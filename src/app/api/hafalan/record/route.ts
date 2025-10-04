@@ -252,10 +252,12 @@ export async function POST(request: NextRequest) {
         // Create a system teacher account if none exists
         const systemTeacher = await prisma.user.create({
           data: {
+            username: 'system',
             email: 'system@pondok.com',
             name: 'System',
             role: 'TEACHER',
-            password: '' // Will be hashed by the model
+            password: 'system123', // Will be hashed by the model
+            isUstadz: true
           }
         });
         teacherId = systemTeacher.id;
