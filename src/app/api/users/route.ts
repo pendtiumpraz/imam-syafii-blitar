@@ -13,8 +13,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Only SUPER_ADMIN can view all users
-    if (session.user.role !== 'SUPER_ADMIN') {
+    // Only SUPER_ADMIN and ADMIN can view all users
+    if (session.user.role !== 'SUPER_ADMIN' && session.user.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
@@ -92,8 +92,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Only SUPER_ADMIN can create users
-    if (session.user.role !== 'SUPER_ADMIN') {
+    // Only SUPER_ADMIN and ADMIN can create users
+    if (session.user.role !== 'SUPER_ADMIN' && session.user.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
@@ -178,8 +178,8 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Only SUPER_ADMIN can update users
-    if (session.user.role !== 'SUPER_ADMIN') {
+    // Only SUPER_ADMIN and ADMIN can update users
+    if (session.user.role !== 'SUPER_ADMIN' && session.user.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
@@ -278,8 +278,8 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Only SUPER_ADMIN can delete users
-    if (session.user.role !== 'SUPER_ADMIN') {
+    // Only SUPER_ADMIN and ADMIN can delete users
+    if (session.user.role !== 'SUPER_ADMIN' && session.user.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 

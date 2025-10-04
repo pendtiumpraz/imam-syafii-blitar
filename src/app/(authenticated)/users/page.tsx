@@ -153,11 +153,11 @@ export default function UsersPage() {
 
   // Check if user has permission
   useEffect(() => {
-    if (session && session.user.role !== 'SUPER_ADMIN') {
+    if (session && session.user.role !== 'SUPER_ADMIN' && session.user.role !== 'ADMIN') {
       router.push('/dashboard')
       toast({
         title: 'Access Denied',
-        description: 'Only Super Admin can access user management',
+        description: 'Only Admin can access user management',
         variant: 'destructive',
       })
     }
@@ -562,7 +562,7 @@ export default function UsersPage() {
     }
   }
 
-  if (session?.user.role !== 'SUPER_ADMIN') {
+  if (session?.user.role !== 'SUPER_ADMIN' && session?.user.role !== 'ADMIN') {
     return null
   }
 
