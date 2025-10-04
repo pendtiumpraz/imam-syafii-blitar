@@ -180,7 +180,7 @@ export default function OTAAdminPage() {
 
       if (response.ok) {
         fetchOrphanStudents()
-        alert(isOrphan ? 'Siswa berhasil ditandai sebagai yatim' : 'Status yatim siswa berhasil dihapus')
+        alert(isOrphan ? 'Siswa berhasil ditandai membutuhkan bantuan OTA' : 'Siswa berhasil dihapus dari program OTA')
       } else {
         const error = await response.json()
         alert('Gagal mengupdate status siswa: ' + error.error)
@@ -354,7 +354,7 @@ export default function OTAAdminPage() {
             <nav className="flex space-x-8 px-6">
               {[
                 { key: 'programs', label: 'Program Aktif', icon: Heart },
-                { key: 'students', label: 'Siswa Yatim', icon: Users },
+                { key: 'students', label: 'Siswa Penerima OTA', icon: Users },
                 { key: 'reports', label: 'Laporan', icon: FileText }
               ].map(({ key, label, icon: Icon }) => (
                 <button
@@ -609,10 +609,10 @@ export default function OTAAdminPage() {
 
         {activeTab === 'students' && (
           <div className="bg-white rounded-lg shadow overflow-hidden">
-            <div className="p-4 bg-yellow-50 border-b">
-              <p className="text-sm text-yellow-800">
+            <div className="p-4 bg-blue-50 border-b">
+              <p className="text-sm text-blue-800">
                 <AlertTriangle className="w-4 h-4 inline mr-2" />
-                Kelola siswa yatim dan buat program OTA untuk mereka
+                Kelola siswa yang membutuhkan bantuan (yatim/piatu/kurang mampu) dan buat program OTA untuk mereka
               </p>
             </div>
             <div className="overflow-x-auto">
@@ -623,7 +623,7 @@ export default function OTAAdminPage() {
                       Siswa
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status Yatim
+                      Status Program OTA
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Kebutuhan Bulanan
@@ -643,9 +643,9 @@ export default function OTAAdminPage() {
                   {filteredStudents.length === 0 ? (
                     <tr>
                       <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
-                        {students.filter(s => s.isOrphan).length === 0 
-                          ? 'Belum ada siswa yang ditandai sebagai yatim'
-                          : 'Semua siswa yatim sudah memiliki program OTA'
+                        {students.filter(s => s.isOrphan).length === 0
+                          ? 'Belum ada siswa yang membutuhkan bantuan OTA'
+                          : 'Semua siswa penerima OTA sudah memiliki program'
                         }
                       </td>
                     </tr>
@@ -669,9 +669,9 @@ export default function OTAAdminPage() {
                         </td>
                         <td className="px-4 py-4">
                           <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                            student.isOrphan ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'
+                            student.isOrphan ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
                           }`}>
-                            {student.isOrphan ? 'Yatim' : 'Bukan Yatim'}
+                            {student.isOrphan ? 'Membutuhkan Bantuan' : 'Tidak Membutuhkan'}
                           </span>
                         </td>
                         <td className="px-4 py-4">
@@ -707,7 +707,7 @@ export default function OTAAdminPage() {
                               onClick={() => handleMarkAsOrphan(student.id, !student.isOrphan)}
                               className="text-xs"
                             >
-                              {student.isOrphan ? 'Hapus Status' : 'Tandai Yatim'}
+                              {student.isOrphan ? 'Hapus dari OTA' : 'Tandai Butuh Bantuan'}
                             </Button>
                             {student.isOrphan && (
                               <Button

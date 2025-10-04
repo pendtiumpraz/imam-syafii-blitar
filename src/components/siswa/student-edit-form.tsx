@@ -240,7 +240,7 @@ export function StudentEditForm({ student, isOpen, onClose, onSubmit }: StudentE
 
                 <div>
                   <label className="block text-sm font-medium mb-2">
-                    Status Yatim
+                    Program OTA (Orang Tua Asuh)
                   </label>
                   <div className="flex items-center gap-4">
                     <label className="flex items-center gap-2 cursor-pointer">
@@ -250,7 +250,7 @@ export function StudentEditForm({ student, isOpen, onClose, onSubmit }: StudentE
                         onChange={(e) => setFormData({ ...formData, isOrphan: e.target.checked })}
                         className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
                       />
-                      <span className="text-sm">Siswa Yatim (untuk program OTA)</span>
+                      <span className="text-sm">Membutuhkan bantuan OTA (yatim/piatu/kurang mampu)</span>
                     </label>
                   </div>
                 </div>
