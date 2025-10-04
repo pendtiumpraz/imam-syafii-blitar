@@ -168,6 +168,7 @@ export default function RoleManagementPage() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
+  const [activeTab, setActiveTab] = useState<string>('Dashboard')
 
   const [roles, setRoles] = useState<Role[]>([
     {
@@ -373,6 +374,7 @@ export default function RoleManagementPage() {
       permissions: [],
       color: 'bg-blue-100 text-blue-800 border-blue-300'
     })
+    setActiveTab('Dashboard') // Reset tab to Dashboard
   }
 
   const openEditDialog = (role: Role) => {
@@ -383,6 +385,7 @@ export default function RoleManagementPage() {
       permissions: role.permissions,
       color: role.color
     })
+    setActiveTab('Dashboard') // Reset tab to Dashboard when opening edit
     setIsEditDialogOpen(true)
   }
 
@@ -486,7 +489,7 @@ export default function RoleManagementPage() {
             </div>
           </div>
 
-          <Tabs defaultValue={Object.keys(categorizedPermissions)[0]} className="w-full">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <div className="overflow-x-auto pb-2">
               <TabsList className="inline-flex w-auto min-w-full">
                 {Object.keys(categorizedPermissions).map((category) => (
