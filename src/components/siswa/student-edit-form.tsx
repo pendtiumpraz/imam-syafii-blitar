@@ -59,6 +59,7 @@ export function StudentEditForm({ student, isOpen, onClose, onSubmit }: StudentE
     enrollmentDate: new Date(student.birthDate).toISOString().split('T')[0], // Default to birthdate, should be updated with actual enrollment date
     status: student.status,
     photo: student.photo || '',
+    isOrphan: (student as any).isOrphan || false,
     // Default values for required fields that might not exist in the interface
     province: 'Jawa Timur',
     village: '',
@@ -235,6 +236,23 @@ export function StudentEditForm({ student, isOpen, onClose, onSubmit }: StudentE
                     <option value="AB">AB</option>
                     <option value="O">O</option>
                   </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Status Yatim
+                  </label>
+                  <div className="flex items-center gap-4">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.isOrphan}
+                        onChange={(e) => setFormData({ ...formData, isOrphan: e.target.checked })}
+                        className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                      />
+                      <span className="text-sm">Siswa Yatim (untuk program OTA)</span>
+                    </label>
+                  </div>
                 </div>
               </div>
             </div>
