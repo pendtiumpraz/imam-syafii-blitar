@@ -840,7 +840,7 @@ export default function UsersPage() {
                     id="new-password"
                     type={showNewPassword ? "text" : "password"}
                     value={changePasswordData.newPassword}
-                    onChange={(e) => handlePasswordChange(e.target.value, true)}
+                    onChange={(e) => handlePasswordChange(e.target.value)}
                     placeholder="Enter new password"
                     className="pr-10"
                   />
@@ -1003,7 +1003,7 @@ export default function UsersPage() {
                     id="reset-password"
                     type={showNewPassword ? "text" : "password"}
                     value={changePasswordData.newPassword}
-                    onChange={(e) => handlePasswordChange(e.target.value, true)}
+                    onChange={(e) => handlePasswordChange(e.target.value)}
                     placeholder="Enter new password"
                     className="pr-10"
                   />
