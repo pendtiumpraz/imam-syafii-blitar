@@ -28,6 +28,7 @@
     "test:ci": "npm run lint && npm run test:coverage && npm run test:integration && npm run test:e2e && npm run test:report"
   },
   "dependencies": {
+    "@headlessui/react": "^2.2.9",
     "@heroicons/react": "^2.2.0",
     "@hookform/resolvers": "^3.9.0",
     "@prisma/client": "^5.22.0",
