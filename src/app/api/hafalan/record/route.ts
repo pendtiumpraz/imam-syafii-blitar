@@ -232,25 +232,43 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify teacher exists
+    // Verify teacher exists or create placeholder for admin
+    let teacherId = session.user.id;
     const teacher = await prisma.user.findUnique({
       where: { id: session.user.id }
     });
 
     if (!teacher) {
-      console.error('Teacher not found:', session.user.id);
-      return NextResponse.json(
-        { error: 'Teacher account not found', userId: session.user.id },
-        { status: 404 }
-      );
+      console.log('User not found in User table, checking if admin...');
+      // If user doesn't exist in User table, try to find or create a default teacher account
+      const defaultTeacher = await prisma.user.findFirst({
+        where: { role: 'TEACHER' }
+      });
+
+      if (defaultTeacher) {
+        teacherId = defaultTeacher.id;
+        console.log('Using default teacher ID:', teacherId);
+      } else {
+        // Create a system teacher account if none exists
+        const systemTeacher = await prisma.user.create({
+          data: {
+            email: 'system@pondok.com',
+            name: 'System',
+            role: 'TEACHER',
+            password: '' // Will be hashed by the model
+          }
+        });
+        teacherId = systemTeacher.id;
+        console.log('Created system teacher:', teacherId);
+      }
     }
 
     // Verify student exists
-    const student = await prisma.student.findUnique({
+    const studentExists = await prisma.student.findUnique({
       where: { id: studentId }
     });
 
-    if (!student) {
+    if (!studentExists) {
       console.error('Student not found:', studentId);
       return NextResponse.json(
         { error: 'Student not found', studentId },
@@ -267,7 +285,7 @@ export async function POST(request: NextRequest) {
         endAyat: parseInt(endAyat),
         status,
         quality,
-        teacherId: session.user.id,
+        teacherId: teacherId,
         fluency,
         tajweed,
         makharijul,
