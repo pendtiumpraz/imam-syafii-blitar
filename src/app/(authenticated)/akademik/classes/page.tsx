@@ -136,13 +136,18 @@ export default function ClassesPage() {
 
   const fetchTeachers = async () => {
     try {
-      // This would be replaced with actual teacher endpoint
-      const mockTeachers: Teacher[] = [
-        { id: '1', name: 'Ahmad Rahman, S.Pd', email: 'ahmad@pondok.id' },
-        { id: '2', name: 'Siti Fatimah, S.Ag', email: 'siti@pondok.id' },
-        { id: '3', name: 'Abdul Malik, M.Pd', email: 'abdul@pondok.id' },
-      ];
-      setTeachers(mockTeachers);
+      // Fetch users with USTADZ role (teachers are stored in User model for class assignments)
+      const response = await fetch('/api/users?role=USTADZ&isActive=true&limit=1000');
+      if (response.ok) {
+        const data = await response.json();
+        // Map User model to the interface expected by the component
+        const teachersData = (data.users || []).map((user: any) => ({
+          id: user.id,
+          name: user.name,
+          email: user.email || '',
+        }));
+        setTeachers(teachersData);
+      }
     } catch (error) {
       console.error('Error fetching teachers:', error);
     }

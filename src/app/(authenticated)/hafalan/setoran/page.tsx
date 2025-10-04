@@ -7,7 +7,9 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Loading } from '@/components/ui/loading';
 import { QuickRecordModal } from '@/components/hafalan/quick-record-modal';
-import { Mic, Search, Book, Users, Target, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { SetoranFormSlideOver } from '@/components/hafalan/setoran-form-slide-over';
+import { Mic, Search, Book, Users, Target, CheckCircle, Clock, AlertCircle, Plus, Edit, Trash2, Calendar, User } from 'lucide-react';
+import { toast } from '@/lib/toast';
 
 interface Student {
   id: string;
@@ -43,6 +45,37 @@ interface StudentProgress {
   };
 }
 
+interface SetoranRecord {
+  id: string;
+  studentId: string;
+  surahNumber: number;
+  startAyat: number;
+  endAyat: number;
+  status: string;
+  quality: string;
+  teacherId: string;
+  date: string;
+  notes?: string;
+  voiceNoteUrl?: string;
+  student: {
+    id: string;
+    fullName: string;
+    nickname?: string;
+    photo?: string;
+  };
+  surah: {
+    number: number;
+    name: string;
+    nameArabic: string;
+    totalAyat: number;
+    juz: number;
+  };
+  teacher: {
+    id: string;
+    name: string;
+  };
+}
+
 export default function HafalanSetoranPage() {
   const [students, setStudents] = useState<Student[]>([]);
   const [surahs, setSurahs] = useState<Surah[]>([]);
@@ -54,6 +87,11 @@ export default function HafalanSetoranPage() {
   const [recording, setRecording] = useState(false);
   const [showRecordModal, setShowRecordModal] = useState(false);
   const [recordType, setRecordType] = useState<'SETORAN_BARU' | 'MURAJA\'AH' | 'TES_HAFALAN'>('SETORAN_BARU');
+  const [setoranRecords, setSetoranRecords] = useState<SetoranRecord[]>([]);
+  const [showFormSlideOver, setShowFormSlideOver] = useState(false);
+  const [editingRecord, setEditingRecord] = useState<SetoranRecord | null>(null);
+  const [recordsLoading, setRecordsLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<'quick' | 'list'>('quick');
 
   // Load initial data
   useEffect(() => {
@@ -65,8 +103,16 @@ export default function HafalanSetoranPage() {
   useEffect(() => {
     if (selectedStudent) {
       loadStudentProgress(selectedStudent.id);
+      loadSetoranRecords(selectedStudent.id);
     }
   }, [selectedStudent]);
+
+  // Load all records when list tab is active
+  useEffect(() => {
+    if (activeTab === 'list') {
+      loadSetoranRecords();
+    }
+  }, [activeTab]);
 
   const loadStudents = async () => {
     try {
@@ -97,6 +143,70 @@ export default function HafalanSetoranPage() {
       setStudentProgress(data);
     } catch (error) {
       console.error('Error loading student progress:', error);
+    }
+  };
+
+  const loadSetoranRecords = async (studentId?: string) => {
+    setRecordsLoading(true);
+    try {
+      const url = studentId
+        ? `/api/hafalan/record?studentId=${studentId}&limit=100`
+        : '/api/hafalan/record?limit=100';
+      const response = await fetch(url);
+      const data = await response.json();
+      setSetoranRecords(data.records || []);
+    } catch (error) {
+      console.error('Error loading setoran records:', error);
+      toast.error('Gagal memuat data setoran');
+    } finally {
+      setRecordsLoading(false);
+    }
+  };
+
+  const handleAddRecord = () => {
+    setEditingRecord(null);
+    setShowFormSlideOver(true);
+  };
+
+  const handleEditRecord = (record: SetoranRecord) => {
+    setEditingRecord(record);
+    setShowFormSlideOver(true);
+  };
+
+  const handleDeleteRecord = async (recordId: string) => {
+    if (!confirm('Apakah Anda yakin ingin menghapus data setoran ini?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/hafalan/record/${recordId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        toast.success('Data setoran berhasil dihapus');
+        loadSetoranRecords(selectedStudent?.id);
+        if (selectedStudent) {
+          loadStudentProgress(selectedStudent.id);
+        }
+      } else {
+        const error = await response.json();
+        toast.error(error.message || 'Gagal menghapus data setoran');
+      }
+    } catch (error) {
+      console.error('Error deleting record:', error);
+      toast.error('Terjadi kesalahan saat menghapus data');
+    }
+  };
+
+  const handleFormClose = (refresh?: boolean) => {
+    setShowFormSlideOver(false);
+    setEditingRecord(null);
+    if (refresh) {
+      loadSetoranRecords(selectedStudent?.id);
+      if (selectedStudent) {
+        loadStudentProgress(selectedStudent.id);
+      }
     }
   };
 
@@ -299,8 +409,209 @@ export default function HafalanSetoranPage() {
           </Card>
         )}
 
-        {/* Surah Grid */}
+        {/* Tab Navigation */}
         {selectedStudent && (
+          <div className="mb-6">
+            <div className="flex gap-2 border-b">
+              <Button
+                variant={activeTab === 'quick' ? 'default' : 'ghost'}
+                onClick={() => setActiveTab('quick')}
+                className="rounded-b-none"
+              >
+                <Book className="w-4 h-4 mr-2" />
+                Quick Record
+              </Button>
+              <Button
+                variant={activeTab === 'list' ? 'default' : 'ghost'}
+                onClick={() => setActiveTab('list')}
+                className="rounded-b-none"
+              >
+                <Users className="w-4 h-4 mr-2" />
+                Daftar Setoran
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Records Table */}
+        {selectedStudent && activeTab === 'list' && (
+          <Card className="mb-6">
+            <CardContent className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-bold">Riwayat Setoran</h3>
+                <Button onClick={handleAddRecord} className="bg-green-600 hover:bg-green-700">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Tambah Setoran
+                </Button>
+              </div>
+
+              {recordsLoading ? (
+                <div className="flex justify-center py-8">
+                  <Loading />
+                </div>
+              ) : setoranRecords.length === 0 ? (
+                <div className="text-center py-12">
+                  <Book className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-600 mb-2">
+                    Belum Ada Data Setoran
+                  </h3>
+                  <p className="text-gray-500 mb-4">
+                    Mulai tambahkan data setoran hafalan untuk santri ini
+                  </p>
+                  <Button onClick={handleAddRecord} className="bg-green-600 hover:bg-green-700">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Tambah Setoran Pertama
+                  </Button>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Tanggal
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Santri
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Surah
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Ayat
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Status
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Kualitas
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Ustadz
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Aksi
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {setoranRecords.map((record) => (
+                        <tr key={record.id} className="hover:bg-gray-50">
+                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <div className="flex items-center">
+                              <Calendar className="w-4 h-4 mr-2 text-gray-400" />
+                              {new Date(record.date).toLocaleDateString('id-ID', {
+                                day: 'numeric',
+                                month: 'short',
+                                year: 'numeric',
+                              })}
+                            </div>
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              {record.student.photo ? (
+                                <img
+                                  src={record.student.photo}
+                                  alt={record.student.fullName}
+                                  className="w-8 h-8 rounded-full mr-2"
+                                />
+                              ) : (
+                                <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold mr-2">
+                                  {record.student.fullName.charAt(0)}
+                                </div>
+                              )}
+                              <div>
+                                <div className="text-sm font-medium text-gray-900">
+                                  {record.student.fullName}
+                                </div>
+                                {record.student.nickname && (
+                                  <div className="text-xs text-gray-500">
+                                    ({record.student.nickname})
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap">
+                            <div className="text-sm font-medium text-gray-900">
+                              {record.surah.name}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {record.surah.nameArabic}
+                            </div>
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {record.startAyat}-{record.endAyat}
+                            <span className="text-xs text-gray-500 ml-1">
+                              ({record.endAyat - record.startAyat + 1} ayat)
+                            </span>
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap">
+                            <Badge
+                              className={
+                                record.status === 'MUTQIN'
+                                  ? 'bg-green-100 text-green-800'
+                                  : record.status === 'LANCAR'
+                                  ? 'bg-blue-100 text-blue-800'
+                                  : record.status === 'MURAJA\'AH'
+                                  ? 'bg-yellow-100 text-yellow-800'
+                                  : 'bg-orange-100 text-orange-800'
+                              }
+                            >
+                              {record.status}
+                            </Badge>
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap">
+                            <Badge
+                              className={
+                                record.quality === 'A'
+                                  ? 'bg-green-100 text-green-800'
+                                  : record.quality === 'B'
+                                  ? 'bg-blue-100 text-blue-800'
+                                  : 'bg-gray-100 text-gray-800'
+                              }
+                            >
+                              {record.quality}
+                            </Badge>
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <div className="flex items-center">
+                              <User className="w-4 h-4 mr-1 text-gray-400" />
+                              {record.teacher.name}
+                            </div>
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
+                            <div className="flex gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEditRecord(record)}
+                                className="text-blue-600 hover:text-blue-900"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteRecord(record.id)}
+                                className="text-red-600 hover:text-red-900"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Surah Grid */}
+        {selectedStudent && activeTab === 'quick' && (
           <Card>
             <CardContent className="p-6">
               <h3 className="text-xl font-bold mb-4">Pilih Surah untuk Setoran</h3>
@@ -409,6 +720,16 @@ export default function HafalanSetoranPage() {
           surah={selectedSurah}
           student={selectedStudent}
           type={recordType}
+        />
+
+        {/* Form Slide Over */}
+        <SetoranFormSlideOver
+          isOpen={showFormSlideOver}
+          onClose={handleFormClose}
+          editingRecord={editingRecord}
+          students={students}
+          surahs={surahs}
+          selectedStudent={selectedStudent}
         />
       </div>
     </div>
