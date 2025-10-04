@@ -232,6 +232,32 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Verify teacher exists
+    const teacher = await prisma.user.findUnique({
+      where: { id: session.user.id }
+    });
+
+    if (!teacher) {
+      console.error('Teacher not found:', session.user.id);
+      return NextResponse.json(
+        { error: 'Teacher account not found', userId: session.user.id },
+        { status: 404 }
+      );
+    }
+
+    // Verify student exists
+    const student = await prisma.student.findUnique({
+      where: { id: studentId }
+    });
+
+    if (!student) {
+      console.error('Student not found:', studentId);
+      return NextResponse.json(
+        { error: 'Student not found', studentId },
+        { status: 404 }
+      );
+    }
+
     // Create hafalan record
     const record = await prisma.hafalanRecord.create({
       data: {
