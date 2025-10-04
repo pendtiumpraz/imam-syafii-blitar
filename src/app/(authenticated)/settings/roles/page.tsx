@@ -36,68 +36,128 @@ interface Role {
 }
 
 const permissions: Permission[] = [
+  // Dashboard
+  { id: 'dashboard.view', name: 'View Dashboard', description: 'Access dashboard page', category: 'Dashboard' },
+
   // Student Management
-  { id: 'student.create', name: 'Create Student', description: 'Create new student records', category: 'Student Management' },
-  { id: 'student.read', name: 'View Students', description: 'View student information', category: 'Student Management' },
-  { id: 'student.update', name: 'Update Student', description: 'Edit student information', category: 'Student Management' },
-  { id: 'student.delete', name: 'Delete Student', description: 'Delete student records', category: 'Student Management', critical: true },
-  { id: 'student.import', name: 'Import Students', description: 'Bulk import student data', category: 'Student Management' },
-  { id: 'student.export', name: 'Export Students', description: 'Export student data', category: 'Student Management' },
-  
-  // Payment Management
-  { id: 'payment.create', name: 'Create Payment', description: 'Create payment records', category: 'Payment Management' },
-  { id: 'payment.read', name: 'View Payments', description: 'View payment information', category: 'Payment Management' },
-  { id: 'payment.update', name: 'Update Payment', description: 'Edit payment records', category: 'Payment Management' },
-  { id: 'payment.delete', name: 'Delete Payment', description: 'Delete payment records', category: 'Payment Management', critical: true },
-  { id: 'payment.process', name: 'Process Payment', description: 'Process and confirm payments', category: 'Payment Management' },
-  { id: 'payment.refund', name: 'Refund Payment', description: 'Process payment refunds', category: 'Payment Management', critical: true },
-  { id: 'payment.export', name: 'Export Payments', description: 'Export payment data', category: 'Payment Management' },
-  
+  { id: 'student.view', name: 'View Students', description: 'View student list and details', category: 'Data Siswa' },
+  { id: 'student.create', name: 'Create Student', description: 'Add new student records', category: 'Data Siswa' },
+  { id: 'student.update', name: 'Update Student', description: 'Edit student information', category: 'Data Siswa' },
+  { id: 'student.delete', name: 'Delete Student', description: 'Delete student records', category: 'Data Siswa', critical: true },
+  { id: 'student.graduate', name: 'Graduate Student', description: 'Move students to alumni', category: 'Data Siswa' },
+  { id: 'student.export', name: 'Export Students', description: 'Export student data', category: 'Data Siswa' },
+
+  // Alumni Management
+  { id: 'alumni.view', name: 'View Alumni', description: 'View alumni list and details', category: 'Data Alumni' },
+  { id: 'alumni.create', name: 'Create Alumni', description: 'Add new alumni records', category: 'Data Alumni' },
+  { id: 'alumni.update', name: 'Update Alumni', description: 'Edit alumni information', category: 'Data Alumni' },
+  { id: 'alumni.delete', name: 'Delete Alumni', description: 'Delete alumni records', category: 'Data Alumni', critical: true },
+
+  // Teacher Management
+  { id: 'teacher.view', name: 'View Teachers', description: 'View teacher list', category: 'Data Pengajar' },
+  { id: 'teacher.create', name: 'Create Teacher', description: 'Add new teacher records', category: 'Data Pengajar' },
+  { id: 'teacher.update', name: 'Update Teacher', description: 'Edit teacher information', category: 'Data Pengajar' },
+  { id: 'teacher.delete', name: 'Delete Teacher', description: 'Delete teacher records', category: 'Data Pengajar', critical: true },
+
+  // PPDB Admin
+  { id: 'ppdb.view', name: 'View PPDB', description: 'Access PPDB admin page', category: 'Admin PPDB' },
+  { id: 'ppdb.manage', name: 'Manage PPDB', description: 'Manage student registration', category: 'Admin PPDB' },
+  { id: 'ppdb.approve', name: 'Approve PPDB', description: 'Approve/reject applications', category: 'Admin PPDB' },
+
+  // OTA Admin
+  { id: 'ota.view', name: 'View OTA Programs', description: 'Access OTA admin page', category: 'OTA Admin' },
+  { id: 'ota.create', name: 'Create OTA Program', description: 'Create new OTA programs', category: 'OTA Admin' },
+  { id: 'ota.update', name: 'Update OTA Program', description: 'Edit OTA program details', category: 'OTA Admin' },
+  { id: 'ota.delete', name: 'Delete OTA Program', description: 'Delete OTA programs', category: 'OTA Admin', critical: true },
+
+  // Finance Management
+  { id: 'finance.view', name: 'View Finance', description: 'View financial data', category: 'Keuangan' },
+  { id: 'finance.create', name: 'Create Transaction', description: 'Create payment records', category: 'Keuangan' },
+  { id: 'finance.update', name: 'Update Transaction', description: 'Edit payment records', category: 'Keuangan' },
+  { id: 'finance.delete', name: 'Delete Transaction', description: 'Delete payment records', category: 'Keuangan', critical: true },
+  { id: 'finance.export', name: 'Export Finance', description: 'Export financial data', category: 'Keuangan' },
+
+  // Activities Management
+  { id: 'activity.view', name: 'View Activities', description: 'View activity list', category: 'Kegiatan' },
+  { id: 'activity.create', name: 'Create Activity', description: 'Add new activities', category: 'Kegiatan' },
+  { id: 'activity.update', name: 'Update Activity', description: 'Edit activity details', category: 'Kegiatan' },
+  { id: 'activity.delete', name: 'Delete Activity', description: 'Delete activities', category: 'Kegiatan', critical: true },
+
+  // Curriculum Management
+  { id: 'curriculum.view', name: 'View Curriculum', description: 'View curriculum data', category: 'Kurikulum' },
+  { id: 'curriculum.create', name: 'Create Curriculum', description: 'Add new curriculum', category: 'Kurikulum' },
+  { id: 'curriculum.update', name: 'Update Curriculum', description: 'Edit curriculum details', category: 'Kurikulum' },
+  { id: 'curriculum.delete', name: 'Delete Curriculum', description: 'Delete curriculum', category: 'Kurikulum', critical: true },
+
+  // Academic Management
+  { id: 'academic.view', name: 'View Academic', description: 'Access academic dashboard', category: 'Akademik' },
+  { id: 'academic.classes', name: 'Manage Classes', description: 'Manage class data', category: 'Akademik' },
+  { id: 'academic.subjects', name: 'Manage Subjects', description: 'Manage subjects/courses', category: 'Akademik' },
+  { id: 'academic.grades', name: 'Input Grades', description: 'Input and manage student grades', category: 'Akademik' },
+  { id: 'academic.attendance', name: 'Manage Attendance', description: 'Record student attendance', category: 'Akademik' },
+  { id: 'academic.schedules', name: 'Manage Schedules', description: 'Create and edit schedules', category: 'Akademik' },
+  { id: 'academic.reportcards', name: 'Manage Report Cards', description: 'Generate and view report cards', category: 'Akademik' },
+  { id: 'academic.exams', name: 'Manage Exams', description: 'Create and manage exams', category: 'Akademik' },
+
+  // Quran Memorization
+  { id: 'hafalan.view', name: 'View Hafalan', description: 'View Quran memorization data', category: 'Hafalan Al-Quran' },
+  { id: 'hafalan.setoran', name: 'Manage Setoran', description: 'Record memorization submissions', category: 'Hafalan Al-Quran' },
+  { id: 'hafalan.progress', name: 'View Progress', description: 'View student memorization progress', category: 'Hafalan Al-Quran' },
+
+  // Video Kajian
+  { id: 'video.view', name: 'View Videos', description: 'View video kajian list', category: 'Video Kajian' },
+  { id: 'video.create', name: 'Create Video', description: 'Add new video kajian', category: 'Video Kajian' },
+  { id: 'video.update', name: 'Update Video', description: 'Edit video details', category: 'Video Kajian' },
+  { id: 'video.delete', name: 'Delete Video', description: 'Delete video kajian', category: 'Video Kajian', critical: true },
+
+  // Perpustakaan (Library)
+  { id: 'library.view', name: 'View Library', description: 'View ebook library', category: 'Perpustakaan' },
+  { id: 'library.create', name: 'Add Ebook', description: 'Add new ebook/PDF', category: 'Perpustakaan' },
+  { id: 'library.update', name: 'Update Ebook', description: 'Edit ebook details', category: 'Perpustakaan' },
+  { id: 'library.delete', name: 'Delete Ebook', description: 'Delete ebook', category: 'Perpustakaan', critical: true },
+
+  // Tanya Ustadz
+  { id: 'tanyaustadz.view', name: 'View Questions', description: 'View student questions', category: 'Tanya Ustadz' },
+  { id: 'tanyaustadz.answer', name: 'Answer Questions', description: 'Respond to questions', category: 'Tanya Ustadz' },
+  { id: 'tanyaustadz.moderate', name: 'Moderate Questions', description: 'Approve/reject questions', category: 'Tanya Ustadz' },
+
+  // Unit Usaha
+  { id: 'unitusaha.view', name: 'View Unit Usaha', description: 'View business units dashboard', category: 'Unit Usaha' },
+  { id: 'unitusaha.koperasi', name: 'Manage Koperasi', description: 'Manage school cooperative', category: 'Unit Usaha' },
+  { id: 'unitusaha.kantin', name: 'Manage Kantin', description: 'Manage canteen operations', category: 'Unit Usaha' },
+  { id: 'unitusaha.laundry', name: 'Manage Laundry', description: 'Manage laundry service', category: 'Unit Usaha' },
+  { id: 'unitusaha.pasarbarkas', name: 'Manage Pasar Barkas', description: 'Manage second-hand market', category: 'Unit Usaha' },
+  { id: 'unitusaha.pos', name: 'Manage POS', description: 'Access POS cashier system', category: 'Unit Usaha' },
+  { id: 'unitusaha.products', name: 'Manage Products', description: 'Manage product catalog', category: 'Unit Usaha' },
+  { id: 'unitusaha.inventory', name: 'Manage Inventory', description: 'Manage stock and inventory', category: 'Unit Usaha' },
+  { id: 'unitusaha.suppliers', name: 'Manage Suppliers', description: 'Manage supplier data', category: 'Unit Usaha' },
+  { id: 'unitusaha.purchases', name: 'Manage Purchases', description: 'Create purchase orders', category: 'Unit Usaha' },
+  { id: 'unitusaha.reports', name: 'View Reports', description: 'View monthly reports', category: 'Unit Usaha' },
+
+  // User Management
+  { id: 'users.view', name: 'View Users', description: 'View user accounts', category: 'Pengguna' },
+  { id: 'users.create', name: 'Create User', description: 'Create new user accounts', category: 'Pengguna', critical: true },
+  { id: 'users.update', name: 'Update User', description: 'Edit user information', category: 'Pengguna' },
+  { id: 'users.delete', name: 'Delete User', description: 'Delete user accounts', category: 'Pengguna', critical: true },
+  { id: 'users.password', name: 'Reset Password', description: 'Reset user passwords', category: 'Pengguna' },
+
   // Staff Management
-  { id: 'staff.create', name: 'Create Staff', description: 'Create new staff accounts', category: 'Staff Management', critical: true },
-  { id: 'staff.read', name: 'View Staff', description: 'View staff information', category: 'Staff Management' },
-  { id: 'staff.update', name: 'Update Staff', description: 'Edit staff information', category: 'Staff Management' },
-  { id: 'staff.delete', name: 'Delete Staff', description: 'Delete staff accounts', category: 'Staff Management', critical: true },
-  { id: 'staff.permissions', name: 'Manage Permissions', description: 'Assign permissions to staff', category: 'Staff Management', critical: true },
-  
-  // Role Management
-  { id: 'role.create', name: 'Create Role', description: 'Create new roles', category: 'Role Management', critical: true },
-  { id: 'role.read', name: 'View Roles', description: 'View role information', category: 'Role Management' },
-  { id: 'role.update', name: 'Update Role', description: 'Edit role permissions', category: 'Role Management', critical: true },
-  { id: 'role.delete', name: 'Delete Role', description: 'Delete custom roles', category: 'Role Management', critical: true },
-  
-  // Class Management
-  { id: 'class.create', name: 'Create Class', description: 'Create new classes', category: 'Academic Management' },
-  { id: 'class.read', name: 'View Classes', description: 'View class information', category: 'Academic Management' },
-  { id: 'class.update', name: 'Update Class', description: 'Edit class information', category: 'Academic Management' },
-  { id: 'class.delete', name: 'Delete Class', description: 'Delete class records', category: 'Academic Management' },
-  
-  // System Settings
-  { id: 'settings.general', name: 'General Settings', description: 'Manage general system settings', category: 'System Settings', critical: true },
-  { id: 'settings.payment', name: 'Payment Settings', description: 'Configure payment gateways', category: 'System Settings', critical: true },
-  { id: 'settings.whatsapp', name: 'WhatsApp Settings', description: 'Configure WhatsApp integration', category: 'System Settings' },
-  { id: 'settings.notification', name: 'Notification Settings', description: 'Configure notification preferences', category: 'System Settings' },
-  { id: 'settings.backup', name: 'Backup Settings', description: 'Manage system backups', category: 'System Settings', critical: true },
-  { id: 'settings.security', name: 'Security Settings', description: 'Manage security configurations', category: 'System Settings', critical: true },
-  
-  // Reports & Analytics
-  { id: 'reports.financial', name: 'Financial Reports', description: 'Access financial reports', category: 'Reports & Analytics' },
-  { id: 'reports.academic', name: 'Academic Reports', description: 'Access academic reports', category: 'Reports & Analytics' },
-  { id: 'reports.student', name: 'Student Reports', description: 'Access student reports', category: 'Reports & Analytics' },
-  { id: 'reports.attendance', name: 'Attendance Reports', description: 'Access attendance reports', category: 'Reports & Analytics' },
-  { id: 'reports.export', name: 'Export Reports', description: 'Export report data', category: 'Reports & Analytics' },
-  
-  // Communication
-  { id: 'communication.whatsapp', name: 'Send WhatsApp', description: 'Send WhatsApp messages', category: 'Communication' },
-  { id: 'communication.email', name: 'Send Email', description: 'Send email notifications', category: 'Communication' },
-  { id: 'communication.sms', name: 'Send SMS', description: 'Send SMS messages', category: 'Communication' },
-  { id: 'communication.broadcast', name: 'Broadcast Messages', description: 'Send bulk messages', category: 'Communication' },
-  
-  // System Administration
-  { id: 'system.logs', name: 'System Logs', description: 'View system logs', category: 'System Administration', critical: true },
-  { id: 'system.maintenance', name: 'System Maintenance', description: 'Perform system maintenance', category: 'System Administration', critical: true },
-  { id: 'system.backup', name: 'System Backup', description: 'Create and restore backups', category: 'System Administration', critical: true },
-  { id: 'system.users', name: 'User Management', description: 'Manage all user accounts', category: 'System Administration', critical: true },
+  { id: 'staff.view', name: 'View Staff', description: 'View staff information', category: 'Staff' },
+  { id: 'staff.create', name: 'Create Staff', description: 'Add new staff members', category: 'Staff' },
+  { id: 'staff.update', name: 'Update Staff', description: 'Edit staff information', category: 'Staff' },
+  { id: 'staff.delete', name: 'Delete Staff', description: 'Delete staff accounts', category: 'Staff', critical: true },
+
+  // Settings
+  { id: 'settings.view', name: 'View Settings', description: 'Access settings page', category: 'Pengaturan' },
+  { id: 'settings.general', name: 'General Settings', description: 'Manage general settings', category: 'Pengaturan' },
+  { id: 'settings.payment', name: 'Payment Settings', description: 'Configure payment gateway', category: 'Pengaturan', critical: true },
+  { id: 'settings.whatsapp', name: 'WhatsApp API', description: 'Configure WhatsApp integration', category: 'Pengaturan' },
+  { id: 'settings.telegram', name: 'Telegram Bot', description: 'Configure Telegram bot', category: 'Pengaturan' },
+  { id: 'settings.line', name: 'LINE Messaging', description: 'Configure LINE messaging', category: 'Pengaturan' },
+  { id: 'settings.roles', name: 'Manage Roles', description: 'Manage user roles and permissions', category: 'Pengaturan', critical: true },
+  { id: 'settings.notifications', name: 'Notification Settings', description: 'Configure notifications', category: 'Pengaturan' },
+  { id: 'settings.system', name: 'System Settings', description: 'System configuration', category: 'Pengaturan', critical: true },
+  { id: 'settings.security', name: 'Security Settings', description: 'Configure 2FA and security', category: 'Pengaturan', critical: true },
   { id: 'system.database', name: 'Database Access', description: 'Direct database access', category: 'System Administration', critical: true },
 ]
 
@@ -427,18 +487,54 @@ export default function RoleManagementPage() {
           </div>
 
           <Tabs defaultValue={Object.keys(categorizedPermissions)[0]} className="w-full">
-            <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6">
-              {Object.keys(categorizedPermissions).map((category) => (
-                <TabsTrigger key={category} value={category} className="text-xs">
-                  {category.split(' ')[0]}
-                </TabsTrigger>
-              ))}
-            </TabsList>
+            <div className="overflow-x-auto pb-2">
+              <TabsList className="inline-flex w-auto min-w-full">
+                {Object.keys(categorizedPermissions).map((category) => (
+                  <TabsTrigger key={category} value={category} className="text-xs px-3 whitespace-nowrap">
+                    {category}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </div>
 
             {Object.entries(categorizedPermissions).map(([category, perms]) => (
               <TabsContent key={category} value={category} className="space-y-3">
-                <div className="text-sm font-medium text-muted-foreground">
-                  {category} ({perms.filter(p => formData.permissions?.includes(p.id)).length}/{perms.length} selected)
+                <div className="flex items-center justify-between">
+                  <div className="text-sm font-medium text-muted-foreground">
+                    {category} ({perms.filter(p => formData.permissions?.includes(p.id)).length}/{perms.length} selected)
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        const categoryPermIds = perms.map(p => p.id)
+                        setFormData(prev => ({
+                          ...prev,
+                          permissions: Array.from(new Set([...prev.permissions, ...categoryPermIds]))
+                        }))
+                      }}
+                      className="text-xs h-7"
+                    >
+                      Select All in {category}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        const categoryPermIds = perms.map(p => p.id)
+                        setFormData(prev => ({
+                          ...prev,
+                          permissions: prev.permissions.filter(id => !categoryPermIds.includes(id))
+                        }))
+                      }}
+                      className="text-xs h-7"
+                    >
+                      Clear
+                    </Button>
+                  </div>
                 </div>
                 <div className="grid grid-cols-1 gap-3">
                   {perms.map((permission) => (
