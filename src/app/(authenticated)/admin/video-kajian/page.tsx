@@ -86,11 +86,10 @@ export default function VideoKajianAdminPage() {
   const fetchVideos = async () => {
     try {
       setLoading(true)
-      // TODO: Replace with actual API call
-      // const response = await fetch('/api/admin/video-kajian')
-      // const data = await response.json()
-      // setVideos(data)
-      setVideos([])
+      const response = await fetch('/api/videos')
+      if (!response.ok) throw new Error('Failed to fetch videos')
+      const data = await response.json()
+      setVideos(data)
     } catch (error) {
       console.error('Error fetching videos:', error)
       toast({
@@ -123,16 +122,15 @@ export default function VideoKajianAdminPage() {
   const handleSubmitForm = async (formData: VideoFormData) => {
     try {
       if (formMode === 'add') {
-        // TODO: Replace with actual API call
-        // const response = await fetch('/api/admin/video-kajian', {
-        //   method: 'POST',
-        //   headers: { 'Content-Type': 'application/json' },
-        //   body: JSON.stringify({
-        //     ...formData,
-        //     tags: formData.tags.split(',').map(t => t.trim()).filter(t => t),
-        //   }),
-        // })
-        // if (!response.ok) throw new Error('Failed to create video')
+        const response = await fetch('/api/videos', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...formData,
+            tags: formData.tags.split(',').map(t => t.trim()).filter(t => t),
+          }),
+        })
+        if (!response.ok) throw new Error('Failed to create video')
 
         toast({
           title: 'Success',
@@ -141,16 +139,15 @@ export default function VideoKajianAdminPage() {
       } else {
         if (!selectedVideo) return
 
-        // TODO: Replace with actual API call
-        // const response = await fetch(`/api/admin/video-kajian/${selectedVideo.id}`, {
-        //   method: 'PUT',
-        //   headers: { 'Content-Type': 'application/json' },
-        //   body: JSON.stringify({
-        //     ...formData,
-        //     tags: formData.tags.split(',').map(t => t.trim()).filter(t => t),
-        //   }),
-        // })
-        // if (!response.ok) throw new Error('Failed to update video')
+        const response = await fetch(`/api/videos/${selectedVideo.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...formData,
+            tags: formData.tags.split(',').map(t => t.trim()).filter(t => t),
+          }),
+        })
+        if (!response.ok) throw new Error('Failed to update video')
 
         toast({
           title: 'Success',
@@ -174,11 +171,10 @@ export default function VideoKajianAdminPage() {
     if (!selectedVideo) return
 
     try {
-      // TODO: Replace with actual API call
-      // const response = await fetch(`/api/admin/video-kajian/${selectedVideo.id}`, {
-      //   method: 'DELETE',
-      // })
-      // if (!response.ok) throw new Error('Failed to delete video')
+      const response = await fetch(`/api/videos/${selectedVideo.id}`, {
+        method: 'DELETE',
+      })
+      if (!response.ok) throw new Error('Failed to delete video')
 
       toast({
         title: 'Success',

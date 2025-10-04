@@ -32,99 +32,32 @@ const categories = [
   'Akhlak', 'Parenting', 'Muamalah', 'Tahsin'
 ];
 
-const kajianData: Kajian[] = [
-  {
-    id: '1',
-    title: 'Keutamaan Ilmu dan Ulama',
-    ustadz: 'Ustadz Ahmad Zainuddin',
-    date: '2024-01-15',
-    duration: '45:30',
-    views: 1250,
-    likes: 89,
-    category: 'Akidah',
-    thumbnail: '/api/placeholder/400/225',
-    videoUrl: '#',
-    description: 'Pembahasan tentang keutamaan menuntut ilmu dan kedudukan ulama dalam Islam',
-    tags: ['ilmu', 'ulama', 'keutamaan', 'adab']
-  },
-  {
-    id: '2',
-    title: 'Fiqih Shalat: Syarat dan Rukun',
-    ustadz: 'Ustadz Muhammad Hasan',
-    date: '2024-01-14',
-    duration: '38:45',
-    views: 980,
-    likes: 76,
-    category: 'Fiqih',
-    thumbnail: '/api/placeholder/400/225',
-    videoUrl: '#',
-    description: 'Penjelasan lengkap tentang syarat sah dan rukun shalat',
-    tags: ['shalat', 'fiqih', 'ibadah', 'rukun']
-  },
-  {
-    id: '3',
-    title: 'Mendidik Anak di Era Digital',
-    ustadz: 'Ustadz Ibrahim Al-Makky',
-    date: '2024-01-13',
-    duration: '52:15',
-    views: 2100,
-    likes: 156,
-    category: 'Parenting',
-    thumbnail: '/api/placeholder/400/225',
-    videoUrl: '#',
-    description: 'Tips dan strategi mendidik anak di tengah perkembangan teknologi',
-    tags: ['parenting', 'anak', 'digital', 'pendidikan']
-  },
-  {
-    id: '4',
-    title: 'Tafsir Surah Al-Fatihah',
-    ustadz: 'Ustadz Abdul Rahman',
-    date: '2024-01-12',
-    duration: '60:00',
-    views: 1560,
-    likes: 124,
-    category: 'Tafsir',
-    thumbnail: '/api/placeholder/400/225',
-    videoUrl: '#',
-    description: 'Tafsir lengkap Surah Al-Fatihah dan hikmahnya',
-    tags: ['tafsir', 'quran', 'alfatihah', 'tadabbur']
-  },
-  {
-    id: '5',
-    title: 'Kisah Nabi Ibrahim AS',
-    ustadz: 'Ustadz Yusuf Mansur',
-    date: '2024-01-11',
-    duration: '48:20',
-    views: 1890,
-    likes: 145,
-    category: 'Sirah',
-    thumbnail: '/api/placeholder/400/225',
-    videoUrl: '#',
-    description: 'Kisah perjalanan dan perjuangan Nabi Ibrahim AS',
-    tags: ['sirah', 'nabi', 'ibrahim', 'kisah']
-  },
-  {
-    id: '6',
-    title: 'Hadits Arbain: Hadits ke-1',
-    ustadz: 'Ustadz Khalid Basalamah',
-    date: '2024-01-10',
-    duration: '35:45',
-    views: 1450,
-    likes: 98,
-    category: 'Hadits',
-    thumbnail: '/api/placeholder/400/225',
-    videoUrl: '#',
-    description: 'Penjelasan Hadits Arbain Nawawi: Hadits pertama tentang niat',
-    tags: ['hadits', 'arbain', 'niat', 'amal']
-  }
-];
-
 export default function KajianPage() {
   const [selectedCategory, setSelectedCategory] = useState('Semua');
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [selectedKajian, setSelectedKajian] = useState<Kajian | null>(null);
   const [savedVideos, setSavedVideos] = useState<string[]>([]);
+  const [kajianData, setKajianData] = useState<Kajian[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchVideos = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('/api/videos?public=true');
+        if (response.ok) {
+          const data = await response.json();
+          setKajianData(data);
+        }
+      } catch (error) {
+        console.error('Error fetching videos:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchVideos();
+  }, []);
 
   const filteredKajian = kajianData.filter(kajian => {
     const matchesCategory = selectedCategory === 'Semua' || kajian.category === selectedCategory;
@@ -273,7 +206,17 @@ export default function KajianPage() {
       {/* Kajian Grid/List */}
       <section className="py-12">
         <div className="container mx-auto px-4">
-          {viewMode === 'grid' ? (
+          {loading ? (
+            <div className="flex justify-center items-center py-20">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
+            </div>
+          ) : filteredKajian.length === 0 ? (
+            <div className="text-center py-20">
+              <Video className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-gray-700 mb-2">Tidak ada video kajian</h3>
+              <p className="text-gray-500">Belum ada video kajian yang tersedia saat ini.</p>
+            </div>
+          ) : viewMode === 'grid' ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredKajian.map((kajian, index) => (
                 <motion.div
