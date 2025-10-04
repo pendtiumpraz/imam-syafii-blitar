@@ -28,9 +28,9 @@ async function main() {
 
   // Create admin user (Admin Yayasan Imam Syafii)
   const hashedPassword = await bcrypt.hash('admin123', 10);
-  
+
   const admin = await prisma.user.upsert({
-    where: { username: 'admin' },
+    where: { username: 'admin_syafii' },
     update: {},
     create: {
       username: 'admin_syafii',

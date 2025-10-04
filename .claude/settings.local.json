@@ -24,7 +24,10 @@
       "Bash(npm uninstall:*)",
       "Bash(ls:*)",
       "Bash(curl:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(gh repo create:*)",
+      "Read(//mnt/d/AI/**)",
+      "Bash(git remote set-url:*)"
     ],
     "deny": [],
     "ask": []

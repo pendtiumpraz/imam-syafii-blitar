@@ -245,6 +245,7 @@ export default function TenantLoginForm({ redirectTo, className }: TenantLoginFo
     if (!selectedTenant && !detectedTenant) return null
 
     const tenant = selectedTenant || detectedTenant
+    if (!tenant) return null
 
     return (
       <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border">
