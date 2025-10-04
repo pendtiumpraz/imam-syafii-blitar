@@ -1,5 +1,18 @@
 # Deployment Guide for Vercel
 
+## ⚡ Quick Fix: Admin Login Issue
+
+**Problem:** Admin login (admin / admin123) tidak bisa digunakan di production
+**Solution:** Panggil API init setelah deploy
+
+```
+https://your-domain.vercel.app/api/auth/init?secret=init-secret-2024
+```
+
+Ini akan otomatis create user admin, staff, dan ustadz dengan credentials default.
+
+---
+
 ## Prerequisites
 
 1. A Vercel account
@@ -31,6 +44,7 @@ Set these in your Vercel project settings:
 DATABASE_URL=your_postgresql_connection_string
 NEXTAUTH_URL=https://your-app.vercel.app
 NEXTAUTH_SECRET=generate_using_openssl_rand_-base64_32
+INIT_SECRET=init-secret-2024
 ```
 
 ## Deployment Steps
@@ -55,13 +69,30 @@ NEXTAUTH_SECRET=generate_using_openssl_rand_-base64_32
    - Add the environment variables listed above
 
 5. **Initialize database**
+
+   **Option A: Via API (Recommended)**
+   ```
+   https://your-domain.vercel.app/api/auth/init?secret=init-secret-2024
+   ```
+
+   **Option B: Via CLI**
    ```bash
    # Run migrations
    npx prisma migrate deploy
-   
-   # Seed initial data (optional)
+
+   # Seed initial data
    npx prisma db seed
    ```
+
+6. **Default Login Credentials**
+
+   After initialization, use these credentials:
+
+   - **Admin**: `admin` / `admin123`
+   - **Staff**: `staff` / `staff123`
+   - **Ustadz**: `ustadz` / `ustadz123`
+
+   ⚠️ **IMPORTANT**: Change these passwords immediately in production!
 
 ## Local Development with PostgreSQL
 
@@ -91,3 +122,14 @@ If you want to use PostgreSQL locally:
 ### Authentication not working
 - Verify NEXTAUTH_URL matches your deployment URL
 - Ensure NEXTAUTH_SECRET is set and secure
+
+### Admin login not working
+1. Make sure database has been initialized
+2. Call the init API: `/api/auth/init?secret=init-secret-2024`
+3. Or run: `npx prisma db seed`
+4. Try login with: `admin` / `admin123`
+
+### Users not found in database
+- Database hasn't been seeded
+- Run init API or `npx prisma db seed`
+- Check logs for seed errors

@@ -12,45 +12,54 @@ async function main() {
   
   const admin = await prisma.user.upsert({
     where: { username: 'admin' },
-    update: {},
+    update: {
+      password: hashedPassword,
+      isActive: true,
+    },
     create: {
       username: 'admin',
       email: 'admin@pondokimamsyafii.com',
       password: hashedPassword,
-      name: 'Administrator',
+      name: 'Test Administrator',
       role: 'ADMIN',
       isUstadz: false,
       isActive: true,
     },
   });
 
-  console.log('Created admin user:', admin.username);
+  console.log('✅ Created/Updated admin user:', admin.username);
 
   // Create staff user
   const staffPassword = await bcrypt.hash('staff123', 10);
   
   const staff = await prisma.user.upsert({
     where: { username: 'staff' },
-    update: {},
+    update: {
+      password: staffPassword,
+      isActive: true,
+    },
     create: {
       username: 'staff',
       email: 'staff@pondokimamsyafii.com',
       password: staffPassword,
-      name: 'Staff User',
+      name: 'Test Staff Member',
       role: 'STAFF',
       isUstadz: false,
       isActive: true,
     },
   });
 
-  console.log('Created staff user:', staff.username);
+  console.log('✅ Created/Updated staff user:', staff.username);
 
   // Create ustadz user
   const ustadzPassword = await bcrypt.hash('ustadz123', 10);
   
   const ustadz = await prisma.user.upsert({
     where: { username: 'ustadz' },
-    update: {},
+    update: {
+      password: ustadzPassword,
+      isActive: true,
+    },
     create: {
       username: 'ustadz',
       email: 'ustadz@pondokimamsyafii.com',
@@ -62,7 +71,7 @@ async function main() {
     },
   });
 
-  console.log('Created ustadz user:', ustadz.username);
+  console.log('✅ Created/Updated ustadz user:', ustadz.username);
 
   // Create financial accounts
   const incomeAccount = await prisma.financialAccount.upsert({
