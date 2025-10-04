@@ -7,7 +7,7 @@ import {
   Play, Search, Calendar, Clock, User, Eye, ThumbsUp,
   Share2, Download, Filter, Grid, List, BookOpen,
   Heart, Bookmark, Volume2, X, ChevronLeft, ChevronRight,
-  Phone, Users, GraduationCap, Book, Copy
+  Phone, Users, GraduationCap, Book, Copy, Video
 } from 'lucide-react';
 import { formatVideoForWhatsApp, copyToClipboard, showCopyNotification } from '@/lib/whatsapp-formatter';
 import PublicLayout from '@/components/layout/PublicLayout';
