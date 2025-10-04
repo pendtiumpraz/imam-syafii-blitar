@@ -3,12 +3,11 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { 
-  Play, Search, Calendar, Clock, User, Eye, ThumbsUp, 
-  Share2, Download, Filter, Grid, List, Home, BookOpen,
+import {
+  Play, Search, Calendar, Clock, User, Eye, ThumbsUp,
+  Share2, Download, Filter, Grid, List, BookOpen,
   Heart, Bookmark, Volume2, X, ChevronLeft, ChevronRight,
-  Menu, Briefcase, Phone, Users, GraduationCap, Book,
-  DollarSign, PlayCircle, Image, Copy
+  Phone, Users, GraduationCap, Book, Copy
 } from 'lucide-react';
 import { formatVideoForWhatsApp, copyToClipboard, showCopyNotification } from '@/lib/whatsapp-formatter';
 import PublicLayout from '@/components/layout/PublicLayout';
@@ -125,7 +124,6 @@ export default function KajianPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [selectedKajian, setSelectedKajian] = useState<Kajian | null>(null);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [savedVideos, setSavedVideos] = useState<string[]>([]);
 
   const filteredKajian = kajianData.filter(kajian => {
@@ -177,77 +175,6 @@ export default function KajianPage() {
 
   return (
     <PublicLayout>
-      {/* Navigation */}
-      <nav className="bg-white/90 backdrop-blur-sm shadow-lg sticky top-0 z-40">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-8">
-              <Link href="/" className="flex items-center space-x-2">
-                <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-xl">P</span>
-                </div>
-                <span className="font-bold text-gray-800 hidden md:block">Pondok Imam Syafi'i</span>
-              </Link>
-              
-              <div className="hidden lg:flex items-center space-x-6">
-                <Link href="/" className="flex items-center space-x-1 text-gray-600 hover:text-emerald-600 transition-colors">
-                  <Home className="w-4 h-4" />
-                  <span>Beranda</span>
-                </Link>
-                <Link href="/about/yayasan" className="text-gray-600 hover:text-emerald-600 transition-colors">Yayasan</Link>
-                <Link href="/about/pondok" className="text-gray-600 hover:text-emerald-600 transition-colors">Pondok</Link>
-                <Link href="/about/tk" className="text-gray-600 hover:text-emerald-600 transition-colors">TK Islam</Link>
-                <Link href="/about/sd" className="text-gray-600 hover:text-emerald-600 transition-colors">SD Islam</Link>
-                <Link href="/donasi" className="flex items-center space-x-1 text-gray-600 hover:text-emerald-600 transition-colors">
-                  <Heart className="w-4 h-4" />
-                  <span>Donasi</span>
-                </Link>
-                <Link href="/gallery" className="flex items-center space-x-1 text-gray-600 hover:text-emerald-600 transition-colors">
-                  <Image className="w-4 h-4" />
-                  <span>Galeri</span>
-                </Link>
-                <Link href="/kajian" className="flex items-center space-x-1 text-emerald-600 font-semibold">
-                  <PlayCircle className="w-4 h-4" />
-                  <span>Kajian</span>
-                </Link>
-                <Link href="/library" className="flex items-center space-x-1 text-gray-600 hover:text-emerald-600 transition-colors">
-                  <Book className="w-4 h-4" />
-                  <span>Perpustakaan</span>
-                </Link>
-              </div>
-            </div>
-
-            <button
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="lg:hidden p-2 rounded-lg hover:bg-gray-100"
-            >
-              <Menu className="w-6 h-6" />
-            </button>
-          </div>
-        </div>
-
-        {/* Mobile Menu */}
-        {isMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="lg:hidden bg-white border-t"
-          >
-            <div className="container mx-auto px-4 py-4 space-y-2">
-              <Link href="/" className="block py-2 text-gray-600 hover:text-emerald-600">Beranda</Link>
-              <Link href="/about/yayasan" className="block py-2 text-gray-600 hover:text-emerald-600">Yayasan</Link>
-              <Link href="/about/pondok" className="block py-2 text-gray-600 hover:text-emerald-600">Pondok</Link>
-              <Link href="/about/tk" className="block py-2 text-gray-600 hover:text-emerald-600">TK Islam</Link>
-              <Link href="/about/sd" className="block py-2 text-gray-600 hover:text-emerald-600">SD Islam</Link>
-              <Link href="/donasi" className="block py-2 text-gray-600 hover:text-emerald-600">Donasi</Link>
-              <Link href="/gallery" className="block py-2 text-gray-600 hover:text-emerald-600">Galeri Kegiatan</Link>
-              <Link href="/kajian" className="block py-2 text-emerald-600 font-semibold">Kajian</Link>
-              <Link href="/library" className="block py-2 text-gray-600 hover:text-emerald-600">Perpustakaan</Link>
-            </div>
-          </motion.div>
-        )}
-      </nav>
-
       {/* Hero Section */}
       <section className="relative py-20 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-emerald-600 to-teal-700"></div>

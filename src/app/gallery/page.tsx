@@ -102,13 +102,13 @@ export default function GalleryPage() {
 
   const categories = [
     { value: 'all', label: 'Semua', color: 'bg-gray-100 text-gray-800' },
-    { value: 'akademik', label: 'Akademik', color: 'bg-blue-100 text-blue-800' },
-    { value: 'keagamaan', label: 'Keagamaan', color: 'bg-green-100 text-green-800' },
-    { value: 'kompetisi', label: 'Kompetisi', color: 'bg-purple-100 text-purple-800' },
-    { value: 'sosial', label: 'Sosial', color: 'bg-red-100 text-red-800' },
-    { value: 'seni_budaya', label: 'Seni Budaya', color: 'bg-yellow-100 text-yellow-800' },
-    { value: 'kunjungan', label: 'Kunjungan', color: 'bg-indigo-100 text-indigo-800' },
-    { value: 'lainnya', label: 'Lainnya', color: 'bg-orange-100 text-orange-800' },
+    { value: 'kajian', label: 'Kajian', color: 'bg-purple-100 text-purple-800' },
+    { value: 'pelatihan', label: 'Pelatihan', color: 'bg-blue-100 text-blue-800' },
+    { value: 'sosial', label: 'Sosial', color: 'bg-green-100 text-green-800' },
+    { value: 'seminar', label: 'Seminar', color: 'bg-orange-100 text-orange-800' },
+    { value: 'kompetisi', label: 'Kompetisi', color: 'bg-red-100 text-red-800' },
+    { value: 'workshop', label: 'Workshop', color: 'bg-indigo-100 text-indigo-800' },
+    { value: 'lainnya', label: 'Lainnya', color: 'bg-yellow-100 text-yellow-800' },
   ]
 
   const filteredActivities = activities.filter(activity => {
@@ -331,9 +331,11 @@ export default function GalleryPage() {
                     {activity.images && activity.images.length > 0 ? (
                       <>
                         <div className="absolute inset-0 bg-black/20"></div>
-                        <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                          <span className="text-gray-500 text-sm">Foto kegiatan</span>
-                        </div>
+                        <img
+                          src={activity.images[0]}
+                          alt={activity.title}
+                          className="w-full h-full object-cover"
+                        />
                       </>
                     ) : (
                       <>
@@ -447,8 +449,13 @@ export default function GalleryPage() {
                   <div className="relative h-96 bg-gray-200 rounded-lg overflow-hidden mb-4">
                     {selectedActivity.images && selectedActivity.images.length > 0 ? (
                       <>
-                        <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
-                          <span className="text-gray-500">Foto {selectedImageIndex + 1} dari {selectedActivity.images.length}</span>
+                        <img
+                          src={selectedActivity.images[selectedImageIndex]}
+                          alt={`${selectedActivity.title} - Foto ${selectedImageIndex + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black/60 text-white px-3 py-1 rounded-full text-sm">
+                          Foto {selectedImageIndex + 1} dari {selectedActivity.images.length}
                         </div>
                         {selectedActivity.images.length > 1 && (
                           <>
@@ -457,6 +464,7 @@ export default function GalleryPage() {
                               variant="ghost"
                               className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/80"
                               onClick={() => setSelectedImageIndex(Math.max(0, selectedImageIndex - 1))}
+                              disabled={selectedImageIndex === 0}
                             >
                               <ChevronLeft className="w-5 h-5" />
                             </Button>
@@ -465,6 +473,7 @@ export default function GalleryPage() {
                               variant="ghost"
                               className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/80"
                               onClick={() => setSelectedImageIndex(Math.min(selectedActivity.images.length - 1, selectedImageIndex + 1))}
+                              disabled={selectedImageIndex === selectedActivity.images.length - 1}
                             >
                               <ChevronRight className="w-5 h-5" />
                             </Button>
@@ -484,15 +493,19 @@ export default function GalleryPage() {
                   {/* Thumbnails */}
                   {selectedActivity.images && selectedActivity.images.length > 1 && (
                     <div className="flex gap-2 overflow-x-auto">
-                      {selectedActivity.images.map((_, index) => (
+                      {selectedActivity.images.map((image, index) => (
                         <button
                           key={index}
-                          className={`w-20 h-20 bg-gray-200 rounded flex-shrink-0 flex items-center justify-center ${
+                          className={`w-20 h-20 bg-gray-200 rounded flex-shrink-0 overflow-hidden ${
                             index === selectedImageIndex ? 'ring-2 ring-blue-600' : ''
                           }`}
                           onClick={() => setSelectedImageIndex(index)}
                         >
-                          <span className="text-xs text-gray-500">{index + 1}</span>
+                          <img
+                            src={image}
+                            alt={`Thumbnail ${index + 1}`}
+                            className="w-full h-full object-cover"
+                          />
                         </button>
                       ))}
                     </div>

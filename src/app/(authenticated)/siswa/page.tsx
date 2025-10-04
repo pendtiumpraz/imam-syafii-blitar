@@ -51,6 +51,8 @@ export default function SiswaPage() {
   const [exportColumns, setExportColumns] = useState<any[]>([])
   const [templateColumns, setTemplateColumns] = useState<any[]>([])
   const [importValidationRules, setImportValidationRules] = useState<any[]>([])
+  const [showGraduateConfirm, setShowGraduateConfirm] = useState(false)
+  const [graduatingStudent, setGraduatingStudent] = useState<Student | null>(null)
 
   useEffect(() => {
     fetchStudents()
@@ -137,7 +139,7 @@ export default function SiswaPage() {
       })
 
       const result = await response.json()
-      
+
       if (result.success && result.validRows > 0) {
         alert(`Import berhasil! ${result.validRows} siswa telah ditambahkan.`)
         fetchStudents() // Refresh data
@@ -147,6 +149,39 @@ export default function SiswaPage() {
     } catch (error) {
       console.error('Error importing students:', error)
       alert('Gagal mengimpor data siswa')
+    }
+  }
+
+  const handleGraduateStudent = async () => {
+    if (!graduatingStudent) return
+
+    try {
+      const response = await fetch(`/api/students/${graduatingStudent.id}/graduate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to graduate student')
+      }
+
+      const result = await response.json()
+
+      alert(`Siswa ${graduatingStudent.fullName} berhasil diluluskan!`)
+
+      // Refresh students list
+      fetchStudents()
+
+      // Close dialogs
+      setShowGraduateConfirm(false)
+      setGraduatingStudent(null)
+      setSelectedStudent(null)
+    } catch (error) {
+      console.error('Error graduating student:', error)
+      alert(error instanceof Error ? error.message : 'Gagal meluluskan siswa')
     }
   }
 
@@ -408,6 +443,20 @@ export default function SiswaPage() {
                           >
                             <Edit className="w-4 h-4" />
                           </Button>
+                          {student.status === 'ACTIVE' && (
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-8 w-8 text-blue-600 hover:text-blue-700"
+                              onClick={() => {
+                                setGraduatingStudent(student)
+                                setShowGraduateConfirm(true)
+                              }}
+                              title="Luluskan Siswa"
+                            >
+                              <GraduationCap className="w-4 h-4" />
+                            </Button>
+                          )}
                           <Button
                             size="icon"
                             variant="ghost"
@@ -548,7 +597,19 @@ export default function SiswaPage() {
                   </div>
                 </div>
 
-                <div className="mt-6 flex justify-end">
+                <div className="mt-6 flex justify-end gap-2">
+                  {selectedStudent.status === 'ACTIVE' && (
+                    <Button
+                      onClick={() => {
+                        setGraduatingStudent(selectedStudent)
+                        setShowGraduateConfirm(true)
+                      }}
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      <GraduationCap className="w-4 h-4 mr-2" />
+                      Luluskan Siswa
+                    </Button>
+                  )}
                   <Button
                     onClick={() => setSelectedStudent(null)}
                     className="bg-green-600 hover:bg-green-700"
@@ -592,6 +653,47 @@ export default function SiswaPage() {
           />
         )}
 
+        {/* Add Student Form */}
+        {showForm && (
+          <StudentEditForm
+            student={{
+              id: '',
+              nis: '',
+              fullName: '',
+              birthPlace: '',
+              birthDate: new Date(),
+              gender: 'MALE',
+              address: '',
+              city: '',
+              fatherName: '',
+              motherName: '',
+              institutionType: 'SD',
+              enrollmentYear: new Date().getFullYear().toString(),
+              status: 'ACTIVE'
+            }}
+            isOpen={showForm}
+            onClose={() => setShowForm(false)}
+            onSubmit={async (data) => {
+              const response = await fetch('/api/students', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+              })
+
+              if (!response.ok) {
+                const errorData = await response.json()
+                throw new Error(errorData.error || 'Gagal menambahkan siswa')
+              }
+
+              const newStudent = await response.json()
+              setStudents([...students, newStudent])
+              setShowForm(false)
+            }}
+          />
+        )}
+
         {/* Bulk Operations Modal */}
         <BulkOperationsModal
           isOpen={showBulkModal}
@@ -603,6 +705,70 @@ export default function SiswaPage() {
           templateColumns={templateColumns}
           onImportComplete={handleImportComplete}
         />
+
+        {/* Graduate Confirmation Dialog */}
+        {showGraduateConfirm && graduatingStudent && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg max-w-md w-full p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+                  <GraduationCap className="w-6 h-6 text-blue-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold">Konfirmasi Kelulusan</h3>
+                  <p className="text-sm text-gray-600">Apakah Anda yakin ingin meluluskan siswa ini?</p>
+                </div>
+              </div>
+
+              <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                <div className="space-y-2 text-sm">
+                  <div>
+                    <span className="text-gray-600">Nama:</span>
+                    <span className="ml-2 font-medium">{graduatingStudent.fullName}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">NIS:</span>
+                    <span className="ml-2 font-medium">{graduatingStudent.nis}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Institusi:</span>
+                    <span className="ml-2 font-medium">{graduatingStudent.institutionType}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                <p className="text-sm text-blue-800">
+                  Dengan meluluskan siswa ini:
+                </p>
+                <ul className="list-disc list-inside text-sm text-blue-700 mt-2 space-y-1">
+                  <li>Status siswa akan diubah menjadi LULUS</li>
+                  <li>Siswa akan dipindahkan ke daftar Alumni</li>
+                  <li>Data siswa akan tetap tersimpan</li>
+                </ul>
+              </div>
+
+              <div className="flex gap-2 justify-end">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowGraduateConfirm(false)
+                    setGraduatingStudent(null)
+                  }}
+                >
+                  Batal
+                </Button>
+                <Button
+                  onClick={handleGraduateStudent}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  <GraduationCap className="w-4 h-4 mr-2" />
+                  Ya, Luluskan
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   )

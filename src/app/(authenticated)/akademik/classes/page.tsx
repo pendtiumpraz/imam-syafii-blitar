@@ -106,7 +106,7 @@ export default function ClassesPage() {
       const response = await fetch('/api/academic/classes');
       if (response.ok) {
         const data = await response.json();
-        setClasses(data);
+        setClasses(data.classes || data);
       }
     } catch (error) {
       console.error('Error fetching classes:', error);

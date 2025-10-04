@@ -118,7 +118,7 @@ export default function SubjectsPage() {
       const response = await fetch('/api/academic/subjects');
       if (response.ok) {
         const data = await response.json();
-        setSubjects(data);
+        setSubjects(data.subjects || data);
       }
     } catch (error) {
       console.error('Error fetching subjects:', error);

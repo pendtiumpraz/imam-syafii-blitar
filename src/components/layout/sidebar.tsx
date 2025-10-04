@@ -170,13 +170,15 @@ const menuItems: MenuItem[] = [
   },
   {
     title: 'Video Kajian',
-    href: '/kajian',
-    icon: Video
+    href: '/admin/video-kajian',
+    icon: Video,
+    adminOnly: true
   },
   {
     title: 'Perpustakaan',
-    href: '/perpustakaan',
-    icon: Library
+    href: '/admin/perpustakaan',
+    icon: Library,
+    adminOnly: true
   },
   {
     title: 'Tanya Ustadz',

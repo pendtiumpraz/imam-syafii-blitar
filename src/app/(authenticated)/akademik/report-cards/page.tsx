@@ -140,7 +140,7 @@ export default function ReportCardsPage() {
       const response = await fetch('/api/academic/classes?active=true');
       if (response.ok) {
         const data = await response.json();
-        setClasses(data);
+        setClasses(data.classes || data);
       }
     } catch (error) {
       console.error('Error fetching classes:', error);

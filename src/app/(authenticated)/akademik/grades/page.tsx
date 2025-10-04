@@ -129,7 +129,7 @@ export default function GradesPage() {
       const response = await fetch('/api/academic/classes?active=true');
       if (response.ok) {
         const data = await response.json();
-        setClasses(data);
+        setClasses(data.classes || data);
       }
     } catch (error) {
       console.error('Error fetching classes:', error);
@@ -141,7 +141,7 @@ export default function GradesPage() {
       const response = await fetch('/api/academic/subjects?active=true');
       if (response.ok) {
         const data = await response.json();
-        setSubjects(data);
+        setSubjects(data.subjects || data);
       }
     } catch (error) {
       console.error('Error fetching subjects:', error);

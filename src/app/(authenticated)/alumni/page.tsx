@@ -638,6 +638,46 @@ export default function AlumniPage() {
           />
         )}
 
+        {/* Add Alumni Form */}
+        {showForm && (
+          <AlumniEditForm
+            alumni={{
+              id: '',
+              fullName: '',
+              birthPlace: '',
+              birthDate: new Date(),
+              gender: 'MALE',
+              currentAddress: '',
+              currentCity: '',
+              currentCountry: 'Indonesia',
+              institutionType: 'SD',
+              graduationYear: new Date().getFullYear().toString(),
+              childrenCount: 0,
+              availableForEvents: false
+            }}
+            isOpen={showForm}
+            onClose={() => setShowForm(false)}
+            onSubmit={async (data) => {
+              const response = await fetch('/api/alumni', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+              })
+
+              if (!response.ok) {
+                const errorData = await response.json()
+                throw new Error(errorData.error || 'Gagal menambahkan alumni')
+              }
+
+              const newAlumni = await response.json()
+              setAlumni([...alumni, newAlumni])
+              setShowForm(false)
+            }}
+          />
+        )}
+
         {/* Bulk Operations Modal */}
         <BulkOperationsModal
           isOpen={showBulkModal}
