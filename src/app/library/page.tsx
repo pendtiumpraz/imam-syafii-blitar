@@ -42,144 +42,15 @@ const bookTypes = [
   { value: 'audio', label: 'Audio Book' }
 ];
 
-const libraryBooks: DigitalBook[] = [
-  {
-    id: '1',
-    title: 'Riyadhus Shalihin',
-    author: 'Imam An-Nawawi',
-    category: 'Hadits',
-    type: 'pdf',
-    size: '12.5 MB',
-    pages: 856,
-    year: 2020,
-    downloads: 2450,
-    views: 8920,
-    rating: 4.9,
-    cover: '/api/placeholder/200/280',
-    description: 'Kumpulan hadits pilihan tentang akhlak dan adab dalam kehidupan sehari-hari',
-    tags: ['hadits', 'akhlak', 'adab', 'nawawi'],
-    language: 'Indonesia'
-  },
-  {
-    id: '2',
-    title: 'Fiqih Sunnah',
-    author: 'Sayyid Sabiq',
-    category: 'Fiqih',
-    type: 'pdf',
-    size: '8.3 MB',
-    pages: 624,
-    year: 2021,
-    downloads: 1890,
-    views: 6540,
-    rating: 4.8,
-    cover: '/api/placeholder/200/280',
-    description: 'Pembahasan lengkap fiqih berdasarkan Al-Quran dan Sunnah',
-    tags: ['fiqih', 'ibadah', 'muamalah', 'sunnah'],
-    language: 'Indonesia'
-  },
-  {
-    id: '3',
-    title: 'Tafsir Ibnu Katsir',
-    author: 'Ibnu Katsir',
-    category: 'Tafsir',
-    type: 'ebook',
-    size: '45.2 MB',
-    pages: 3200,
-    year: 2019,
-    downloads: 3210,
-    views: 12450,
-    rating: 5.0,
-    cover: '/api/placeholder/200/280',
-    description: 'Tafsir Al-Quran yang komprehensif dengan penjelasan dari hadits-hadits shahih',
-    tags: ['tafsir', 'quran', 'ibnu katsir', 'hadits'],
-    language: 'Indonesia'
-  },
-  {
-    id: '4',
-    title: 'Sirah Nabawiyah',
-    author: 'Syaikh Shafiyyurrahman',
-    category: 'Sirah',
-    type: 'pdf',
-    size: '6.7 MB',
-    pages: 480,
-    year: 2022,
-    downloads: 1560,
-    views: 5430,
-    rating: 4.7,
-    cover: '/api/placeholder/200/280',
-    description: 'Sejarah hidup Nabi Muhammad SAW yang lengkap dan autentik',
-    tags: ['sirah', 'nabi', 'sejarah', 'muhammad'],
-    language: 'Indonesia'
-  },
-  {
-    id: '5',
-    title: 'Panduan Tajwid Lengkap',
-    author: 'Dr. Ahmad Fathoni',
-    category: 'Tajwid',
-    type: 'pdf',
-    size: '4.2 MB',
-    pages: 220,
-    year: 2023,
-    downloads: 980,
-    views: 3210,
-    rating: 4.6,
-    cover: '/api/placeholder/200/280',
-    description: 'Panduan praktis belajar tajwid dengan ilustrasi dan contoh',
-    tags: ['tajwid', 'quran', 'bacaan', 'makharijul huruf'],
-    language: 'Indonesia'
-  },
-  {
-    id: '6',
-    title: 'Kitab Tauhid',
-    author: 'Muhammad bin Abdul Wahhab',
-    category: 'Akidah',
-    type: 'audio',
-    size: '125 MB',
-    pages: 180,
-    year: 2021,
-    downloads: 1230,
-    views: 4560,
-    rating: 4.8,
-    cover: '/api/placeholder/200/280',
-    description: 'Pembahasan mendalam tentang tauhid dan aqidah Islam yang benar',
-    tags: ['tauhid', 'akidah', 'aqidah', 'islam'],
-    language: 'Indonesia'
-  },
-  {
-    id: '7',
-    title: 'Bahasa Arab untuk Pemula',
-    author: 'Ustadz Ahmad Zarkasyi',
-    category: 'Bahasa Arab',
-    type: 'ebook',
-    size: '3.8 MB',
-    pages: 320,
-    year: 2023,
-    downloads: 2100,
-    views: 7890,
-    rating: 4.5,
-    cover: '/api/placeholder/200/280',
-    description: 'Metode praktis belajar bahasa Arab dari dasar',
-    tags: ['bahasa arab', 'nahwu', 'shorof', 'kosakata'],
-    language: 'Indonesia'
-  },
-  {
-    id: '8',
-    title: 'Sejarah Peradaban Islam',
-    author: 'Prof. Dr. Badri Yatim',
-    category: 'Sejarah Islam',
-    type: 'pdf',
-    size: '9.4 MB',
-    pages: 560,
-    year: 2020,
-    downloads: 1450,
-    views: 5230,
-    rating: 4.7,
-    cover: '/api/placeholder/200/280',
-    description: 'Sejarah lengkap peradaban Islam dari masa Nabi hingga modern',
-    tags: ['sejarah', 'peradaban', 'islam', 'khilafah'],
-    language: 'Indonesia'
-  }
-];
+// Category labels mapping
+const categoryLabels: { [key: string]: string } = {
+  'fiqh': 'Fiqih',
+  'hadith': 'Hadits',
+  'tafsir': 'Tafsir',
+  'akhlak': 'Akhlak',
+  'sirah': 'Sirah Nabawiyah',
+  'aqidah': 'Akidah',
+};
 
 export default function LibraryPage() {
   const [selectedCategory, setSelectedCategory] = useState('Semua');
@@ -187,8 +58,62 @@ export default function LibraryPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [selectedBook, setSelectedBook] = useState<DigitalBook | null>(null);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [savedBooks, setSavedBooks] = useState<string[]>([]);
+  const [libraryBooks, setLibraryBooks] = useState<DigitalBook[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchEbooks = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('/api/ebooks');
+        if (response.ok) {
+          const data = await response.json();
+          // Map ebook API data to DigitalBook interface
+          const mappedBooks: DigitalBook[] = data.map((ebook: any) => {
+            // Parse tags if they're stored as JSON string
+            let parsedTags: string[] = [];
+            if (ebook.tags) {
+              if (typeof ebook.tags === 'string') {
+                try {
+                  parsedTags = JSON.parse(ebook.tags);
+                } catch {
+                  parsedTags = [ebook.tags];
+                }
+              } else if (Array.isArray(ebook.tags)) {
+                parsedTags = ebook.tags;
+              }
+            }
+
+            return {
+              id: ebook.id,
+              title: ebook.title,
+              author: ebook.author,
+              category: categoryLabels[ebook.category] || ebook.category,
+              type: 'pdf' as const,
+              size: ebook.fileSize ? `${(ebook.fileSize / (1024 * 1024)).toFixed(1)} MB` : 'N/A',
+              pages: ebook.pageCount || 0,
+              year: ebook.publishYear ? parseInt(ebook.publishYear) : new Date().getFullYear(),
+              downloads: ebook.downloadCount || 0,
+              views: ebook.viewCount || 0,
+              rating: 4.5,
+              cover: ebook.coverImage || '/api/placeholder/200/280',
+              description: ebook.description || 'Deskripsi tidak tersedia',
+              tags: parsedTags,
+              language: ebook.language === 'id' ? 'Indonesia' : ebook.language || 'Indonesia',
+            };
+          });
+          setLibraryBooks(mappedBooks);
+        }
+      } catch (error) {
+        console.error('Error fetching ebooks:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchEbooks();
+  }, []);
+
   const [sortBy, setSortBy] = useState<'popular' | 'newest' | 'rating'>('popular');
 
   const filteredBooks = libraryBooks
@@ -242,77 +167,6 @@ export default function LibraryPage() {
 
   return (
     <PublicLayout>
-      {/* Navigation */}
-      <nav className="bg-white/90 backdrop-blur-sm shadow-lg sticky top-0 z-40">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-8">
-              <Link href="/" className="flex items-center space-x-2">
-                <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-xl">P</span>
-                </div>
-                <span className="font-bold text-gray-800 hidden md:block">Pondok Imam Syafi'i</span>
-              </Link>
-              
-              <div className="hidden lg:flex items-center space-x-6">
-                <Link href="/" className="flex items-center space-x-1 text-gray-600 hover:text-indigo-600 transition-colors">
-                  <Home className="w-4 h-4" />
-                  <span>Beranda</span>
-                </Link>
-                <Link href="/about/yayasan" className="text-gray-600 hover:text-indigo-600 transition-colors">Yayasan</Link>
-                <Link href="/about/pondok" className="text-gray-600 hover:text-indigo-600 transition-colors">Pondok</Link>
-                <Link href="/about/tk" className="text-gray-600 hover:text-indigo-600 transition-colors">TK Islam</Link>
-                <Link href="/about/sd" className="text-gray-600 hover:text-indigo-600 transition-colors">SD Islam</Link>
-                <Link href="/donasi" className="flex items-center space-x-1 text-gray-600 hover:text-indigo-600 transition-colors">
-                  <Heart className="w-4 h-4" />
-                  <span>Donasi</span>
-                </Link>
-                <Link href="/gallery" className="flex items-center space-x-1 text-gray-600 hover:text-indigo-600 transition-colors">
-                  <Image className="w-4 h-4" />
-                  <span>Galeri</span>
-                </Link>
-                <Link href="/kajian" className="flex items-center space-x-1 text-gray-600 hover:text-indigo-600 transition-colors">
-                  <PlayCircle className="w-4 h-4" />
-                  <span>Kajian</span>
-                </Link>
-                <Link href="/library" className="flex items-center space-x-1 text-indigo-600 font-semibold">
-                  <Book className="w-4 h-4" />
-                  <span>Perpustakaan</span>
-                </Link>
-              </div>
-            </div>
-
-            <button
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="lg:hidden p-2 rounded-lg hover:bg-gray-100"
-            >
-              <Menu className="w-6 h-6" />
-            </button>
-          </div>
-        </div>
-
-        {/* Mobile Menu */}
-        {isMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="lg:hidden bg-white border-t"
-          >
-            <div className="container mx-auto px-4 py-4 space-y-2">
-              <Link href="/" className="block py-2 text-gray-600 hover:text-indigo-600">Beranda</Link>
-              <Link href="/about/yayasan" className="block py-2 text-gray-600 hover:text-indigo-600">Yayasan</Link>
-              <Link href="/about/pondok" className="block py-2 text-gray-600 hover:text-indigo-600">Pondok</Link>
-              <Link href="/about/tk" className="block py-2 text-gray-600 hover:text-indigo-600">TK Islam</Link>
-              <Link href="/about/sd" className="block py-2 text-gray-600 hover:text-indigo-600">SD Islam</Link>
-              <Link href="/donasi" className="block py-2 text-gray-600 hover:text-indigo-600">Donasi</Link>
-              <Link href="/gallery" className="block py-2 text-gray-600 hover:text-indigo-600">Galeri Kegiatan</Link>
-              <Link href="/kajian" className="block py-2 text-gray-600 hover:text-indigo-600">Kajian</Link>
-              <Link href="/library" className="block py-2 text-indigo-600 font-semibold">Perpustakaan</Link>
-            </div>
-          </motion.div>
-        )}
-      </nav>
-
       {/* Hero Section */}
       <section className="relative py-20 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-indigo-600 to-purple-700"></div>
@@ -436,7 +290,22 @@ export default function LibraryPage() {
       {/* Books Grid/List */}
       <section className="py-12">
         <div className="container mx-auto px-4">
-          {viewMode === 'grid' ? (
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-20">
+              <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-indigo-600 mb-4"></div>
+              <p className="text-gray-600">Memuat koleksi buku...</p>
+            </div>
+          ) : filteredBooks.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20">
+              <Book className="w-20 h-20 text-gray-300 mb-4" />
+              <h3 className="text-xl font-semibold text-gray-600 mb-2">Tidak ada buku ditemukan</h3>
+              <p className="text-gray-500 text-center max-w-md">
+                {searchQuery
+                  ? `Tidak ada hasil untuk "${searchQuery}". Coba kata kunci lain.`
+                  : 'Belum ada buku dalam kategori ini. Silakan pilih kategori lain.'}
+              </p>
+            </div>
+          ) : viewMode === 'grid' ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
               {filteredBooks.map((book, index) => (
                 <motion.div
