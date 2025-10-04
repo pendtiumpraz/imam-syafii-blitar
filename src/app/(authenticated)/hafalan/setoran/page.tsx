@@ -118,7 +118,7 @@ export default function HafalanSetoranPage() {
     try {
       const response = await fetch('/api/students?limit=100');
       const data = await response.json();
-      setStudents(data.students || []);
+      setStudents(data.data || []);
     } catch (error) {
       console.error('Error loading students:', error);
     }
