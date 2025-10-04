@@ -62,24 +62,26 @@ async function updateStudentProgress(studentId: string) {
   const juz30Progress = Math.min(((juzProgress[30] || 0) / juz30Ayats) * 100, 100);
 
   // Update or create progress record
+  const avgQuality = records.length > 0 ? qualitySum / records.length : 0;
+
   await prisma.hafalanProgress.upsert({
     where: { studentId },
     create: {
       studentId,
       totalSurah: completedSurahs.size,
       totalAyat,
-      juz30Progress,
-      overallProgress,
-      avgQuality: records.length > 0 ? qualitySum / records.length : 0,
+      juz30Progress: Number(juz30Progress.toFixed(2)),
+      overallProgress: Number(overallProgress.toFixed(2)),
+      avgQuality: Number(avgQuality.toFixed(2)),
       totalSessions: records.length,
       lastUpdated: new Date()
     },
     update: {
       totalSurah: completedSurahs.size,
       totalAyat,
-      juz30Progress,
-      overallProgress,
-      avgQuality: records.length > 0 ? qualitySum / records.length : 0,
+      juz30Progress: Number(juz30Progress.toFixed(2)),
+      overallProgress: Number(overallProgress.toFixed(2)),
+      avgQuality: Number(avgQuality.toFixed(2)),
       lastUpdated: new Date()
     }
   });
@@ -176,6 +178,8 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
+    console.log('Received body:', JSON.stringify(body, null, 2));
+
     const {
       studentId,
       surahNumber,
@@ -195,8 +199,9 @@ export async function POST(request: NextRequest) {
 
     // Validation
     if (!studentId || !surahNumber || !startAyat || !endAyat || !status) {
+      console.error('Validation failed:', { studentId, surahNumber, startAyat, endAyat, status });
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: 'Missing required fields', received: { studentId, surahNumber, startAyat, endAyat, status } },
         { status: 400 }
       );
     }
@@ -335,7 +340,10 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error creating hafalan record:', error);
     return NextResponse.json(
-      { error: 'Failed to create record' },
+      {
+        error: 'Failed to create record',
+        details: error instanceof Error ? error.message : String(error)
+      },
       { status: 500 }
     );
   }
