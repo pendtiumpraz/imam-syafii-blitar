@@ -512,7 +512,7 @@ export default function RoleManagementPage() {
                         const categoryPermIds = perms.map(p => p.id)
                         setFormData(prev => ({
                           ...prev,
-                          permissions: Array.from(new Set([...prev.permissions, ...categoryPermIds]))
+                          permissions: Array.from(new Set([...(prev.permissions || []), ...categoryPermIds]))
                         }))
                       }}
                       className="text-xs h-7"
@@ -527,7 +527,7 @@ export default function RoleManagementPage() {
                         const categoryPermIds = perms.map(p => p.id)
                         setFormData(prev => ({
                           ...prev,
-                          permissions: prev.permissions.filter(id => !categoryPermIds.includes(id))
+                          permissions: (prev.permissions || []).filter(id => !categoryPermIds.includes(id))
                         }))
                       }}
                       className="text-xs h-7"
