@@ -423,9 +423,15 @@ export default function OTAAdminPage() {
               </div>
 
               <div className="flex gap-2">
-                {activeTab === 'students' && (
+                {activeTab === 'students' && filteredStudents.length > 0 && (
                   <Button
-                    onClick={() => setShowAddProgramModal(true)}
+                    onClick={() => {
+                      // If there's only one student, auto-select it
+                      if (filteredStudents.length === 1) {
+                        setSelectedStudent(filteredStudents[0])
+                      }
+                      setShowAddProgramModal(true)
+                    }}
                     className="bg-green-600 hover:bg-green-700"
                     size="sm"
                   >
@@ -887,7 +893,7 @@ export default function OTAAdminPage() {
       )}
 
       {/* Add Program Modal */}
-      {showAddProgramModal && selectedStudent && (
+      {showAddProgramModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg max-w-md w-full">
             <div className="p-6">
@@ -895,18 +901,41 @@ export default function OTAAdminPage() {
               <form onSubmit={(e) => {
                 e.preventDefault()
                 const formData = new FormData(e.currentTarget)
+                const studentId = formData.get('studentId') as string
                 const monthlyTarget = parseFloat(formData.get('monthlyTarget') as string)
                 const otaProfile = formData.get('otaProfile') as string
-                handleCreateProgram(selectedStudent.id, monthlyTarget, otaProfile)
+                handleCreateProgram(studentId, monthlyTarget, otaProfile)
               }}>
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Siswa
                     </label>
-                    <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
-                      {selectedStudent.fullName} - {selectedStudent.nis}
-                    </p>
+                    {selectedStudent ? (
+                      <>
+                        <input type="hidden" name="studentId" value={selectedStudent.id} />
+                        <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
+                          {selectedStudent.fullName} - {selectedStudent.nis}
+                        </p>
+                      </>
+                    ) : (
+                      <select
+                        name="studentId"
+                        required
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                        onChange={(e) => {
+                          const student = filteredStudents.find(s => s.id === e.target.value)
+                          if (student) setSelectedStudent(student)
+                        }}
+                      >
+                        <option value="">Pilih Siswa</option>
+                        {filteredStudents.map(student => (
+                          <option key={student.id} value={student.id}>
+                            {student.fullName} - {student.nis} ({student.institutionType} {student.grade})
+                          </option>
+                        ))}
+                      </select>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
