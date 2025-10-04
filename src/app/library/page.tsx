@@ -626,51 +626,6 @@ export default function LibraryPage() {
         </motion.div>
       )}
 
-      {/* Footer */}
-      <footer className="bg-gradient-to-br from-indigo-900 to-purple-800 text-white py-12 mt-20">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div>
-              <h3 className="text-xl font-bold mb-4">Pondok Imam Syafi'i</h3>
-              <p className="text-indigo-100">
-                Membentuk generasi Qurani yang berakhlak mulia dan berwawasan luas
-              </p>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-3">Lembaga</h4>
-              <ul className="space-y-2 text-indigo-100">
-                <li><Link href="/about/yayasan" className="hover:text-white transition-colors">Yayasan</Link></li>
-                <li><Link href="/about/pondok" className="hover:text-white transition-colors">Pondok Pesantren</Link></li>
-                <li><Link href="/about/tk" className="hover:text-white transition-colors">TK Islam</Link></li>
-                <li><Link href="/about/sd" className="hover:text-white transition-colors">SD Islam</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-3">Program</h4>
-              <ul className="space-y-2 text-indigo-100">
-                <li><Link href="/donasi" className="hover:text-white transition-colors">Donasi</Link></li>
-                <li><Link href="/gallery" className="hover:text-white transition-colors">Galeri Kegiatan</Link></li>
-                <li><Link href="/kajian" className="hover:text-white transition-colors">Kajian Islam</Link></li>
-                <li><Link href="/library" className="hover:text-white transition-colors">Perpustakaan Digital</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-3">Kontak</h4>
-              <ul className="space-y-2 text-indigo-100">
-                <li className="flex items-center gap-2">
-                  <Phone className="w-4 h-4" />
-                  <span>(0342) 123456</span>
-                </li>
-                <li>Jl. Pendidikan No. 123</li>
-                <li>Kota Blitar, Jawa Timur</li>
-              </ul>
-            </div>
-          </div>
-          <div className="border-t border-indigo-700 mt-8 pt-8 text-center text-indigo-100">
-            <p>&copy; 2024 Pondok Pesantren Imam Syafi'i. All rights reserved.</p>
-          </div>
-        </div>
-      </footer>
     </PublicLayout>
   );
 }

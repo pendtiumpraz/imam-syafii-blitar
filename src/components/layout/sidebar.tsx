@@ -95,6 +95,12 @@ const menuItems: MenuItem[] = [
     icon: DollarSign
   },
   {
+    title: 'Donasi & Campaign',
+    href: '/admin/donasi',
+    icon: Heart,
+    adminOnly: true
+  },
+  {
     title: 'Kegiatan',
     href: '/kegiatan',
     icon: Calendar

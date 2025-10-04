@@ -571,48 +571,6 @@ export default function GalleryPage() {
         )}
       </AnimatePresence>
 
-      {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12 mt-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-4 gap-8">
-            <div>
-              <h3 className="text-xl font-bold mb-4">Pondok Imam Syafi'i</h3>
-              <p className="text-gray-400 text-sm">
-                Membentuk generasi Qurani dan berakhlak mulia sejak 1985
-              </p>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-3">Quick Links</h4>
-              <ul className="space-y-2 text-sm text-gray-400">
-                <li><Link href="/" className="hover:text-white">Beranda</Link></li>
-                <li><Link href="/about/yayasan" className="hover:text-white">Tentang Kami</Link></li>
-                <li><Link href="/donasi" className="hover:text-white">Donasi</Link></li>
-                <li><Link href="/ppdb" className="hover:text-white">PPDB Online</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-3">Unit Pendidikan</h4>
-              <ul className="space-y-2 text-sm text-gray-400">
-                <li><Link href="/about/pondok" className="hover:text-white">Pondok Pesantren</Link></li>
-                <li><Link href="/about/tk" className="hover:text-white">TK Islam</Link></li>
-                <li><Link href="/about/sd" className="hover:text-white">SD Islam</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-3">Kontak</h4>
-              <ul className="space-y-2 text-sm text-gray-400">
-                <li>Jl. Imam Syafi'i No. 123</li>
-                <li>Blitar, Jawa Timur 66111</li>
-                <li>Tel: (0342) 123456</li>
-                <li>info@imamsyafii-blitar.sch.id</li>
-              </ul>
-            </div>
-          </div>
-          <div className="border-t border-gray-800 mt-8 pt-8 text-center text-sm text-gray-400">
-            <p>&copy; 2024 Pondok Pesantren Imam Syafi'i Blitar. All rights reserved.</p>
-          </div>
-        </div>
-      </footer>
     </PublicLayout>
   )
 }
