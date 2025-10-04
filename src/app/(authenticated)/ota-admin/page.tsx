@@ -423,7 +423,7 @@ export default function OTAAdminPage() {
               </div>
 
               <div className="flex gap-2">
-                {activeTab === 'students' && filteredStudents.length > 0 && (
+                {activeTab === 'students' && (
                   <Button
                     onClick={() => {
                       // If there's only one student, auto-select it
@@ -434,6 +434,7 @@ export default function OTAAdminPage() {
                     }}
                     className="bg-green-600 hover:bg-green-700"
                     size="sm"
+                    disabled={filteredStudents.length === 0}
                   >
                     <Plus className="w-4 h-4 mr-2" />
                     Buat Program OTA
