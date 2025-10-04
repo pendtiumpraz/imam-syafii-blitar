@@ -76,6 +76,14 @@ const permissions: Permission[] = [
   { id: 'finance.delete', name: 'Delete Transaction', description: 'Delete payment records', category: 'Keuangan', critical: true },
   { id: 'finance.export', name: 'Export Finance', description: 'Export financial data', category: 'Keuangan' },
 
+  // Donation Campaign Management
+  { id: 'donasi.view', name: 'View Campaigns', description: 'View donation campaigns', category: 'Donasi & Campaign' },
+  { id: 'donasi.create', name: 'Create Campaign', description: 'Create new donation campaign', category: 'Donasi & Campaign' },
+  { id: 'donasi.update', name: 'Update Campaign', description: 'Edit campaign details', category: 'Donasi & Campaign' },
+  { id: 'donasi.delete', name: 'Delete Campaign', description: 'Delete donation campaigns', category: 'Donasi & Campaign', critical: true },
+  { id: 'donasi.approve', name: 'Approve Campaign', description: 'Approve/publish campaigns', category: 'Donasi & Campaign' },
+  { id: 'donasi.report', name: 'View Reports', description: 'View donation reports', category: 'Donasi & Campaign' },
+
   // Activities Management
   { id: 'activity.view', name: 'View Activities', description: 'View activity list', category: 'Kegiatan' },
   { id: 'activity.create', name: 'Create Activity', description: 'Add new activities', category: 'Kegiatan' },
