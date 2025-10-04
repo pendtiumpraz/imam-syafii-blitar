@@ -8,7 +8,8 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { StaffForm } from '@/components/staff/staff-form'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
@@ -283,81 +284,50 @@ export default function StaffManagementPage() {
     }
   }
 
-  const handleCreate = async () => {
-    if (!formData.name || !formData.email || !formData.phone || !formData.role) {
-      toast({
-        title: 'Validation Error',
-        description: 'Please fill in all required fields.',
-        variant: 'destructive'
-      })
-      return
+  const handleCreate = async (data: any) => {
+    const newStaff: Staff = {
+      ...data as Staff,
+      id: Math.random().toString(36).substr(2, 9),
+      joinDate: new Date(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      permissions: getRoleInfo(data.role!.toLowerCase()).permissions
     }
 
-    setLoading(true)
-    try {
-      const newStaff: Staff = {
-        ...formData as Staff,
-        id: Math.random().toString(36).substr(2, 9),
-        joinDate: new Date(),
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        permissions: getRoleInfo(formData.role!.toLowerCase()).permissions
-      }
+    setStaff(prev => [...prev, newStaff])
+    setIsAddDialogOpen(false)
+    resetForm()
 
-      setStaff(prev => [...prev, newStaff])
-      setIsAddDialogOpen(false)
-      resetForm()
-      
-      toast({
-        title: 'Staff Created',
-        description: `${newStaff.name} has been added successfully.`
-      })
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to create staff member.',
-        variant: 'destructive'
-      })
-    } finally {
-      setLoading(false)
-    }
+    toast({
+      title: 'Staff Created',
+      description: `${newStaff.name} has been added successfully.`
+    })
   }
 
-  const handleUpdate = async () => {
-    if (!selectedStaff || !formData.name || !formData.email) {
+  const handleUpdate = async (data: any) => {
+    if (!selectedStaff) {
       return
     }
 
-    setLoading(true)
-    try {
-      setStaff(prev => prev.map(s => 
-        s.id === selectedStaff.id 
-          ? { 
-              ...s, 
-              ...formData, 
-              updatedAt: new Date(),
-              permissions: getRoleInfo(formData.role!.toLowerCase()).permissions
-            } as Staff
-          : s
-      ))
-      
-      setIsEditDialogOpen(false)
-      setSelectedStaff(null)
-      resetForm()
-      
-      toast({
-        title: 'Staff Updated',
-        description: 'Staff information has been updated successfully.'
-      })
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to update staff information.',
-        variant: 'destructive'
-      })
-    } finally {
-      setLoading(false)
-    }
+    setStaff(prev => prev.map(s =>
+      s.id === selectedStaff.id
+        ? {
+            ...s,
+            ...data,
+            updatedAt: new Date(),
+            permissions: getRoleInfo(data.role!.toLowerCase()).permissions
+          } as Staff
+        : s
+    ))
+
+    setIsEditDialogOpen(false)
+    setSelectedStaff(null)
+    resetForm()
+
+    toast({
+      title: 'Staff Updated',
+      description: 'Staff information has been updated successfully.'
+    })
   }
 
   const handleDelete = async (staffId: string) => {
@@ -425,192 +395,6 @@ export default function StaffManagementPage() {
     setIsViewDialogOpen(true)
   }
 
-  const StaffForm = ({ isEdit = false }: { isEdit?: boolean }) => (
-    <div className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="name">Full Name *</Label>
-          <Input
-            id="name"
-            value={formData.name}
-            onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-            placeholder="Enter full name"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="email">Email Address *</Label>
-          <Input
-            id="email"
-            type="email"
-            value={formData.email}
-            onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-            placeholder="Enter email address"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="phone">Phone Number *</Label>
-          <Input
-            id="phone"
-            value={formData.phone}
-            onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-            placeholder="Enter phone number"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="employeeId">Employee ID</Label>
-          <Input
-            id="employeeId"
-            value={formData.employeeId}
-            onChange={(e) => setFormData(prev => ({ ...prev, employeeId: e.target.value }))}
-            placeholder="Enter employee ID"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="role">Role *</Label>
-          <Select value={formData.role} onValueChange={(value) => setFormData(prev => ({ ...prev, role: value as Staff['role'] }))}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select role" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ADMIN">Administrator</SelectItem>
-              <SelectItem value="TEACHER">Teacher</SelectItem>
-              <SelectItem value="FINANCE">Finance Manager</SelectItem>
-              <SelectItem value="ACADEMIC">Academic Staff</SelectItem>
-              <SelectItem value="STAFF">General Staff</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="status">Status</Label>
-          <Select value={formData.status} onValueChange={(value) => setFormData(prev => ({ ...prev, status: value as Staff['status'] }))}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ACTIVE">Active</SelectItem>
-              <SelectItem value="INACTIVE">Inactive</SelectItem>
-              <SelectItem value="SUSPENDED">Suspended</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="position">Position</Label>
-          <Input
-            id="position"
-            value={formData.position}
-            onChange={(e) => setFormData(prev => ({ ...prev, position: e.target.value }))}
-            placeholder="Enter job position"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="department">Department</Label>
-          <Select value={formData.department} onValueChange={(value) => setFormData(prev => ({ ...prev, department: value }))}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select department" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Administration">Administration</SelectItem>
-              <SelectItem value="Academic">Academic</SelectItem>
-              <SelectItem value="Finance">Finance</SelectItem>
-              <SelectItem value="IT">IT Support</SelectItem>
-              <SelectItem value="Maintenance">Maintenance</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="address">Address</Label>
-        <Input
-          id="address"
-          value={formData.address}
-          onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
-          placeholder="Enter full address"
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="dateOfBirth">Date of Birth</Label>
-        <Input
-          id="dateOfBirth"
-          type="date"
-          value={formData.dateOfBirth?.toISOString().split('T')[0]}
-          onChange={(e) => setFormData(prev => ({ ...prev, dateOfBirth: new Date(e.target.value) }))}
-        />
-      </div>
-
-      <div className="space-y-4">
-        <Label>Emergency Contact</Label>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="emergencyName">Name</Label>
-            <Input
-              id="emergencyName"
-              value={formData.emergencyContact?.name}
-              onChange={(e) => setFormData(prev => ({ 
-                ...prev, 
-                emergencyContact: { ...prev.emergencyContact!, name: e.target.value }
-              }))}
-              placeholder="Emergency contact name"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="emergencyPhone">Phone</Label>
-            <Input
-              id="emergencyPhone"
-              value={formData.emergencyContact?.phone}
-              onChange={(e) => setFormData(prev => ({ 
-                ...prev, 
-                emergencyContact: { ...prev.emergencyContact!, phone: e.target.value }
-              }))}
-              placeholder="Emergency contact phone"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="emergencyRelationship">Relationship</Label>
-            <Input
-              id="emergencyRelationship"
-              value={formData.emergencyContact?.relationship}
-              onChange={(e) => setFormData(prev => ({ 
-                ...prev, 
-                emergencyContact: { ...prev.emergencyContact!, relationship: e.target.value }
-              }))}
-              placeholder="Relationship"
-            />
-          </div>
-        </div>
-      </div>
-
-      {formData.role && (
-        <div className="space-y-2">
-          <Label>Role Permissions</Label>
-          <div className="p-4 border rounded-lg bg-gray-50">
-            <p className="text-sm text-muted-foreground mb-2">
-              This role will have the following permissions:
-            </p>
-            <div className="flex flex-wrap gap-1">
-              {getRoleInfo(formData.role.toLowerCase()).permissions.map(permissionId => {
-                const permission = permissions.find(p => p.id === permissionId)
-                return permission ? (
-                  <Badge key={permissionId} variant="outline" className="text-xs">
-                    {permission.name}
-                  </Badge>
-                ) : null
-              })}
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  )
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -621,33 +405,10 @@ export default function StaffManagementPage() {
           </p>
         </div>
         
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={resetForm}>
-              <Plus className="w-4 h-4 mr-2" />
-              Add Staff
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Add New Staff Member</DialogTitle>
-              <DialogDescription>
-                Create a new staff account with appropriate role and permissions
-              </DialogDescription>
-            </DialogHeader>
-            
-            <StaffForm />
-            
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleCreate} disabled={loading}>
-                {loading ? 'Creating...' : 'Create Staff'}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <Button onClick={() => { resetForm(); setIsAddDialogOpen(true); }}>
+          <Plus className="w-4 h-4 mr-2" />
+          Add Staff
+        </Button>
       </div>
 
       {/* Filters */}
@@ -813,28 +574,46 @@ export default function StaffManagementPage() {
         </CardContent>
       </Card>
 
-      {/* Edit Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Edit Staff Member</DialogTitle>
-            <DialogDescription>
-              Update staff information and permissions
-            </DialogDescription>
-          </DialogHeader>
-          
-          <StaffForm isEdit={true} />
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleUpdate} disabled={loading}>
-              {loading ? 'Updating...' : 'Update Staff'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Add Staff Form */}
+      <StaffForm
+        isOpen={isAddDialogOpen}
+        onClose={() => setIsAddDialogOpen(false)}
+        onSubmit={handleCreate}
+        mode="add"
+        initialData={{
+          name: '',
+          email: '',
+          phone: '',
+          role: 'STAFF',
+          status: 'ACTIVE',
+          employeeId: '',
+          position: '',
+          department: '',
+          address: '',
+          dateOfBirth: new Date(),
+          emergencyContact: {
+            name: '',
+            phone: '',
+            relationship: ''
+          },
+          permissions: []
+        }}
+        title="Add New Staff Member"
+        description="Create a new staff account with appropriate role and permissions"
+        roles={roles}
+      />
+
+      {/* Edit Staff Form */}
+      <StaffForm
+        isOpen={isEditDialogOpen}
+        onClose={() => setIsEditDialogOpen(false)}
+        onSubmit={handleUpdate}
+        mode="edit"
+        initialData={formData}
+        title="Edit Staff Member"
+        description="Update staff information and permissions"
+        roles={roles}
+      />
 
       {/* View Dialog */}
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>

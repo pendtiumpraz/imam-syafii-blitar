@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import {
   Table,
@@ -22,7 +21,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Label } from '@/components/ui/label'
 import { toast } from '@/components/ui/use-toast'
 import {
   Video,
@@ -35,6 +33,7 @@ import {
   PlayCircle,
 } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { VideoEditForm } from '@/components/kajian/video-edit-form'
 
 interface VideoKajian {
   id: string
@@ -75,21 +74,10 @@ export default function VideoKajianAdminPage() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('')
-  const [showAddDialog, setShowAddDialog] = useState(false)
-  const [showEditDialog, setShowEditDialog] = useState(false)
+  const [showFormPanel, setShowFormPanel] = useState(false)
+  const [formMode, setFormMode] = useState<'add' | 'edit'>('add')
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [selectedVideo, setSelectedVideo] = useState<VideoKajian | null>(null)
-  const [formData, setFormData] = useState<VideoFormData>({
-    title: '',
-    ustadz: '',
-    date: new Date().toISOString().split('T')[0],
-    duration: '',
-    category: 'Fiqih',
-    thumbnail: '',
-    videoUrl: '',
-    description: '',
-    tags: '',
-  })
 
   useEffect(() => {
     fetchVideos()
@@ -116,34 +104,15 @@ export default function VideoKajianAdminPage() {
   }
 
   const handleAdd = () => {
-    setFormData({
-      title: '',
-      ustadz: '',
-      date: new Date().toISOString().split('T')[0],
-      duration: '',
-      category: 'Fiqih',
-      thumbnail: '',
-      videoUrl: '',
-      description: '',
-      tags: '',
-    })
-    setShowAddDialog(true)
+    setSelectedVideo(null)
+    setFormMode('add')
+    setShowFormPanel(true)
   }
 
   const handleEdit = (video: VideoKajian) => {
     setSelectedVideo(video)
-    setFormData({
-      title: video.title,
-      ustadz: video.ustadz,
-      date: video.date,
-      duration: video.duration,
-      category: video.category,
-      thumbnail: video.thumbnail,
-      videoUrl: video.videoUrl,
-      description: video.description,
-      tags: video.tags.join(', '),
-    })
-    setShowEditDialog(true)
+    setFormMode('edit')
+    setShowFormPanel(true)
   }
 
   const handleDelete = (video: VideoKajian) => {
@@ -151,61 +120,53 @@ export default function VideoKajianAdminPage() {
     setShowDeleteDialog(true)
   }
 
-  const handleSubmitAdd = async () => {
+  const handleSubmitForm = async (formData: VideoFormData) => {
     try {
-      // TODO: Replace with actual API call
-      // const response = await fetch('/api/admin/video-kajian', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({
-      //     ...formData,
-      //     tags: formData.tags.split(',').map(t => t.trim()).filter(t => t),
-      //   }),
-      // })
-      // if (!response.ok) throw new Error('Failed to create video')
+      if (formMode === 'add') {
+        // TODO: Replace with actual API call
+        // const response = await fetch('/api/admin/video-kajian', {
+        //   method: 'POST',
+        //   headers: { 'Content-Type': 'application/json' },
+        //   body: JSON.stringify({
+        //     ...formData,
+        //     tags: formData.tags.split(',').map(t => t.trim()).filter(t => t),
+        //   }),
+        // })
+        // if (!response.ok) throw new Error('Failed to create video')
 
-      toast({
-        title: 'Success',
-        description: 'Video created successfully',
-      })
-      setShowAddDialog(false)
+        toast({
+          title: 'Success',
+          description: 'Video created successfully',
+        })
+      } else {
+        if (!selectedVideo) return
+
+        // TODO: Replace with actual API call
+        // const response = await fetch(`/api/admin/video-kajian/${selectedVideo.id}`, {
+        //   method: 'PUT',
+        //   headers: { 'Content-Type': 'application/json' },
+        //   body: JSON.stringify({
+        //     ...formData,
+        //     tags: formData.tags.split(',').map(t => t.trim()).filter(t => t),
+        //   }),
+        // })
+        // if (!response.ok) throw new Error('Failed to update video')
+
+        toast({
+          title: 'Success',
+          description: 'Video updated successfully',
+        })
+      }
+
+      setShowFormPanel(false)
       fetchVideos()
     } catch (error: any) {
       toast({
         title: 'Error',
-        description: error.message || 'Failed to create video',
+        description: error.message || `Failed to ${formMode === 'add' ? 'create' : 'update'} video`,
         variant: 'destructive',
       })
-    }
-  }
-
-  const handleSubmitEdit = async () => {
-    if (!selectedVideo) return
-
-    try {
-      // TODO: Replace with actual API call
-      // const response = await fetch(`/api/admin/video-kajian/${selectedVideo.id}`, {
-      //   method: 'PUT',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({
-      //     ...formData,
-      //     tags: formData.tags.split(',').map(t => t.trim()).filter(t => t),
-      //   }),
-      // })
-      // if (!response.ok) throw new Error('Failed to update video')
-
-      toast({
-        title: 'Success',
-        description: 'Video updated successfully',
-      })
-      setShowEditDialog(false)
-      fetchVideos()
-    } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to update video',
-        variant: 'destructive',
-      })
+      throw error
     }
   }
 
@@ -411,218 +372,15 @@ export default function VideoKajianAdminPage() {
         </CardContent>
       </Card>
 
-      {/* Add Video Dialog */}
-      <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white">
-          <DialogHeader>
-            <DialogTitle className="text-gray-900">Add New Video</DialogTitle>
-            <DialogDescription className="text-gray-600">
-              Add a new Islamic lecture video to the kajian page.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="title">Title *</Label>
-              <Input
-                id="title"
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                placeholder="Keutamaan Ilmu dan Ulama"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="ustadz">Ustadz *</Label>
-                <Input
-                  id="ustadz"
-                  value={formData.ustadz}
-                  onChange={(e) => setFormData({ ...formData, ustadz: e.target.value })}
-                  placeholder="Ustadz Ahmad Zainuddin"
-                />
-              </div>
-              <div>
-                <Label htmlFor="category">Category *</Label>
-                <select
-                  id="category"
-                  value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                >
-                  {categories.map(cat => (
-                    <option key={cat} value={cat}>{cat}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="date">Date *</Label>
-                <Input
-                  id="date"
-                  type="date"
-                  value={formData.date}
-                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label htmlFor="duration">Duration *</Label>
-                <Input
-                  id="duration"
-                  value={formData.duration}
-                  onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
-                  placeholder="45:30"
-                />
-              </div>
-            </div>
-            <div>
-              <Label htmlFor="videoUrl">Video URL *</Label>
-              <Input
-                id="videoUrl"
-                value={formData.videoUrl}
-                onChange={(e) => setFormData({ ...formData, videoUrl: e.target.value })}
-                placeholder="https://youtube.com/watch?v=..."
-              />
-            </div>
-            <div>
-              <Label htmlFor="thumbnail">Thumbnail URL</Label>
-              <Input
-                id="thumbnail"
-                value={formData.thumbnail}
-                onChange={(e) => setFormData({ ...formData, thumbnail: e.target.value })}
-                placeholder="https://example.com/thumbnail.jpg"
-              />
-            </div>
-            <div>
-              <Label htmlFor="description">Description *</Label>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Pembahasan tentang keutamaan menuntut ilmu..."
-                rows={3}
-              />
-            </div>
-            <div>
-              <Label htmlFor="tags">Tags (comma separated)</Label>
-              <Input
-                id="tags"
-                value={formData.tags}
-                onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-                placeholder="ilmu, ulama, keutamaan, adab"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAddDialog(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleSubmitAdd}>Create Video</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Video Dialog */}
-      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white">
-          <DialogHeader>
-            <DialogTitle className="text-gray-900">Edit Video</DialogTitle>
-            <DialogDescription className="text-gray-600">
-              Update video information.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="edit-title">Title *</Label>
-              <Input
-                id="edit-title"
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="edit-ustadz">Ustadz *</Label>
-                <Input
-                  id="edit-ustadz"
-                  value={formData.ustadz}
-                  onChange={(e) => setFormData({ ...formData, ustadz: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit-category">Category *</Label>
-                <select
-                  id="edit-category"
-                  value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                >
-                  {categories.map(cat => (
-                    <option key={cat} value={cat}>{cat}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="edit-date">Date *</Label>
-                <Input
-                  id="edit-date"
-                  type="date"
-                  value={formData.date}
-                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit-duration">Duration *</Label>
-                <Input
-                  id="edit-duration"
-                  value={formData.duration}
-                  onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
-                />
-              </div>
-            </div>
-            <div>
-              <Label htmlFor="edit-videoUrl">Video URL *</Label>
-              <Input
-                id="edit-videoUrl"
-                value={formData.videoUrl}
-                onChange={(e) => setFormData({ ...formData, videoUrl: e.target.value })}
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-thumbnail">Thumbnail URL</Label>
-              <Input
-                id="edit-thumbnail"
-                value={formData.thumbnail}
-                onChange={(e) => setFormData({ ...formData, thumbnail: e.target.value })}
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-description">Description *</Label>
-              <Textarea
-                id="edit-description"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                rows={3}
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-tags">Tags (comma separated)</Label>
-              <Input
-                id="edit-tags"
-                value={formData.tags}
-                onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowEditDialog(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleSubmitEdit}>Update Video</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Video Edit Form - Slide-over Panel */}
+      <VideoEditForm
+        video={selectedVideo}
+        isOpen={showFormPanel}
+        onClose={() => setShowFormPanel(false)}
+        onSubmit={handleSubmitForm}
+        mode={formMode}
+        categories={categories}
+      />
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>

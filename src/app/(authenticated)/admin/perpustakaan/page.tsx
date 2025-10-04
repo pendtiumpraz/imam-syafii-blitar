@@ -14,16 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
+import { EbookForm } from '@/components/perpustakaan/ebook-form'
 import { toast } from '@/components/ui/use-toast'
 import {
   BookOpen,
@@ -37,6 +28,14 @@ import {
   Upload,
 } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 
 interface Ebook {
   id: string
@@ -186,72 +185,46 @@ export default function PerpustakaanAdminPage() {
     setShowDeleteDialog(true)
   }
 
-  const handleSubmitAdd = async () => {
-    try {
-      const response = await fetch('/api/ebooks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...formData,
-          fileSize: formData.fileSize ? parseInt(formData.fileSize) : undefined,
-          pageCount: formData.pageCount ? parseInt(formData.pageCount) : undefined,
-          tags: formData.tags.split(',').map(t => t.trim()).filter(t => t),
-        }),
-      })
+  const handleSubmitAdd = async (data: any) => {
+    const response = await fetch('/api/ebooks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    })
 
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to create ebook')
-      }
-
-      toast({
-        title: 'Success',
-        description: 'Ebook created successfully',
-      })
-      setShowAddDialog(false)
-      fetchEbooks()
-    } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to create ebook',
-        variant: 'destructive',
-      })
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.error || 'Failed to create ebook')
     }
+
+    toast({
+      title: 'Success',
+      description: 'Ebook created successfully',
+    })
+    setShowAddDialog(false)
+    fetchEbooks()
   }
 
-  const handleSubmitEdit = async () => {
+  const handleSubmitEdit = async (data: any) => {
     if (!selectedEbook) return
 
-    try {
-      const response = await fetch(`/api/ebooks/${selectedEbook.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...formData,
-          fileSize: formData.fileSize ? parseInt(formData.fileSize) : undefined,
-          pageCount: formData.pageCount ? parseInt(formData.pageCount) : undefined,
-          tags: formData.tags.split(',').map(t => t.trim()).filter(t => t),
-        }),
-      })
+    const response = await fetch(`/api/ebooks/${selectedEbook.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    })
 
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to update ebook')
-      }
-
-      toast({
-        title: 'Success',
-        description: 'Ebook updated successfully',
-      })
-      setShowEditDialog(false)
-      fetchEbooks()
-    } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to update ebook',
-        variant: 'destructive',
-      })
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.error || 'Failed to update ebook')
     }
+
+    toast({
+      title: 'Success',
+      description: 'Ebook updated successfully',
+    })
+    setShowEditDialog(false)
+    fetchEbooks()
   }
 
   const handleSubmitDelete = async () => {
@@ -478,301 +451,42 @@ export default function PerpustakaanAdminPage() {
         </CardContent>
       </Card>
 
-      {/* Add Ebook Dialog */}
-      <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white">
-          <DialogHeader>
-            <DialogTitle className="text-gray-900">Add New Ebook</DialogTitle>
-            <DialogDescription className="text-gray-600">
-              Add a new book or ebook to the digital library.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="title">Title *</Label>
-              <Input
-                id="title"
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                placeholder="Kitab At-Tauhid"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="author">Author *</Label>
-                <Input
-                  id="author"
-                  value={formData.author}
-                  onChange={(e) => setFormData({ ...formData, author: e.target.value })}
-                  placeholder="Muhammad bin Abdul Wahhab"
-                />
-              </div>
-              <div>
-                <Label htmlFor="category">Category *</Label>
-                <select
-                  id="category"
-                  value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                >
-                  {categories.map(cat => (
-                    <option key={cat} value={cat}>{categoryLabels[cat]}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            <div>
-              <Label htmlFor="description">Description *</Label>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Kitab yang membahas tentang tauhid..."
-                rows={3}
-              />
-            </div>
-            <div>
-              <Label htmlFor="fileUrl">PDF File URL *</Label>
-              <Input
-                id="fileUrl"
-                value={formData.fileUrl}
-                onChange={(e) => setFormData({ ...formData, fileUrl: e.target.value })}
-                placeholder="https://example.com/book.pdf"
-              />
-            </div>
-            <div>
-              <Label htmlFor="coverImage">Cover Image URL</Label>
-              <Input
-                id="coverImage"
-                value={formData.coverImage}
-                onChange={(e) => setFormData({ ...formData, coverImage: e.target.value })}
-                placeholder="https://example.com/cover.jpg"
-              />
-            </div>
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <Label htmlFor="fileSize">File Size (bytes)</Label>
-                <Input
-                  id="fileSize"
-                  type="number"
-                  value={formData.fileSize}
-                  onChange={(e) => setFormData({ ...formData, fileSize: e.target.value })}
-                  placeholder="5242880"
-                />
-              </div>
-              <div>
-                <Label htmlFor="pageCount">Page Count</Label>
-                <Input
-                  id="pageCount"
-                  type="number"
-                  value={formData.pageCount}
-                  onChange={(e) => setFormData({ ...formData, pageCount: e.target.value })}
-                  placeholder="150"
-                />
-              </div>
-              <div>
-                <Label htmlFor="language">Language *</Label>
-                <select
-                  id="language"
-                  value={formData.language}
-                  onChange={(e) => setFormData({ ...formData, language: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                >
-                  <option value="id">Indonesia</option>
-                  <option value="ar">Arabic</option>
-                  <option value="en">English</option>
-                </select>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="publisher">Publisher</Label>
-                <Input
-                  id="publisher"
-                  value={formData.publisher}
-                  onChange={(e) => setFormData({ ...formData, publisher: e.target.value })}
-                  placeholder="Dar Al-Kitab Al-Arabi"
-                />
-              </div>
-              <div>
-                <Label htmlFor="publishYear">Publish Year</Label>
-                <Input
-                  id="publishYear"
-                  value={formData.publishYear}
-                  onChange={(e) => setFormData({ ...formData, publishYear: e.target.value })}
-                  placeholder="2020"
-                />
-              </div>
-            </div>
-            <div>
-              <Label htmlFor="tags">Tags (comma separated)</Label>
-              <Input
-                id="tags"
-                value={formData.tags}
-                onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-                placeholder="tauhid, aqidah, islam"
-              />
-            </div>
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="featured"
-                checked={formData.isFeatured}
-                onCheckedChange={(checked: boolean) => setFormData({ ...formData, isFeatured: checked })}
-              />
-              <Label htmlFor="featured">Featured Book</Label>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAddDialog(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleSubmitAdd}>Create Ebook</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Add Ebook Form */}
+      <EbookForm
+        isOpen={showAddDialog}
+        onClose={() => setShowAddDialog(false)}
+        onSubmit={handleSubmitAdd}
+        mode="add"
+        initialData={{
+          title: '',
+          author: '',
+          description: '',
+          category: 'fiqh',
+          subcategory: '',
+          fileUrl: '',
+          coverImage: '',
+          fileSize: '',
+          pageCount: '',
+          language: 'id',
+          publisher: '',
+          publishYear: '',
+          tags: '',
+          isFeatured: false,
+        }}
+        title="Add New Ebook"
+        description="Add a new book or ebook to the digital library."
+      />
 
-      {/* Edit Ebook Dialog */}
-      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white">
-          <DialogHeader>
-            <DialogTitle className="text-gray-900">Edit Ebook</DialogTitle>
-            <DialogDescription className="text-gray-600">
-              Update ebook information.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="edit-title">Title *</Label>
-              <Input
-                id="edit-title"
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="edit-author">Author *</Label>
-                <Input
-                  id="edit-author"
-                  value={formData.author}
-                  onChange={(e) => setFormData({ ...formData, author: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit-category">Category *</Label>
-                <select
-                  id="edit-category"
-                  value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                >
-                  {categories.map(cat => (
-                    <option key={cat} value={cat}>{categoryLabels[cat]}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            <div>
-              <Label htmlFor="edit-description">Description *</Label>
-              <Textarea
-                id="edit-description"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                rows={3}
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-fileUrl">PDF File URL *</Label>
-              <Input
-                id="edit-fileUrl"
-                value={formData.fileUrl}
-                onChange={(e) => setFormData({ ...formData, fileUrl: e.target.value })}
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-coverImage">Cover Image URL</Label>
-              <Input
-                id="edit-coverImage"
-                value={formData.coverImage}
-                onChange={(e) => setFormData({ ...formData, coverImage: e.target.value })}
-              />
-            </div>
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <Label htmlFor="edit-fileSize">File Size (bytes)</Label>
-                <Input
-                  id="edit-fileSize"
-                  type="number"
-                  value={formData.fileSize}
-                  onChange={(e) => setFormData({ ...formData, fileSize: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit-pageCount">Page Count</Label>
-                <Input
-                  id="edit-pageCount"
-                  type="number"
-                  value={formData.pageCount}
-                  onChange={(e) => setFormData({ ...formData, pageCount: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit-language">Language *</Label>
-                <select
-                  id="edit-language"
-                  value={formData.language}
-                  onChange={(e) => setFormData({ ...formData, language: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                >
-                  <option value="id">Indonesia</option>
-                  <option value="ar">Arabic</option>
-                  <option value="en">English</option>
-                </select>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="edit-publisher">Publisher</Label>
-                <Input
-                  id="edit-publisher"
-                  value={formData.publisher}
-                  onChange={(e) => setFormData({ ...formData, publisher: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit-publishYear">Publish Year</Label>
-                <Input
-                  id="edit-publishYear"
-                  value={formData.publishYear}
-                  onChange={(e) => setFormData({ ...formData, publishYear: e.target.value })}
-                />
-              </div>
-            </div>
-            <div>
-              <Label htmlFor="edit-tags">Tags (comma separated)</Label>
-              <Input
-                id="edit-tags"
-                value={formData.tags}
-                onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-              />
-            </div>
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="edit-featured"
-                checked={formData.isFeatured}
-                onCheckedChange={(checked: boolean) => setFormData({ ...formData, isFeatured: checked })}
-              />
-              <Label htmlFor="edit-featured">Featured Book</Label>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowEditDialog(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleSubmitEdit}>Update Ebook</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Edit Ebook Form */}
+      <EbookForm
+        isOpen={showEditDialog}
+        onClose={() => setShowEditDialog(false)}
+        onSubmit={handleSubmitEdit}
+        mode="edit"
+        initialData={formData}
+        title="Edit Ebook"
+        description="Update ebook information."
+      />
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>

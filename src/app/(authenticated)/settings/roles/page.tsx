@@ -8,11 +8,10 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Shield, Plus, Edit, Trash2, Users, Check, X, MoreHorizontal, Crown, User, BookOpen, Settings } from 'lucide-react'
+import { Shield, Plus, Edit, Trash2, Users, Check, X, MoreHorizontal, Crown, User, BookOpen, Settings, Save } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
 interface Permission {
@@ -165,9 +164,8 @@ export default function RoleManagementPage() {
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
   const [selectedRole, setSelectedRole] = useState<Role | null>(null)
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
-  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
+  const [isSlideOverOpen, setIsSlideOverOpen] = useState(false)
+  const [slideOverMode, setSlideOverMode] = useState<'add' | 'edit' | 'view'>('add')
   const [activeTab, setActiveTab] = useState<string>('Dashboard')
 
   const [roles, setRoles] = useState<Role[]>([
@@ -278,9 +276,9 @@ export default function RoleManagementPage() {
       }
 
       setRoles(prev => [...prev, newRole])
-      setIsAddDialogOpen(false)
+      setIsSlideOverOpen(false)
       resetForm()
-      
+
       toast({
         title: 'Role Created',
         description: `${newRole.name} role has been created successfully.`
@@ -303,16 +301,16 @@ export default function RoleManagementPage() {
 
     setLoading(true)
     try {
-      setRoles(prev => prev.map(r => 
-        r.id === selectedRole.id 
+      setRoles(prev => prev.map(r =>
+        r.id === selectedRole.id
           ? { ...r, ...formData, updatedAt: new Date() } as Role
           : r
       ))
-      
-      setIsEditDialogOpen(false)
+
+      setIsSlideOverOpen(false)
       setSelectedRole(null)
       resetForm()
-      
+
       toast({
         title: 'Role Updated',
         description: 'Role has been updated successfully.'
@@ -377,7 +375,15 @@ export default function RoleManagementPage() {
     setActiveTab('Dashboard') // Reset tab to Dashboard
   }
 
-  const openEditDialog = (role: Role) => {
+  const openAddSlideOver = () => {
+    resetForm()
+    setSlideOverMode('add')
+    setSelectedRole(null)
+    setActiveTab('Dashboard')
+    setIsSlideOverOpen(true)
+  }
+
+  const openEditSlideOver = (role: Role) => {
     setSelectedRole(role)
     setFormData({
       name: role.name,
@@ -385,13 +391,23 @@ export default function RoleManagementPage() {
       permissions: role.permissions,
       color: role.color
     })
-    setActiveTab('Dashboard') // Reset tab to Dashboard when opening edit
-    setIsEditDialogOpen(true)
+    setActiveTab('Dashboard')
+    setSlideOverMode('edit')
+    setIsSlideOverOpen(true)
   }
 
-  const openViewDialog = (role: Role) => {
+  const openViewSlideOver = (role: Role) => {
     setSelectedRole(role)
-    setIsViewDialogOpen(true)
+    setSlideOverMode('view')
+    setIsSlideOverOpen(true)
+  }
+
+  const closeSlideOver = () => {
+    setIsSlideOverOpen(false)
+    setTimeout(() => {
+      setSelectedRole(null)
+      resetForm()
+    }, 300) // Wait for animation to complete
   }
 
   const togglePermission = (permissionId: string) => {
@@ -420,12 +436,14 @@ export default function RoleManagementPage() {
     }, {} as Record<string, Permission[]>)
   }
 
-  const RoleForm = ({ isEdit = false }: { isEdit?: boolean }) => {
+  const RoleForm = ({ mode }: { mode: 'add' | 'edit' | 'view' }) => {
     const categorizedPermissions = getPermissionsByCategory()
+    const isViewMode = mode === 'view'
+    const isEditMode = mode === 'edit'
 
     return (
       <div className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4">
           <div className="space-y-2">
             <Label htmlFor="name">Role Name *</Label>
             <Input
@@ -433,8 +451,12 @@ export default function RoleManagementPage() {
               value={formData.name}
               onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
               placeholder="Enter role name"
-              disabled={selectedRole?.isSystem}
+              disabled={isViewMode || (isEditMode && selectedRole?.isSystem)}
+              readOnly={isViewMode}
             />
+            {isEditMode && selectedRole?.isSystem && (
+              <p className="text-xs text-muted-foreground">System role names cannot be changed</p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -444,11 +466,12 @@ export default function RoleManagementPage() {
                 <button
                   key={color.value}
                   type="button"
-                  onClick={() => setFormData(prev => ({ ...prev, color: color.value }))}
+                  onClick={() => !isViewMode && setFormData(prev => ({ ...prev, color: color.value }))}
                   className={`w-8 h-8 rounded-full border-2 ${color.value} ${
                     formData.color === color.value ? 'ring-2 ring-offset-2 ring-blue-500' : ''
-                  }`}
+                  } ${isViewMode ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
                   title={color.label}
+                  disabled={isViewMode}
                 />
               ))}
             </div>
@@ -463,30 +486,34 @@ export default function RoleManagementPage() {
             onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
             placeholder="Enter role description"
             rows={3}
+            disabled={isViewMode}
+            readOnly={isViewMode}
           />
         </div>
 
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <Label>Permissions ({formData.permissions?.length || 0} selected)</Label>
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setFormData(prev => ({ ...prev, permissions: permissions.map(p => p.id) }))}
-              >
-                Select All
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setFormData(prev => ({ ...prev, permissions: [] }))}
-              >
-                Clear All
-              </Button>
-            </div>
+            {!isViewMode && (
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setFormData(prev => ({ ...prev, permissions: permissions.map(p => p.id) }))}
+                >
+                  Select All
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setFormData(prev => ({ ...prev, permissions: [] }))}
+                >
+                  Clear All
+                </Button>
+              </div>
+            )}
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -506,38 +533,40 @@ export default function RoleManagementPage() {
                   <div className="text-sm font-medium text-muted-foreground">
                     {category} ({perms.filter(p => formData.permissions?.includes(p.id)).length}/{perms.length} selected)
                   </div>
-                  <div className="flex gap-2">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        const categoryPermIds = perms.map(p => p.id)
-                        setFormData(prev => ({
-                          ...prev,
-                          permissions: Array.from(new Set([...(prev.permissions || []), ...categoryPermIds]))
-                        }))
-                      }}
-                      className="text-xs h-7"
-                    >
-                      Select All in {category}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        const categoryPermIds = perms.map(p => p.id)
-                        setFormData(prev => ({
-                          ...prev,
-                          permissions: (prev.permissions || []).filter(id => !categoryPermIds.includes(id))
-                        }))
-                      }}
-                      className="text-xs h-7"
-                    >
-                      Clear
-                    </Button>
-                  </div>
+                  {!isViewMode && (
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          const categoryPermIds = perms.map(p => p.id)
+                          setFormData(prev => ({
+                            ...prev,
+                            permissions: Array.from(new Set([...(prev.permissions || []), ...categoryPermIds]))
+                          }))
+                        }}
+                        className="text-xs h-7"
+                      >
+                        Select All in {category}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          const categoryPermIds = perms.map(p => p.id)
+                          setFormData(prev => ({
+                            ...prev,
+                            permissions: (prev.permissions || []).filter(id => !categoryPermIds.includes(id))
+                          }))
+                        }}
+                        className="text-xs h-7"
+                      >
+                        Clear
+                      </Button>
+                    </div>
+                  )}
                 </div>
                 <div className="grid grid-cols-1 gap-3">
                   {perms.map((permission) => (
@@ -552,7 +581,7 @@ export default function RoleManagementPage() {
                       <Switch
                         checked={formData.permissions?.includes(permission.id) || false}
                         onCheckedChange={() => togglePermission(permission.id)}
-                        disabled={selectedRole?.isSystem && permission.critical}
+                        disabled={isViewMode || (selectedRole?.isSystem && permission.critical)}
                       />
                       <div className="flex-1 space-y-1">
                         <div className="flex items-center gap-2">
@@ -609,34 +638,11 @@ export default function RoleManagementPage() {
             Manage user roles and permissions for your school management system
           </p>
         </div>
-        
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={resetForm}>
-              <Plus className="w-4 h-4 mr-2" />
-              Add Role
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Create New Role</DialogTitle>
-              <DialogDescription>
-                Define a new role with specific permissions for your staff members
-              </DialogDescription>
-            </DialogHeader>
-            
-            <RoleForm />
-            
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleCreate} disabled={loading}>
-                {loading ? 'Creating...' : 'Create Role'}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+
+        <Button onClick={openAddSlideOver}>
+          <Plus className="w-4 h-4 mr-2" />
+          Add Role
+        </Button>
       </div>
 
       {/* Role Statistics */}
@@ -731,11 +737,11 @@ export default function RoleManagementPage() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => openViewDialog(role)}>
+                    <DropdownMenuItem onClick={() => openViewSlideOver(role)}>
                       <Shield className="w-4 h-4 mr-2" />
                       View Permissions
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => openEditDialog(role)}>
+                    <DropdownMenuItem onClick={() => openEditSlideOver(role)}>
                       <Edit className="w-4 h-4 mr-2" />
                       Edit Role
                     </DropdownMenuItem>
@@ -780,111 +786,149 @@ export default function RoleManagementPage() {
         </CardContent>
       </Card>
 
-      {/* Edit Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Edit Role</DialogTitle>
-            <DialogDescription>
-              Modify role permissions and settings
-            </DialogDescription>
-          </DialogHeader>
-          
-          <RoleForm isEdit={true} />
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleUpdate} disabled={loading}>
-              {loading ? 'Updating...' : 'Update Role'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Slide-over Panel */}
+      {isSlideOverOpen && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-black bg-opacity-50 z-50 transition-opacity duration-300"
+            onClick={closeSlideOver}
+          />
 
-      {/* View Dialog */}
-      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Role Details</DialogTitle>
-            <DialogDescription>
-              View permissions and information for {selectedRole?.name}
-            </DialogDescription>
-          </DialogHeader>
-          
-          {selectedRole && (
-            <div className="space-y-6">
-              <div className="flex items-center gap-4">
-                <Badge className={selectedRole.color}>
-                  {getRoleIcon(selectedRole)}
-                  {selectedRole.name}
-                </Badge>
-                {selectedRole.isSystem && (
-                  <Badge variant="outline">System Role</Badge>
-                )}
-                <span className="text-sm text-muted-foreground">
-                  {selectedRole.userCount} user{selectedRole.userCount !== 1 ? 's' : ''} assigned
-                </span>
-              </div>
-              
+          {/* Slide-over Container */}
+          <div className={`fixed top-0 right-0 h-full w-full max-w-4xl bg-white shadow-xl z-50 transform transition-transform duration-300 flex flex-col ${isSlideOverOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+            {/* Sticky Header */}
+            <div className="flex items-center justify-between p-6 border-b bg-white">
               <div>
-                <Label>Description</Label>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {selectedRole.description}
+                <h2 className="text-xl font-bold text-gray-900">
+                  {slideOverMode === 'add' && 'Create New Role'}
+                  {slideOverMode === 'edit' && 'Edit Role'}
+                  {slideOverMode === 'view' && 'Role Details'}
+                </h2>
+                <p className="text-sm text-gray-600">
+                  {slideOverMode === 'add' && 'Define a new role with specific permissions for your staff members'}
+                  {slideOverMode === 'edit' && 'Modify role permissions and settings'}
+                  {slideOverMode === 'view' && `View permissions and information for ${selectedRole?.name}`}
                 </p>
               </div>
-              
-              <div>
-                <Label className="text-base">
-                  Permissions ({selectedRole.permissions.length})
-                </Label>
-                <div className="mt-3 space-y-4">
-                  {Object.entries(getPermissionsByCategory()).map(([category, perms]) => {
-                    const categoryPermissions = perms.filter(p => selectedRole.permissions.includes(p.id))
-                    if (categoryPermissions.length === 0) return null
-                    
-                    return (
-                      <div key={category}>
-                        <h4 className="font-medium text-sm mb-2">
-                          {category} ({categoryPermissions.length}/{perms.length})
-                        </h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                          {categoryPermissions.map(permission => (
-                            <div key={permission.id} className="flex items-center gap-2 text-sm">
-                              <Check className="w-4 h-4 text-green-600" />
-                              <span>{permission.name}</span>
-                              {permission.critical && (
-                                <Badge variant="destructive" className="text-xs">
-                                  Critical
-                                </Badge>
-                              )}
+              <Button variant="ghost" size="icon" onClick={closeSlideOver} disabled={loading}>
+                <X className="w-5 h-5" />
+              </Button>
+            </div>
+
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {slideOverMode === 'view' && selectedRole ? (
+                <div className="space-y-6">
+                  <div className="flex items-center gap-4">
+                    <Badge className={selectedRole.color}>
+                      {getRoleIcon(selectedRole)}
+                      {selectedRole.name}
+                    </Badge>
+                    {selectedRole.isSystem && (
+                      <Badge variant="outline">System Role</Badge>
+                    )}
+                    <span className="text-sm text-muted-foreground">
+                      {selectedRole.userCount} user{selectedRole.userCount !== 1 ? 's' : ''} assigned
+                    </span>
+                  </div>
+
+                  <div>
+                    <Label>Description</Label>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {selectedRole.description}
+                    </p>
+                  </div>
+
+                  <div>
+                    <Label className="text-base">
+                      Permissions ({selectedRole.permissions.length})
+                    </Label>
+                    <div className="mt-3 space-y-4">
+                      {Object.entries(getPermissionsByCategory()).map(([category, perms]) => {
+                        const categoryPermissions = perms.filter(p => selectedRole.permissions.includes(p.id))
+                        if (categoryPermissions.length === 0) return null
+
+                        return (
+                          <div key={category}>
+                            <h4 className="font-medium text-sm mb-2">
+                              {category} ({categoryPermissions.length}/{perms.length})
+                            </h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                              {categoryPermissions.map(permission => (
+                                <div key={permission.id} className="flex items-center gap-2 text-sm">
+                                  <Check className="w-4 h-4 text-green-600" />
+                                  <span>{permission.name}</span>
+                                  {permission.critical && (
+                                    <Badge variant="destructive" className="text-xs">
+                                      Critical
+                                    </Badge>
+                                  )}
+                                </div>
+                              ))}
                             </div>
-                          ))}
-                        </div>
-                      </div>
-                    )
-                  })}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
                 </div>
+              ) : (
+                <RoleForm mode={slideOverMode} />
+              )}
+            </div>
+
+            {/* Sticky Footer */}
+            <div className="border-t bg-white p-6">
+              <div className="flex gap-3 justify-end">
+                {slideOverMode === 'view' ? (
+                  <>
+                    <Button variant="outline" onClick={closeSlideOver}>
+                      Close
+                    </Button>
+                    {selectedRole && (
+                      <Button onClick={() => {
+                        setFormData({
+                          name: selectedRole.name,
+                          description: selectedRole.description,
+                          permissions: selectedRole.permissions,
+                          color: selectedRole.color
+                        })
+                        setSlideOverMode('edit')
+                      }}>
+                        Edit Role
+                      </Button>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <Button variant="outline" onClick={closeSlideOver} disabled={loading}>
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={slideOverMode === 'add' ? handleCreate : handleUpdate}
+                      disabled={loading}
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      {loading ? (
+                        <>
+                          <Save className="w-4 h-4 mr-2 animate-spin" />
+                          {slideOverMode === 'add' ? 'Creating...' : 'Updating...'}
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-4 h-4 mr-2" />
+                          {slideOverMode === 'add' ? 'Create Role' : 'Update Role'}
+                        </>
+                      )}
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
-          )}
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
-              Close
-            </Button>
-            {selectedRole && (
-              <Button onClick={() => {
-                setIsViewDialogOpen(false)
-                openEditDialog(selectedRole)
-              }}>
-                Edit Role
-              </Button>
-            )}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        </>
+      )}
     </div>
   )
 }

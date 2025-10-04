@@ -24,6 +24,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { UserFormSlideOver } from '@/components/users/user-form-slideover'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { toast } from '@/components/ui/use-toast'
@@ -71,15 +72,6 @@ interface User {
   updatedAt: string
 }
 
-interface UserFormData {
-  username: string
-  email: string
-  name: string
-  password: string
-  role: string
-  isActive: boolean
-}
-
 interface ChangePasswordData {
   currentPassword: string
   newPassword: string
@@ -108,31 +100,31 @@ const roleColors = {
   PARENT: 'bg-gray-100 text-gray-800',
 }
 
+interface Role {
+  id: string
+  name: string
+  description: string
+  color: string
+}
+
 export default function UsersPage() {
   const { data: session } = useSession()
   const router = useRouter()
   const [users, setUsers] = useState<User[]>([])
+  const [roles, setRoles] = useState<Role[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [roleFilter, setRoleFilter] = useState('')
   const [activeFilter, setActiveFilter] = useState('')
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
-  const [showAddDialog, setShowAddDialog] = useState(false)
-  const [showEditDialog, setShowEditDialog] = useState(false)
+  const [showUserSlideOver, setShowUserSlideOver] = useState(false)
+  const [slideOverMode, setSlideOverMode] = useState<'add' | 'edit'>('add')
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [showChangePasswordDialog, setShowChangePasswordDialog] = useState(false)
   const [showResetPasswordDialog, setShowResetPasswordDialog] = useState(false)
   const [showGeneratedPasswordDialog, setShowGeneratedPasswordDialog] = useState(false)
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
-  const [formData, setFormData] = useState<UserFormData>({
-    username: '',
-    email: '',
-    name: '',
-    password: '',
-    role: 'STAFF',
-    isActive: true,
-  })
   const [changePasswordData, setChangePasswordData] = useState<ChangePasswordData>({
     currentPassword: '',
     newPassword: '',
@@ -143,7 +135,6 @@ export default function UsersPage() {
     username: '',
     email: '',
   })
-  const [showPassword, setShowPassword] = useState(false)
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [showCurrentPassword, setShowCurrentPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
@@ -162,6 +153,30 @@ export default function UsersPage() {
       })
     }
   }, [session, router])
+
+  // Fetch roles
+  useEffect(() => {
+    const fetchRoles = async () => {
+      try {
+        const response = await fetch('/api/roles')
+        if (!response.ok) throw new Error('Failed to fetch roles')
+        const data = await response.json()
+        setRoles(data.roles || [])
+      } catch (error) {
+        console.error('Error fetching roles:', error)
+        // Fallback to hardcoded roles if fetch fails
+        setRoles([
+          { id: 'SUPER_ADMIN', name: 'Super Administrator', description: 'Full system access', color: 'bg-red-100' },
+          { id: 'ADMIN', name: 'Admin', description: 'Administrative access', color: 'bg-purple-100' },
+          { id: 'USTADZ', name: 'Ustadz', description: 'Teacher access', color: 'bg-blue-100' },
+          { id: 'STAFF', name: 'Staff', description: 'Basic staff access', color: 'bg-green-100' },
+          { id: 'PARENT', name: 'Parent', description: 'Parent access', color: 'bg-gray-100' },
+        ])
+      }
+    }
+
+    fetchRoles()
+  }, [])
 
   // Fetch users
   useEffect(() => {
@@ -198,28 +213,15 @@ export default function UsersPage() {
   }
 
   const handleAdd = () => {
-    setFormData({
-      username: '',
-      email: '',
-      name: '',
-      password: '',
-      role: 'STAFF',
-      isActive: true,
-    })
-    setShowAddDialog(true)
+    setSelectedUser(null)
+    setSlideOverMode('add')
+    setShowUserSlideOver(true)
   }
 
   const handleEdit = (user: User) => {
     setSelectedUser(user)
-    setFormData({
-      username: user.username,
-      email: user.email,
-      name: user.name,
-      password: '',
-      role: user.role,
-      isActive: user.isActive,
-    })
-    setShowEditDialog(true)
+    setSlideOverMode('edit')
+    setShowUserSlideOver(true)
   }
 
   const handleDelete = (user: User) => {
@@ -227,79 +229,67 @@ export default function UsersPage() {
     setShowDeleteDialog(true)
   }
 
-  const handleSubmitAdd = async () => {
-    setSaveLoading(true)
+  const handleUserFormSubmit = async (data: any) => {
     try {
-      const response = await fetch('/api/users', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      })
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to create user')
-      }
-
-      const result = await response.json()
-      
-      // Show generated password if one was generated
-      if (formData.password) {
-        setGeneratedPasswordData({
-          password: formData.password,
-          username: formData.username,
-          email: formData.email,
+      if (slideOverMode === 'add') {
+        const response = await fetch('/api/users', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
         })
-        setShowGeneratedPasswordDialog(true)
+
+        if (!response.ok) {
+          const error = await response.json()
+          throw new Error(error.error || 'Failed to create user')
+        }
+
+        // Show generated password if one was generated
+        if (data.password) {
+          setGeneratedPasswordData({
+            password: data.password,
+            username: data.username,
+            email: data.email,
+          })
+          setShowGeneratedPasswordDialog(true)
+        }
+
+        toast({
+          title: 'Success',
+          description: 'User created successfully',
+        })
+      } else {
+        // Edit mode
+        if (!selectedUser) return
+
+        const response = await fetch('/api/users', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: selectedUser.id,
+            ...data,
+          }),
+        })
+
+        if (!response.ok) {
+          const error = await response.json()
+          throw new Error(error.error || 'Failed to update user')
+        }
+
+        toast({
+          title: 'Success',
+          description: 'User updated successfully',
+        })
       }
 
-      toast({
-        title: 'Success',
-        description: 'User created successfully',
-      })
-      setShowAddDialog(false)
+      setShowUserSlideOver(false)
       fetchUsers()
     } catch (error: any) {
       toast({
         title: 'Error',
-        description: error.message || 'Failed to create user',
+        description: error.message || 'Failed to save user',
         variant: 'destructive',
       })
-    } finally {
-      setSaveLoading(false)
-    }
-  }
-
-  const handleSubmitEdit = async () => {
-    if (!selectedUser) return
-
-    try {
-      const response = await fetch('/api/users', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: selectedUser.id,
-          ...formData,
-        }),
-      })
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to update user')
-      }
-
-      toast({
-        title: 'Success',
-        description: 'User updated successfully',
-      })
-      setShowEditDialog(false)
-      fetchUsers()
-    } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to update user',
-        variant: 'destructive',
-      })
+      throw error // Re-throw to let the slide-over handle it
     }
   }
 
@@ -331,46 +321,14 @@ export default function UsersPage() {
     }
   }
 
-  // Password utility functions
-  const handlePasswordChange = (password: string, isNewPassword: boolean = false) => {
-    if (isNewPassword) {
-      setChangePasswordData({ ...changePasswordData, newPassword: password })
-    } else {
-      setFormData({ ...formData, password })
-    }
-    
+  // Password utility functions for password change/reset dialogs
+  const handlePasswordChange = (password: string) => {
+    setChangePasswordData({ ...changePasswordData, newPassword: password })
+
     if (password) {
       setPasswordStrength(checkPasswordStrength(password))
     } else {
       setPasswordStrength(null)
-    }
-  }
-
-  const generatePassword = async (type: 'secure' | 'memorable') => {
-    setIsGenerating(true)
-    try {
-      let password = ''
-      if (type === 'secure') {
-        password = generateSecurePassword(12)
-      } else {
-        password = generateMemorablePassword()
-      }
-      
-      setFormData({ ...formData, password })
-      setPasswordStrength(checkPasswordStrength(password))
-      
-      toast({
-        title: 'Password Generated',
-        description: `${type === 'secure' ? 'Secure' : 'Memorable'} password generated successfully`,
-      })
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to generate password',
-        variant: 'destructive',
-      })
-    } finally {
-      setIsGenerating(false)
     }
   }
 
@@ -655,11 +613,11 @@ export default function UsersPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="">All Roles</SelectItem>
-                <SelectItem value="SUPER_ADMIN">Super Admin</SelectItem>
-                <SelectItem value="ADMIN">Admin</SelectItem>
-                <SelectItem value="USTADZ">Ustadz</SelectItem>
-                <SelectItem value="STAFF">Staff</SelectItem>
-                <SelectItem value="PARENT">Parent</SelectItem>
+                {roles.map((role) => (
+                  <SelectItem key={role.id} value={role.id}>
+                    {role.name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
             <Select value={activeFilter} onValueChange={setActiveFilter}>
@@ -794,255 +752,14 @@ export default function UsersPage() {
         </div>
       )}
 
-      {/* Add User Dialog */}
-      <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-        <DialogContent className="max-w-md bg-white">
-          <DialogHeader>
-            <DialogTitle className="text-gray-900">Add New User</DialogTitle>
-            <DialogDescription className="text-gray-600">
-              Create a new user account with specified role and permissions.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="name">Full Name</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="John Doe"
-              />
-            </div>
-            <div>
-              <Label htmlFor="username">Username</Label>
-              <Input
-                id="username"
-                value={formData.username}
-                onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                placeholder="johndoe"
-              />
-            </div>
-            <div>
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                placeholder="john@example.com"
-              />
-            </div>
-            <div>
-              <Label htmlFor="password">Password</Label>
-              <div className="space-y-2">
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    value={formData.password}
-                    onChange={(e) => handlePasswordChange(e.target.value)}
-                    placeholder="Min. 8 characters"
-                    className="pr-10"
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4 text-gray-500" />
-                    ) : (
-                      <Eye className="h-4 w-4 text-gray-500" />
-                    )}
-                  </Button>
-                </div>
-                
-                {/* Password Generation Buttons */}
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => generatePassword('secure')}
-                    disabled={isGenerating}
-                    className="flex-1"
-                  >
-                    {isGenerating ? (
-                      <RefreshCw className="w-3 h-3 mr-1 animate-spin" />
-                    ) : (
-                      <Zap className="w-3 h-3 mr-1" />
-                    )}
-                    Secure
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => generatePassword('memorable')}
-                    disabled={isGenerating}
-                    className="flex-1"
-                  >
-                    {isGenerating ? (
-                      <RefreshCw className="w-3 h-3 mr-1 animate-spin" />
-                    ) : (
-                      <CheckCircle2 className="w-3 h-3 mr-1" />
-                    )}
-                    Memorable
-                  </Button>
-                  {formData.password && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => copyPasswordToClipboard(formData.password)}
-                    >
-                      <Copy className="w-3 h-3" />
-                    </Button>
-                  )}
-                </div>
-
-                {/* Password Strength Indicator */}
-                {passwordStrength && (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">Password Strength:</span>
-                      <span className={`text-sm font-bold text-${passwordStrength.color}-600`}>
-                        {passwordStrength.label}
-                      </span>
-                    </div>
-                    <Progress 
-                      value={(passwordStrength.score / 5) * 100} 
-                      className={`h-2 bg-gray-200`}
-                    />
-                    {passwordStrength.suggestions.length > 0 && (
-                      <div className="space-y-1">
-                        <p className="text-xs font-medium text-gray-600">Suggestions:</p>
-                        <ul className="text-xs text-gray-500 space-y-0.5">
-                          {passwordStrength.suggestions.map((suggestion, index) => (
-                            <li key={index}>• {suggestion}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-            <div>
-              <Label htmlFor="role">Role</Label>
-              <select
-                id="role"
-                value={formData.role}
-                onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <option value="SUPER_ADMIN">Super Admin</option>
-                <option value="ADMIN">Admin</option>
-                <option value="USTADZ">Ustadz</option>
-                <option value="STAFF">Staff</option>
-                <option value="PARENT">Parent</option>
-              </select>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="active"
-                checked={formData.isActive}
-                onCheckedChange={(checked: boolean) => setFormData({ ...formData, isActive: checked })}
-              />
-              <Label htmlFor="active">Active Account</Label>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAddDialog(false)} disabled={saveLoading}>
-              Cancel
-            </Button>
-            <Button onClick={handleSubmitAdd} disabled={saveLoading || !formData.password}>
-              {saveLoading && <RefreshCw className="w-4 h-4 mr-2 animate-spin" />}
-              Create User
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit User Dialog */}
-      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="max-w-md bg-white">
-          <DialogHeader>
-            <DialogTitle className="text-gray-900">Edit User</DialogTitle>
-            <DialogDescription className="text-gray-600">
-              Update user information and permissions.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="edit-name">Full Name</Label>
-              <Input
-                id="edit-name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-username">Username</Label>
-              <Input
-                id="edit-username"
-                value={formData.username}
-                onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-email">Email</Label>
-              <Input
-                id="edit-email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-password">New Password (leave empty to keep current)</Label>
-              <Input
-                id="edit-password"
-                type="password"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                placeholder="Leave empty to keep current password"
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-role">Role</Label>
-              <select
-                id="edit-role"
-                value={formData.role}
-                onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <option value="SUPER_ADMIN">Super Admin</option>
-                <option value="ADMIN">Admin</option>
-                <option value="USTADZ">Ustadz</option>
-                <option value="STAFF">Staff</option>
-                <option value="PARENT">Parent</option>
-              </select>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="edit-active"
-                checked={formData.isActive}
-                onCheckedChange={(checked: boolean) => setFormData({ ...formData, isActive: checked })}
-              />
-              <Label htmlFor="edit-active">Active Account</Label>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowEditDialog(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleSubmitEdit}>Update User</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* User Form Slide-over (Add/Edit) */}
+      <UserFormSlideOver
+        user={selectedUser}
+        isOpen={showUserSlideOver}
+        onClose={() => setShowUserSlideOver(false)}
+        onSubmit={handleUserFormSubmit}
+        mode={slideOverMode}
+      />
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
