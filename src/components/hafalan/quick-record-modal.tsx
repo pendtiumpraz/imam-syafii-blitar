@@ -154,7 +154,8 @@ export function QuickRecordModal({
         resetForm();
       } else {
         const error = await response.json();
-        toast.error(error.message || 'Gagal menyimpan hafalan');
+        console.error('API Error:', error);
+        toast.error(error.error || error.message || 'Gagal menyimpan hafalan');
       }
     } catch (error) {
       console.error('Error saving record:', error);

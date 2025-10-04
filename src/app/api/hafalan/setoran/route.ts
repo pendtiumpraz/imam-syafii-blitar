@@ -297,7 +297,6 @@ async function updateStudentProgress(studentId: string) {
       studentId,
       totalSurah: completedSurahs.size,
       totalAyat,
-      totalJuz: Object.keys(juzProgress).length,
       juz30Progress,
       overallProgress,
       avgQuality: records.length > 0 ? qualitySum / records.length : 0,
@@ -308,7 +307,6 @@ async function updateStudentProgress(studentId: string) {
     update: {
       totalSurah: completedSurahs.size,
       totalAyat,
-      totalJuz: Object.keys(juzProgress).length,
       juz30Progress,
       overallProgress,
       avgQuality: records.length > 0 ? qualitySum / records.length : 0,
