@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { softDelete, forceDelete } from '@/lib/soft-delete'
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
@@ -255,11 +256,12 @@ export async function DELETE(
     const hasPurchaseOrders = supplier.purchaseOrders.length > 0
 
     if (hasPurchaseOrders) {
-      // Soft delete - just deactivate
-      const updatedSupplier = await prisma.supplier.update({
-        where: { id: params.id },
-        data: { isActive: false },
-      })
+      // Soft delete if has purchase orders
+      const updatedSupplier = await softDelete(
+        prisma.supplier,
+        { id: params.id },
+        session.user.id
+      )
 
       return NextResponse.json({
         supplier: updatedSupplier,
@@ -267,9 +269,7 @@ export async function DELETE(
       })
     } else {
       // Hard delete if no purchase orders
-      await prisma.supplier.delete({
-        where: { id: params.id },
-      })
+      await forceDelete(prisma.supplier, { id: params.id })
 
       return NextResponse.json({
         message: 'Supplier deleted successfully',

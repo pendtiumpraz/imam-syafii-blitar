@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { Decimal } from '@prisma/client/runtime/library';
+import { softDelete } from '@/lib/soft-delete';
 
 // Helper function to generate payment number
 async function generatePaymentNumber(year: number, month: number): Promise<string> {
@@ -394,12 +395,10 @@ export async function DELETE(request: NextRequest) {
       });
     }
     
-    // Delete payment
-    await prisma.sPPPayment.delete({
-      where: { id }
-    });
-    
-    return NextResponse.json({ message: 'Payment deleted successfully' });
+    // Soft delete payment
+    await softDelete(prisma.sPPPayment, { id }, session.user.id);
+
+    return NextResponse.json({ message: 'Payment soft deleted successfully' });
   } catch (error) {
     console.error('Error deleting payment:', error);
     return NextResponse.json(

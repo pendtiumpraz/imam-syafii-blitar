@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { softDelete } from '@/lib/soft-delete';
 
 // Helper function to check user permissions
 function hasPermission(userRole: string, action: 'read' | 'create' | 'update' | 'delete'): boolean {
@@ -523,11 +524,9 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    await prisma.grade.delete({
-      where: { id },
-    });
+    await softDelete(prisma.grade, { id }, session.user.id);
 
-    return NextResponse.json({ message: 'Grade deleted successfully' });
+    return NextResponse.json({ message: 'Grade soft deleted successfully' });
   } catch (error) {
     console.error('Error deleting grade:', error);
     return NextResponse.json(

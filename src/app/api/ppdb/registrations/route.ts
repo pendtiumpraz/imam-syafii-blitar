@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { softDelete } from '@/lib/soft-delete';
 
 // Helper function to generate registration number
 async function generateRegistrationNumber(level: string, year: string): Promise<string> {
@@ -429,22 +430,20 @@ export async function DELETE(request: NextRequest) {
     if (!session?.user?.role || !['SUPER_ADMIN', 'ADMIN'].includes(session.user.role)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
-    
+
     if (!id) {
       return NextResponse.json(
         { error: 'Registration ID is required' },
         { status: 400 }
       );
     }
-    
-    await prisma.pPDBRegistration.delete({
-      where: { id }
-    });
-    
-    return NextResponse.json({ message: 'Registration deleted successfully' });
+
+    await softDelete(prisma.pPDBRegistration, { id }, session.user.id);
+
+    return NextResponse.json({ message: 'PPDB registration soft deleted successfully' });
   } catch (error) {
     console.error('Error deleting registration:', error);
     return NextResponse.json(

@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { z } from 'zod';
+import { softDelete } from '@/lib/soft-delete';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
@@ -571,15 +572,13 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
     }
 
-    await prisma.hafalanSession.delete({
-      where: { id: sessionId }
-    });
+    await softDelete(prisma.hafalanSession, { id: sessionId }, session.user.id);
 
     // Update student progress after deletion
     await updateStudentProgress(existingSession.studentId);
 
     return NextResponse.json({
-      message: 'Session deleted successfully'
+      message: 'Session soft deleted successfully'
     });
 
   } catch (error) {

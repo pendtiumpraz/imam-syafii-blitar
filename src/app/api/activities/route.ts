@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { softDelete } from '@/lib/soft-delete';
 
 // GET /api/activities - Get all activities (public and admin)
 export async function GET(request: NextRequest) {
@@ -239,12 +240,23 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    await prisma.activity.delete({
+    // Check if activity exists
+    const activity = await prisma.activity.findUnique({
       where: { id }
     });
 
-    return NextResponse.json({ 
-      message: 'Activity deleted successfully' 
+    if (!activity) {
+      return NextResponse.json(
+        { error: 'Activity not found' },
+        { status: 404 }
+      );
+    }
+
+    // Soft delete the activity
+    await softDelete(prisma.activity, { id }, session.user?.id);
+
+    return NextResponse.json({
+      message: 'Activity deleted successfully'
     });
   } catch (error) {
     console.error('Error deleting activity:', error);

@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { softDelete, forceDelete } from '@/lib/soft-delete'
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
@@ -301,7 +302,7 @@ export async function DELETE(request: NextRequest) {
 
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
-    
+
     if (!id) {
       return NextResponse.json(
         { error: 'Category ID is required' },
@@ -327,11 +328,12 @@ export async function DELETE(request: NextRequest) {
 
     // Check if category has active products or children
     if (category.products.length > 0 || category.children.length > 0) {
-      // Soft delete - just deactivate
-      const updatedCategory = await prisma.productCategory.update({
-        where: { id },
-        data: { isActive: false },
-      })
+      // Soft delete if has products or children
+      const updatedCategory = await softDelete(
+        prisma.productCategory,
+        { id },
+        session.user.id
+      )
 
       return NextResponse.json({
         category: updatedCategory,
@@ -339,9 +341,7 @@ export async function DELETE(request: NextRequest) {
       })
     } else {
       // Hard delete if no products or children
-      await prisma.productCategory.delete({
-        where: { id },
-      })
+      await forceDelete(prisma.productCategory, { id })
 
       return NextResponse.json({
         message: 'Category deleted successfully',

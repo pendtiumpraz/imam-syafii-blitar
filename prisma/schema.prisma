@@ -55,7 +55,11 @@ model User {
   createdTransactions       Transaction[]
   twoFactorVerification     TwoFactorVerification?
   createdVideos             Video[]
+  deletedAt                 DateTime?
+  isDeleted                 Boolean                @default(false)
+  deletedBy                 String?
 
+  @@index([isDeleted, deletedAt])
   @@map("users")
 }
 
@@ -90,8 +94,12 @@ model FinancialAccount {
   children    FinancialAccount[]  @relation("AccountHierarchy")
   categories  FinancialCategory[]
   entryLines  JournalEntryLine[]  @relation("AccountEntries")
+  deletedAt   DateTime?
+  isDeleted   Boolean             @default(false)
+  deletedBy   String?
 
   @@index([type, isActive])
+  @@index([isDeleted, deletedAt])
   @@map("financial_accounts")
 }
 
@@ -113,9 +121,13 @@ model FinancialCategory {
   parent       FinancialCategory?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
   children     FinancialCategory[] @relation("CategoryHierarchy")
   transactions Transaction[]
+  deletedAt    DateTime?
+  isDeleted    Boolean             @default(false)
+  deletedBy    String?
 
   @@unique([name, type])
   @@index([type, isActive])
+  @@index([isDeleted, deletedAt])
   @@map("financial_categories")
 }
 
@@ -141,9 +153,13 @@ model Transaction {
   journalEntry  JournalEntry?
   category      FinancialCategory @relation(fields: [categoryId], references: [id])
   creator       User              @relation(fields: [createdBy], references: [id])
+  deletedAt     DateTime?
+  isDeleted     Boolean           @default(false)
+  deletedBy     String?
 
   @@index([type, status, date])
   @@index([categoryId])
+  @@index([isDeleted, deletedAt])
   @@map("transactions")
 }
 
@@ -168,8 +184,12 @@ model JournalEntry {
   creator       User               @relation(fields: [createdBy], references: [id])
   transaction   Transaction?       @relation(fields: [transactionId], references: [id])
   entries       JournalEntryLine[]
+  deletedAt     DateTime?
+  isDeleted     Boolean            @default(false)
+  deletedBy     String?
 
   @@index([status, date])
+  @@index([isDeleted, deletedAt])
   @@map("journal_entries")
 }
 
@@ -206,8 +226,12 @@ model Budget {
   items       BudgetItem[]
   creator     User              @relation(fields: [createdBy], references: [id])
   reports     FinancialReport[]
+  deletedAt   DateTime?
+  isDeleted   Boolean           @default(false)
+  deletedBy   String?
 
   @@index([status, startDate])
+  @@index([isDeleted, deletedAt])
   @@map("budgets")
 }
 
@@ -230,7 +254,7 @@ model BudgetItem {
 }
 
 model FinancialReport {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   name      String
   type      String
   period    String
@@ -239,19 +263,23 @@ model FinancialReport {
   budgetId  String?
   data      String
   fileUrl   String?
-  status    String   @default("GENERATED")
+  status    String    @default("GENERATED")
   createdBy String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  budget    Budget?  @relation(fields: [budgetId], references: [id])
-  creator   User     @relation(fields: [createdBy], references: [id])
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  budget    Budget?   @relation(fields: [budgetId], references: [id])
+  creator   User      @relation(fields: [createdBy], references: [id])
+  deletedAt DateTime?
+  isDeleted Boolean   @default(false)
+  deletedBy String?
 
   @@index([type, period, startDate])
+  @@index([isDeleted, deletedAt])
   @@map("financial_reports")
 }
 
 model AuditTrail {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   tableName String
   recordId  String
   action    String
@@ -260,28 +288,36 @@ model AuditTrail {
   userId    String
   ipAddress String?
   userAgent String?
-  timestamp DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id])
+  timestamp DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id])
+  deletedAt DateTime?
+  isDeleted Boolean   @default(false)
+  deletedBy String?
 
   @@index([tableName, recordId])
   @@index([userId, timestamp])
+  @@index([isDeleted, deletedAt])
   @@map("audit_trails")
 }
 
 model Activity {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   title       String
   description String
   type        String
   date        DateTime
   location    String?
-  photos      String   @default("[]")
-  status      String   @default("planned")
+  photos      String    @default("[]")
+  status      String    @default("planned")
   createdBy   String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  creator     User     @relation(fields: [createdBy], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  creator     User      @relation(fields: [createdBy], references: [id])
+  deletedAt   DateTime?
+  isDeleted   Boolean   @default(false)
+  deletedBy   String?
 
+  @@index([isDeleted, deletedAt])
   @@map("activities")
 }
 
@@ -397,14 +433,18 @@ model Teacher {
   updatedAt      DateTime  @updatedAt
   createdBy      String?
   creator        User?     @relation(fields: [createdBy], references: [id])
+  deletedAt      DateTime?
+  isDeleted      Boolean   @default(false)
+  deletedBy      String?
 
   @@index([institution, status])
   @@index([isUstadz, status])
+  @@index([isDeleted, deletedAt])
   @@map("teachers")
 }
 
 model Course {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   name        String
   description String
   level       String
@@ -412,18 +452,22 @@ model Course {
   teacher     String
   duration    String
   capacity    Int
-  enrolled    Int      @default(0)
-  status      String   @default("active")
+  enrolled    Int       @default(0)
+  status      String    @default("active")
   createdBy   String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  creator     User     @relation(fields: [createdBy], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  creator     User      @relation(fields: [createdBy], references: [id])
+  deletedAt   DateTime?
+  isDeleted   Boolean   @default(false)
+  deletedBy   String?
 
+  @@index([isDeleted, deletedAt])
   @@map("courses")
 }
 
 model Video {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   title       String
   description String
   url         String
@@ -432,18 +476,22 @@ model Video {
   category    String
   teacher     String
   uploadDate  DateTime
-  views       Int      @default(0)
-  isPublic    Boolean  @default(true)
+  views       Int       @default(0)
+  isPublic    Boolean   @default(true)
   createdBy   String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  creator     User     @relation(fields: [createdBy], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  creator     User      @relation(fields: [createdBy], references: [id])
+  deletedAt   DateTime?
+  isDeleted   Boolean   @default(false)
+  deletedBy   String?
 
+  @@index([isDeleted, deletedAt])
   @@map("videos")
 }
 
 model Ebook {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
   title         String
   author        String
   description   String
@@ -453,20 +501,24 @@ model Ebook {
   coverImage    String?
   fileSize      Int?
   pageCount     Int?
-  language      String   @default("id")
+  language      String    @default("id")
   publisher     String?
   publishYear   String?
   isbn          String?
-  tags          String   @default("[]")
-  downloadCount Int      @default(0)
-  viewCount     Int      @default(0)
-  isFeatured    Boolean  @default(false)
-  isPublic      Boolean  @default(true)
+  tags          String    @default("[]")
+  downloadCount Int       @default(0)
+  viewCount     Int       @default(0)
+  isFeatured    Boolean   @default(false)
+  isPublic      Boolean   @default(true)
   createdBy     String
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  creator       User     @relation(fields: [createdBy], references: [id])
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  creator       User      @relation(fields: [createdBy], references: [id])
+  deletedAt     DateTime?
+  isDeleted     Boolean   @default(false)
+  deletedBy     String?
 
+  @@index([isDeleted, deletedAt])
   @@map("ebooks")
 }
 
@@ -551,10 +603,14 @@ model Student {
   studentClasses      StudentClass[]
   creator             User                 @relation(fields: [createdBy], references: [id])
   registration        Registration?        @relation(fields: [registrationId], references: [id])
+  deletedAt           DateTime?
+  isDeleted           Boolean              @default(false)
+  deletedBy           String?
 
   @@index([institutionType, status])
   @@index([enrollmentYear])
   @@index([isOrphan])
+  @@index([isDeleted, deletedAt])
   @@map("students")
 }
 
@@ -605,10 +661,14 @@ model Alumni {
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
   creator            User      @relation(fields: [createdBy], references: [id])
+  deletedAt          DateTime?
+  isDeleted          Boolean   @default(false)
+  deletedBy          String?
 
   @@index([institutionType, graduationYear])
   @@index([generation])
   @@index([availableForEvents])
+  @@index([isDeleted, deletedAt])
   @@map("alumni")
 }
 
@@ -683,11 +743,15 @@ model Registration {
   submittedAt      DateTime?
   payments         Payment[]
   student          Student?
+  deletedAt        DateTime?
+  isDeleted        Boolean   @default(false)
+  deletedBy        String?
 
   @@index([status])
   @@index([level])
   @@index([paymentStatus])
   @@index([testResult])
+  @@index([isDeleted, deletedAt])
   @@map("registrations")
 }
 
@@ -724,11 +788,15 @@ model Payment {
   updatedAt          DateTime      @updatedAt
   registration       Registration? @relation(fields: [registrationId], references: [id])
   student            Student?      @relation(fields: [studentId], references: [id])
+  deletedAt          DateTime?
+  isDeleted          Boolean       @default(false)
+  deletedBy          String?
 
   @@index([status])
   @@index([paymentType])
   @@index([externalId])
   @@index([transactionId])
+  @@index([isDeleted, deletedAt])
   @@map("payments")
 }
 
@@ -776,10 +844,14 @@ model DonationCampaign {
   category       DonationCategory @relation(fields: [categoryId], references: [id])
   creator        User             @relation(fields: [createdBy], references: [id])
   donations      Donation[]
+  deletedAt      DateTime?
+  isDeleted      Boolean          @default(false)
+  deletedBy      String?
 
   @@index([status, isFeatured])
   @@index([categoryId])
   @@index([endDate])
+  @@index([isDeleted, deletedAt])
   @@map("donation_campaigns")
 }
 
@@ -831,11 +903,15 @@ model Donation {
   updatedAt      DateTime          @updatedAt
   campaign       DonationCampaign? @relation(fields: [campaignId], references: [id])
   category       DonationCategory  @relation(fields: [categoryId], references: [id])
+  deletedAt      DateTime?
+  isDeleted      Boolean           @default(false)
+  deletedBy      String?
 
   @@index([paymentStatus, createdAt])
   @@index([campaignId])
   @@index([categoryId])
   @@index([donorEmail])
+  @@index([isDeleted, deletedAt])
   @@map("donations")
 }
 
@@ -921,11 +997,15 @@ model Product {
   category              ProductCategory        @relation(fields: [categoryId], references: [id])
   purchaseItems         PurchaseOrderItem[]
   saleItems             SaleItem[]
+  deletedAt             DateTime?
+  isDeleted             Boolean                @default(false)
+  deletedBy             String?
 
   @@index([code])
   @@index([categoryId, isActive])
   @@index([location, isActive])
   @@index([stock])
+  @@index([isDeleted, deletedAt])
   @@map("products")
 }
 
@@ -947,8 +1027,12 @@ model Supplier {
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
   purchaseOrders PurchaseOrder[]
+  deletedAt      DateTime?
+  isDeleted      Boolean         @default(false)
+  deletedBy      String?
 
   @@index([isActive])
+  @@index([isDeleted, deletedAt])
   @@map("suppliers")
 }
 
@@ -1100,9 +1184,13 @@ model AcademicYear {
   classes        Class[]
   semesters      Semester[]
   studentClasses StudentClass[]
+  deletedAt      DateTime?
+  isDeleted      Boolean        @default(false)
+  deletedBy      String?
 
   @@index([isActive])
   @@index([startDate, endDate])
+  @@index([isDeleted, deletedAt])
   @@map("academic_years")
 }
 
@@ -1125,10 +1213,14 @@ model Semester {
   academicYear    AcademicYear     @relation(fields: [academicYearId], references: [id])
   sppBillings     SPPBilling[]
   teacherSubjects TeacherSubject[]
+  deletedAt       DateTime?
+  isDeleted       Boolean          @default(false)
+  deletedBy       String?
 
   @@unique([academicYearId, name])
   @@index([isActive])
   @@index([startDate, endDate])
+  @@index([isDeleted, deletedAt])
   @@map("semesters")
 }
 
@@ -1156,10 +1248,14 @@ model Class {
   sppBillings     SPPBilling[]
   studentClasses  StudentClass[]
   teacherSubjects TeacherSubject[]
+  deletedAt       DateTime?
+  isDeleted       Boolean          @default(false)
+  deletedBy       String?
 
   @@unique([academicYearId, name])
   @@index([grade, level])
   @@index([isActive])
+  @@index([isDeleted, deletedAt])
   @@map("classes")
 }
 
@@ -1184,9 +1280,13 @@ model Subject {
   grades             Grade[]
   schedules          Schedule[]
   teacherSubjects    TeacherSubject[]
+  deletedAt          DateTime?
+  isDeleted          Boolean             @default(false)
+  deletedBy          String?
 
   @@index([level, category])
   @@index([isActive])
+  @@index([isDeleted, deletedAt])
   @@map("subjects")
 }
 
@@ -1243,8 +1343,12 @@ model Curriculum {
   createdAt   DateTime            @default(now())
   updatedAt   DateTime            @updatedAt
   subjects    CurriculumSubject[]
+  deletedAt   DateTime?
+  isDeleted   Boolean             @default(false)
+  deletedBy   String?
 
   @@index([level, isActive])
+  @@index([isDeleted, deletedAt])
   @@map("curriculums")
 }
 
@@ -1294,10 +1398,14 @@ model Grade {
   semester      Semester  @relation(fields: [semesterId], references: [id])
   student       Student   @relation(fields: [studentId], references: [id])
   subject       Subject   @relation(fields: [subjectId], references: [id])
+  deletedAt     DateTime?
+  isDeleted     Boolean   @default(false)
+  deletedBy     String?
 
   @@unique([studentId, subjectId, semesterId])
   @@index([semesterId, subjectId])
   @@index([studentId, semesterId])
+  @@index([isDeleted, deletedAt])
   @@map("grades")
 }
 
@@ -1318,10 +1426,14 @@ model Attendance {
   marker     User      @relation("AttendanceMarker", fields: [markedBy], references: [id])
   semester   Semester  @relation(fields: [semesterId], references: [id])
   student    Student   @relation(fields: [studentId], references: [id])
+  deletedAt  DateTime?
+  isDeleted  Boolean   @default(false)
+  deletedBy  String?
 
   @@unique([studentId, classId, date])
   @@index([date, classId])
   @@index([studentId, semesterId])
+  @@index([isDeleted, deletedAt])
   @@map("attendances")
 }
 
@@ -1359,14 +1471,18 @@ model ReportCard {
   class                Class     @relation("ReportCardClass", fields: [classId], references: [id])
   semester             Semester  @relation(fields: [semesterId], references: [id])
   student              Student   @relation(fields: [studentId], references: [id])
+  deletedAt            DateTime?
+  isDeleted            Boolean   @default(false)
+  deletedBy            String?
 
   @@unique([studentId, semesterId])
   @@index([semesterId, status])
+  @@index([isDeleted, deletedAt])
   @@map("report_cards")
 }
 
 model Schedule {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   classId   String
   subjectId String
   teacherId String
@@ -1375,17 +1491,21 @@ model Schedule {
   endTime   String
   room      String?
   period    Int?
-  isActive  Boolean  @default(true)
+  isActive  Boolean   @default(true)
   notes     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  class     Class    @relation(fields: [classId], references: [id])
-  subject   Subject  @relation(fields: [subjectId], references: [id])
-  teacher   User     @relation("ScheduleTeacher", fields: [teacherId], references: [id])
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  class     Class     @relation(fields: [classId], references: [id])
+  subject   Subject   @relation(fields: [subjectId], references: [id])
+  teacher   User      @relation("ScheduleTeacher", fields: [teacherId], references: [id])
+  deletedAt DateTime?
+  isDeleted Boolean   @default(false)
+  deletedBy String?
 
   @@unique([classId, day, startTime])
   @@index([teacherId, day])
   @@index([classId, day])
+  @@index([isDeleted, deletedAt])
   @@map("schedules")
 }
 
@@ -1417,9 +1537,13 @@ model Exam {
   semester     Semester     @relation(fields: [semesterId], references: [id])
   subject      Subject      @relation(fields: [subjectId], references: [id])
   teacher      User         @relation("ExamTeacher", fields: [teacherId], references: [id])
+  deletedAt    DateTime?
+  isDeleted    Boolean      @default(false)
+  deletedBy    String?
 
   @@index([date, classId])
   @@index([subjectId, semesterId])
+  @@index([isDeleted, deletedAt])
   @@map("exams")
 }
 
@@ -1438,10 +1562,14 @@ model ExamResult {
   updatedAt DateTime  @updatedAt
   exam      Exam      @relation(fields: [examId], references: [id])
   student   Student   @relation(fields: [studentId], references: [id])
+  deletedAt DateTime?
+  isDeleted Boolean   @default(false)
+  deletedBy String?
 
   @@unique([examId, studentId])
   @@index([examId])
   @@index([studentId])
+  @@index([isDeleted, deletedAt])
   @@map("exam_results")
 }
 
@@ -1459,8 +1587,12 @@ model ParentAccount {
   updatedAt            DateTime        @updatedAt
   user                 User            @relation(fields: [userId], references: [id])
   parentStudents       ParentStudent[]
+  deletedAt            DateTime?
+  isDeleted            Boolean         @default(false)
+  deletedBy            String?
 
   @@index([userId])
+  @@index([isDeleted, deletedAt])
   @@map("parent_accounts")
 }
 
@@ -1508,11 +1640,15 @@ model Announcement {
   publishedAt    DateTime?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+  isDeleted      Boolean   @default(false)
+  deletedBy      String?
 
   @@index([status, publishDate])
   @@index([targetAudience, priority])
   @@index([category, createdAt])
   @@index([expiryDate])
+  @@index([isDeleted, deletedAt])
   @@map("announcements")
 }
 
@@ -1540,12 +1676,16 @@ model Message {
   replies         Message[] @relation("MessageThread")
   receiver        User      @relation("MessageReceiver", fields: [receiverId], references: [id])
   sender          User      @relation("MessageSender", fields: [senderId], references: [id])
+  deletedAt       DateTime?
+  isDeleted       Boolean   @default(false)
+  deletedBy       String?
 
   @@index([senderId, sentAt])
   @@index([receiverId, isRead])
   @@index([threadId])
   @@index([parentMessageId])
   @@index([status, priority])
+  @@index([isDeleted, deletedAt])
   @@map("messages")
 }
 
@@ -1630,11 +1770,15 @@ model HafalanRecord {
   student        Student    @relation(fields: [studentId], references: [id])
   surah          QuranSurah @relation(fields: [surahNumber], references: [number])
   teacher        User       @relation("HafalanTeacher", fields: [teacherId], references: [id])
+  deletedAt      DateTime?
+  isDeleted      Boolean    @default(false)
+  deletedBy      String?
 
   @@index([studentId, date])
   @@index([surahNumber, status])
   @@index([teacherId, date])
   @@index([status, quality])
+  @@index([isDeleted, deletedAt])
   @@map("hafalan_records")
 }
 
@@ -1663,9 +1807,13 @@ model HafalanProgress {
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
   student          Student   @relation(fields: [studentId], references: [id])
+  deletedAt        DateTime?
+  isDeleted        Boolean   @default(false)
+  deletedBy        String?
 
   @@index([level])
   @@index([totalSurah, totalAyat])
+  @@index([isDeleted, deletedAt])
   @@map("hafalan_progress")
 }
 
@@ -1758,17 +1906,17 @@ model HafalanAchievement {
 }
 
 model HafalanSession {
-  id             String   @id @default(cuid())
+  id             String    @id @default(cuid())
   studentId      String
   teacherId      String
-  sessionDate    DateTime @default(now())
+  sessionDate    DateTime  @default(now())
   type           String
-  method         String   @default("INDIVIDUAL")
+  method         String    @default("INDIVIDUAL")
   duration       Int
-  location       String   @default("KELAS")
-  atmosphere     String   @default("FORMAL")
+  location       String    @default("KELAS")
+  atmosphere     String    @default("FORMAL")
   content        String
-  totalAyat      Int      @default(0)
+  totalAyat      Int       @default(0)
   overallQuality String
   overallFluency String
   improvements   String?
@@ -1776,20 +1924,24 @@ model HafalanSession {
   homework       String?
   nextTarget     String?
   reminderNote   String?
-  studentMood    String   @default("NORMAL")
-  engagement     String   @default("GOOD")
-  confidence     String   @default("MEDIUM")
-  reportSent     Boolean  @default(false)
+  studentMood    String    @default("NORMAL")
+  engagement     String    @default("GOOD")
+  confidence     String    @default("MEDIUM")
+  reportSent     Boolean   @default(false)
   parentFeedback String?
   notes          String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  student        Student  @relation(fields: [studentId], references: [id])
-  teacher        User     @relation("HafalanSessionTeacher", fields: [teacherId], references: [id])
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  student        Student   @relation(fields: [studentId], references: [id])
+  teacher        User      @relation("HafalanSessionTeacher", fields: [teacherId], references: [id])
+  deletedAt      DateTime?
+  isDeleted      Boolean   @default(false)
+  deletedBy      String?
 
   @@index([studentId, sessionDate])
   @@index([teacherId, sessionDate])
   @@index([type, sessionDate])
+  @@index([isDeleted, deletedAt])
   @@map("hafalan_sessions")
 }
 
@@ -1856,12 +2008,16 @@ model Bill {
   student          Student           @relation(fields: [studentId], references: [id])
   paymentHistory   PaymentHistory[]
   paymentReminders PaymentReminder[]
+  deletedAt        DateTime?
+  isDeleted        Boolean           @default(false)
+  deletedBy        String?
 
   @@index([studentId, status])
   @@index([billTypeId, period])
   @@index([status, dueDate])
   @@index([isOverdue, dueDate])
   @@index([period, billTypeId])
+  @@index([isDeleted, deletedAt])
   @@map("bills")
 }
 
@@ -1890,11 +2046,15 @@ model BillPayment {
   updatedAt          DateTime         @updatedAt
   bill               Bill             @relation(fields: [billId], references: [id])
   history            PaymentHistory[]
+  deletedAt          DateTime?
+  isDeleted          Boolean          @default(false)
+  deletedBy          String?
 
   @@index([billId, paymentDate])
   @@index([method, verificationStatus])
   @@index([paymentDate])
   @@index([verificationStatus])
+  @@index([isDeleted, deletedAt])
   @@map("bill_payments")
 }
 
@@ -2176,10 +2336,14 @@ model PPDBRegistration {
   updatedAt         DateTime       @updatedAt
   activities        PPDBActivity[]
   student           Student?       @relation(fields: [studentId], references: [id])
+  deletedAt         DateTime?
+  isDeleted         Boolean        @default(false)
+  deletedBy         String?
 
   @@index([level, academicYear, status])
   @@index([registrationNo])
   @@index([status, createdAt])
+  @@index([isDeleted, deletedAt])
   @@map("ppdb_registrations")
 }
 
@@ -2266,11 +2430,15 @@ model SPPBilling {
   student        Student       @relation(fields: [studentId], references: [id])
   payments       SPPPayment[]
   reminders      SPPReminder[]
+  deletedAt      DateTime?
+  isDeleted      Boolean       @default(false)
+  deletedBy      String?
 
   @@unique([studentId, month, year])
   @@index([status, dueDate])
   @@index([studentId, year, month])
   @@index([classId, status])
+  @@index([isDeleted, deletedAt])
   @@map("spp_billings")
 }
 
@@ -2298,10 +2466,14 @@ model SPPPayment {
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
   billing       SPPBilling @relation(fields: [billingId], references: [id])
+  deletedAt     DateTime?
+  isDeleted     Boolean    @default(false)
+  deletedBy     String?
 
   @@index([billingId])
   @@index([paymentDate])
   @@index([status])
+  @@index([isDeleted, deletedAt])
   @@map("spp_payments")
 }
 
@@ -2481,49 +2653,61 @@ model TwoFactorVerification {
 }
 
 model SecurityAuditLog {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   userId    String
   event     String
   metadata  Json?
-  ipAddress String   @default("unknown")
-  userAgent String   @default("unknown")
-  timestamp DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ipAddress String    @default("unknown")
+  userAgent String    @default("unknown")
+  timestamp DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deletedAt DateTime?
+  isDeleted Boolean   @default(false)
+  deletedBy String?
 
   @@index([userId])
   @@index([event])
   @@index([timestamp])
+  @@index([isDeleted, deletedAt])
   @@map("security_audit_logs")
 }
 
 model Question {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   question    String
   category    String
   askerName   String?
-  isAnonymous Boolean  @default(false)
-  status      String   @default("pending")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  isAnonymous Boolean   @default(false)
+  status      String    @default("pending")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
   answer      Answer?
+  deletedAt   DateTime?
+  isDeleted   Boolean   @default(false)
+  deletedBy   String?
 
   @@index([status])
   @@index([category])
   @@index([createdAt])
+  @@index([isDeleted, deletedAt])
   @@map("questions")
 }
 
 model Answer {
-  id         String   @id @default(cuid())
-  questionId String   @unique
+  id         String    @id @default(cuid())
+  questionId String    @unique
   ustadzId   String
   answer     String
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
-  ustadz     User     @relation("UstadzAnswers", fields: [ustadzId], references: [id])
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  question   Question  @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  ustadz     User      @relation("UstadzAnswers", fields: [ustadzId], references: [id])
+  deletedAt  DateTime?
+  isDeleted  Boolean   @default(false)
+  deletedBy  String?
 
   @@index([ustadzId])
   @@index([createdAt])
+  @@index([isDeleted, deletedAt])
   @@map("answers")
 }

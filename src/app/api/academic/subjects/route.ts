@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { softDelete } from '@/lib/soft-delete';
 
 // Helper function to check user permissions
 function hasPermission(userRole: string, action: 'read' | 'create' | 'update' | 'delete'): boolean {
@@ -396,9 +397,8 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    await prisma.subject.delete({
-      where: { id },
-    });
+    // Soft delete the subject
+    await softDelete(prisma.subject, { id }, session.user?.id);
 
     return NextResponse.json({ message: 'Subject deleted successfully' });
   } catch (error) {

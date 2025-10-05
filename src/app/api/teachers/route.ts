@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { softDelete } from '@/lib/soft-delete';
 
 // GET /api/teachers - Get all teachers (public)
 export async function GET(request: NextRequest) {
@@ -289,12 +290,10 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    await prisma.teacher.delete({
-      where: { id }
-    });
+    await softDelete(prisma.teacher, { id }, session.user.id);
 
-    return NextResponse.json({ 
-      message: 'Teacher deleted successfully' 
+    return NextResponse.json({
+      message: 'Teacher soft deleted successfully'
     });
   } catch (error) {
     console.error('Error deleting teacher:', error);

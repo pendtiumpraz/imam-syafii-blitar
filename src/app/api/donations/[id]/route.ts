@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { softDelete } from '@/lib/soft-delete'
 
 // GET /api/donations/[id] - Get single campaign details
 export async function GET(
@@ -286,10 +287,12 @@ export async function DELETE(
       )
     }
 
-    // Delete campaign (cascade will delete related updates)
-    await prisma.donationCampaign.delete({
-      where: { id }
-    })
+    // Soft delete campaign
+    await softDelete(
+      prisma.donationCampaign,
+      { id },
+      session.user.id
+    )
 
     return NextResponse.json({
       message: 'Campaign berhasil dihapus',

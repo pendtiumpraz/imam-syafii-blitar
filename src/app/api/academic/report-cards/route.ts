@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { softDelete } from '@/lib/soft-delete';
 
 export async function GET(request: NextRequest) {
   try {
@@ -439,11 +440,9 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    await prisma.reportCard.delete({
-      where: { id },
-    });
+    await softDelete(prisma.reportCard, { id }, session.user.id);
 
-    return NextResponse.json({ message: 'Report card deleted successfully' });
+    return NextResponse.json({ message: 'Report card soft deleted successfully' });
   } catch (error) {
     console.error('Error deleting report card:', error);
     return NextResponse.json(

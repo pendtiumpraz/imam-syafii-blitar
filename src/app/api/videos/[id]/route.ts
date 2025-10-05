@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { softDelete } from '@/lib/soft-delete'
 
 // PUT /api/videos/[id] - Update a video (admin only)
 export async function PUT(
@@ -77,9 +78,20 @@ export async function DELETE(
 
     const { id } = params
 
-    await prisma.video.delete({
+    // Check if video exists
+    const video = await prisma.video.findUnique({
       where: { id },
     })
+
+    if (!video) {
+      return NextResponse.json(
+        { error: 'Video not found' },
+        { status: 404 }
+      )
+    }
+
+    // Soft delete the video
+    await softDelete(prisma.video, { id }, session.user?.id)
 
     return NextResponse.json({ success: true })
   } catch (error) {

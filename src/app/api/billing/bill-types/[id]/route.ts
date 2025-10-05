@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { z } from 'zod';
+import { softDelete } from '@/lib/soft-delete';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
@@ -145,7 +146,7 @@ export async function DELETE(
   try {
     const { default: prisma } = await import('@/lib/prisma');
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -183,9 +184,8 @@ export async function DELETE(
       );
     }
 
-    await prisma.billType.delete({
-      where: { id: params.id },
-    });
+    // Soft delete the bill type
+    await softDelete(prisma.billType, { id: params.id }, session.user.id);
 
     return NextResponse.json({ message: 'Bill type deleted successfully' });
   } catch (error) {

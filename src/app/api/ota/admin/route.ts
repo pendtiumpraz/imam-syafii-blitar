@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { softDelete } from '@/lib/soft-delete';
 
 // GET /api/ota/admin - Get all OTA programs with student details
 export async function GET(request: NextRequest) {
@@ -363,20 +364,17 @@ export async function DELETE(request: NextRequest) {
     // Check if there are paid donations
     if (program.sponsors.length > 0) {
       return NextResponse.json(
-        { 
-          error: 'Cannot delete program with existing paid donations. Please archive it instead.' 
+        {
+          error: 'Cannot delete program with existing paid donations. Please archive it instead.'
         },
         { status: 400 }
       );
     }
 
-    // Delete the program and all related sponsors
-    await prisma.oTAProgram.delete({
-      where: { id }
-    });
+    await softDelete(prisma.oTAProgram, { id }, session.user.id);
 
-    return NextResponse.json({ 
-      message: 'OTA program deleted successfully' 
+    return NextResponse.json({
+      message: 'OTA program soft deleted successfully'
     });
   } catch (error) {
     console.error('Error deleting OTA program:', error);

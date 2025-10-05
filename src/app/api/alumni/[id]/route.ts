@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { z } from 'zod';
+import { softDelete } from '@/lib/soft-delete';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
@@ -175,12 +176,10 @@ export async function DELETE(
       );
     }
 
-    // Hard delete alumni (or you could implement soft delete by adding a deleted field)
-    await prisma.alumni.delete({
-      where: { id: params.id },
-    });
+    // Soft delete alumni
+    await softDelete(prisma.alumni, { id: params.id }, session.user.id);
 
-    return NextResponse.json({ message: 'Alumni deleted successfully' });
+    return NextResponse.json({ message: 'Alumni soft deleted successfully' });
   } catch (error) {
     console.error('Error deleting alumni:', error);
     return NextResponse.json(

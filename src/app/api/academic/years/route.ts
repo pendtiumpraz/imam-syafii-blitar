@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { softDelete } from '@/lib/soft-delete';
 
 export async function GET(request: NextRequest) {
   try {
@@ -230,11 +231,9 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    await prisma.academicYear.delete({
-      where: { id },
-    });
+    await softDelete(prisma.academicYear, { id }, session.user.id);
 
-    return NextResponse.json({ message: 'Academic year deleted successfully' });
+    return NextResponse.json({ message: 'Academic year soft deleted successfully' });
   } catch (error) {
     console.error('Error deleting academic year:', error);
     return NextResponse.json(

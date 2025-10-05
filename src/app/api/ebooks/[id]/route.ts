@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
+import { softDelete } from '@/lib/soft-delete';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
@@ -90,13 +91,22 @@ export async function DELETE(
         { status: 401 }
       );
     }
-    
-    await prisma.ebook.delete({
-      where: {
-        id: params.id,
-      },
+
+    // Check if ebook exists
+    const ebook = await prisma.ebook.findUnique({
+      where: { id: params.id },
     });
-    
+
+    if (!ebook) {
+      return NextResponse.json(
+        { error: 'Ebook not found' },
+        { status: 404 }
+      );
+    }
+
+    // Soft delete the ebook
+    await softDelete(prisma.ebook, { id: params.id }, session.user?.id);
+
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting ebook:', error);

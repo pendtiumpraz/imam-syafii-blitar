@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { softDelete } from '@/lib/soft-delete';
 
 // Helper function to update student progress
 async function updateStudentProgress(studentId: string) {
@@ -306,15 +307,13 @@ export async function DELETE(
       );
     }
 
-    // Delete the record
-    await prisma.hafalanRecord.delete({
-      where: { id: params.id }
-    });
+    // Soft delete the record
+    await softDelete(prisma.hafalanRecord, { id: params.id }, session.user.id);
 
     // Update student progress
     await updateStudentProgress(existingRecord.studentId);
 
-    return NextResponse.json({ message: 'Record deleted successfully' });
+    return NextResponse.json({ message: 'Record soft deleted successfully' });
 
   } catch (error) {
     console.error('Error deleting hafalan record:', error);

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { softDelete } from '@/lib/soft-delete';
 
 // GET /api/ota/sponsors - Get sponsors for admin management
 export async function GET(request: NextRequest) {
@@ -373,16 +374,18 @@ export async function DELETE(request: NextRequest) {
     const programId = sponsor.programId;
     const month = sponsor.month;
 
-    // Delete sponsor
-    await prisma.oTASponsor.delete({
-      where: { id }
-    });
+    // Soft delete sponsor
+    await softDelete(
+      prisma.oTASponsor,
+      { id },
+      session.user.id
+    );
 
     // Update program progress
     await updateProgramProgress(programId, month);
 
-    return NextResponse.json({ 
-      message: 'Sponsor donation deleted successfully' 
+    return NextResponse.json({
+      message: 'Sponsor donation deleted successfully'
     });
   } catch (error) {
     console.error('Error deleting sponsor:', error);

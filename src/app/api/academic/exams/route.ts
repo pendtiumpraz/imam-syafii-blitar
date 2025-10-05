@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { softDelete } from '@/lib/soft-delete';
 
 export async function GET(request: NextRequest) {
   try {
@@ -378,9 +379,8 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    await prisma.exam.delete({
-      where: { id },
-    });
+    // Soft delete the exam
+    await softDelete(prisma.exam, { id }, session.user?.id);
 
     return NextResponse.json({ message: 'Exam deleted successfully' });
   } catch (error) {

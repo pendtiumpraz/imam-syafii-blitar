@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { softDelete } from '@/lib/soft-delete';
 
 // GET /api/ota/reports - Get OTA financial reports
 export async function GET(request: NextRequest) {
@@ -263,12 +264,15 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    await prisma.oTAReport.delete({
-      where: { id }
-    });
+    // Soft delete report
+    await softDelete(
+      prisma.oTAReport,
+      { id },
+      session.user.id
+    );
 
-    return NextResponse.json({ 
-      message: 'Report deleted successfully' 
+    return NextResponse.json({
+      message: 'Report deleted successfully'
     });
   } catch (error) {
     console.error('Error deleting OTA report:', error);

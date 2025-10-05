@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import prisma from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
+import { softDelete } from '@/lib/soft-delete'
 
 // GET /api/users - Get all users (SUPER_ADMIN only)
 export async function GET(request: NextRequest) {
@@ -313,12 +314,10 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    // Delete user
-    await prisma.user.delete({
-      where: { id }
-    })
+    // Soft delete user
+    await softDelete(prisma.user, { id }, session.user.id)
 
-    return NextResponse.json({ message: 'User deleted successfully' })
+    return NextResponse.json({ message: 'User soft deleted successfully' })
   } catch (error) {
     console.error('Error deleting user:', error)
     return NextResponse.json(

@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { softDelete } from '@/lib/soft-delete'
 
 // Validation schemas
 const budgetItemSchema = z.object({
@@ -426,13 +427,11 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       )
     }
 
-    // Delete budget (cascade will delete budget items)
-    await prisma.budget.delete({
-      where: { id: params.id },
-    })
+    // Soft delete budget
+    await softDelete(prisma.budget, { id: params.id }, session.user.id)
 
     return NextResponse.json({
-      message: 'Budget deleted successfully',
+      message: 'Budget soft deleted successfully',
     })
 
   } catch (error: any) {

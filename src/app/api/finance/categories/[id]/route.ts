@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { softDelete } from '@/lib/soft-delete'
 
 // Validation schema for updates
 const updateCategorySchema = z.object({
@@ -279,9 +280,8 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       )
     }
 
-    await prisma.financialCategory.delete({
-      where: { id: params.id },
-    })
+    // Soft delete the financial category
+    await softDelete(prisma.financialCategory, { id: params.id }, session.user.id)
 
     return NextResponse.json({ message: 'Category deleted successfully' })
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { PrismaClient } from '@prisma/client'
+import { softDelete } from '@/lib/soft-delete'
 
 const prisma = new PrismaClient()
 
@@ -81,19 +82,17 @@ export async function DELETE(
         answer: true
       }
     })
-    
+
     if (!question) {
       return NextResponse.json({
         success: false,
         message: 'Pertanyaan tidak ditemukan'
       }, { status: 404 })
     }
-    
-    // Delete the question (this will cascade delete the answer if exists)
-    await prisma.question.delete({
-      where: { id: params.id }
-    })
-    
+
+    // Soft delete the question
+    await softDelete(prisma.question, { id: params.id }, session.user?.id)
+
     return NextResponse.json({
       success: true,
       message: 'Pertanyaan berhasil dihapus',

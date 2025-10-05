@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { softDelete } from '@/lib/soft-delete';
 
 // Helper function to check user permissions
 function hasPermission(userRole: string, action: 'read' | 'create' | 'update' | 'delete'): boolean {
@@ -461,9 +462,20 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    await prisma.attendance.delete({
+    // Check if attendance exists
+    const attendance = await prisma.attendance.findUnique({
       where: { id },
     });
+
+    if (!attendance) {
+      return NextResponse.json(
+        { error: 'Attendance not found' },
+        { status: 404 }
+      );
+    }
+
+    // Soft delete the attendance
+    await softDelete(prisma.attendance, { id }, session.user?.id);
 
     return NextResponse.json({ message: 'Attendance deleted successfully' });
   } catch (error) {
