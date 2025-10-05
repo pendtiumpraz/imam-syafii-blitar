@@ -104,7 +104,7 @@ export function CampaignFormSlideover({
         mainImage: '',
         images: '',
         video: '',
-        status: 'DRAFT',
+        status: 'ACTIVE',
         isFeatured: false,
         isUrgent: false,
         allowAnonymous: true,
