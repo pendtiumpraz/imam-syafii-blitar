@@ -28,12 +28,46 @@ import {
   HeartIcon as HeartSolidIcon,
   FireIcon
 } from '@heroicons/react/24/solid'
+import {
+  Building2,
+  GraduationCap,
+  Award,
+  Heart as HeartLucide,
+  Settings,
+  Church,
+  Coins,
+  Beef,
+  AlertCircle,
+  Gift
+} from 'lucide-react'
 import PublicLayout from '@/components/layout/PublicLayout'
 import { DonationProgress } from '@/components/donasi/donation-progress'
 import { DonorList } from '@/components/donasi/donor-list'
 import { SocialShare } from '@/components/donasi/social-share'
 
 type SortOption = 'newest' | 'highest' | 'almost' | 'urgent'
+
+// Icon mapping
+const iconMap: { [key: string]: any } = {
+  Building: Building2,
+  Building2: Building2,
+  GraduationCap: GraduationCap,
+  Award: Award,
+  Heart: HeartLucide,
+  Settings: Settings,
+  Mosque: Church,
+  Church: Church,
+  Coins: Coins,
+  Beef: Beef,
+  AlertCircle: AlertCircle,
+  Gift: Gift
+}
+
+const getIconComponent = (iconName: string | null) => {
+  if (!iconName) return null
+  const IconComponent = iconMap[iconName]
+  return IconComponent ? <IconComponent className="w-4 h-4" /> : null
+}
 
 export default function DonasiPage() {
   const [categories, setCategories] = useState<DonationCategory[]>([])
@@ -287,9 +321,10 @@ export default function DonasiPage() {
                   variant={selectedCategory === cat.id ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setSelectedCategory(cat.id)}
-                  className="whitespace-nowrap"
+                  className="whitespace-nowrap flex items-center gap-2"
                 >
-                  {cat.icon} {cat.name}
+                  {getIconComponent(cat.icon)}
+                  {cat.name}
                 </Button>
               ))}
             </div>
