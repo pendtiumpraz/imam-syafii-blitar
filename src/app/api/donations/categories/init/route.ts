@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if categories already exist
-    const existingCount = await prisma.donation_categories.count()
+    const existingCount = await prisma.donationCategory.count()
 
     if (existingCount > 0) {
       return NextResponse.json({
@@ -140,11 +140,11 @@ export async function POST(request: NextRequest) {
     ]
 
     // Create all categories
-    await prisma.donation_categories.createMany({
+    await prisma.donationCategory.createMany({
       data: defaultCategories
     })
 
-    const categories = await prisma.donation_categories.findMany({
+    const categories = await prisma.donationCategory.findMany({
       orderBy: { sortOrder: 'asc' }
     })
 
