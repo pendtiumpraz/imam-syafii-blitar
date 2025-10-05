@@ -18,9 +18,13 @@ const prismaClientSingleton = () => {
 export const prisma = globalForPrisma.prisma ?? prismaClientSingleton()
 
 // Soft delete middleware
-prisma.$use(async (params, next) => {
-  // Check if model has soft delete fields
-  const softDeleteModels = [
+// Only enable in development until production DB is migrated
+const enableSoftDelete = process.env.NODE_ENV === 'development' || process.env.ENABLE_SOFT_DELETE === 'true';
+
+if (enableSoftDelete) {
+  prisma.$use(async (params, next) => {
+    // Check if model has soft delete fields
+    const softDeleteModels = [
     // CRITICAL priority models
     'User', 'Student', 'Teacher', 'ParentAccount', 'Transaction', 'JournalEntry',
     'Payment', 'Donation', 'Bill', 'BillPayment', 'SPPBilling', 'SPPPayment',
@@ -75,8 +79,9 @@ prisma.$use(async (params, next) => {
     }
   }
 
-  return next(params);
-});
+    return next(params);
+  });
+}
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
 
