@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { getNotificationService } from '@/lib/notification-service';
 import { prisma } from '@/lib/prisma';
+import { softDelete } from '@/lib/soft-delete';
 
 export async function PATCH(
   request: NextRequest,
@@ -64,9 +65,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'Notification not found' }, { status: 404 });
     }
 
-    await prisma.notification.delete({
-      where: { id: notificationId },
-    });
+    // Soft delete notification
+    await softDelete(prisma.notification, { id: notificationId }, session.user.id);
 
     return NextResponse.json({ success: true });
   } catch (error) {

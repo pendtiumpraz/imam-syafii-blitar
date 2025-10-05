@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
+import { softDelete } from '@/lib/soft-delete';
 
 export async function GET(
   request: NextRequest,
@@ -133,11 +134,9 @@ export async function DELETE(
       );
     }
     
-    // Delete registration
-    await prisma.registration.delete({
-      where: { id: params.id }
-    });
-    
+    // Soft delete registration (preserve data for audit trail)
+    await softDelete(prisma.registration, { id: params.id }, session.user.id);
+
     return NextResponse.json({
       success: true,
       message: 'Pendaftaran berhasil dihapus'
