@@ -21,7 +21,14 @@ export const prisma = globalForPrisma.prisma ?? prismaClientSingleton()
 // Only enable in development until production DB is migrated
 const enableSoftDelete = process.env.NODE_ENV === 'development' || process.env.ENABLE_SOFT_DELETE === 'true';
 
+console.log('🔧 Soft Delete Middleware:', {
+  enabled: enableSoftDelete,
+  NODE_ENV: process.env.NODE_ENV,
+  ENABLE_SOFT_DELETE: process.env.ENABLE_SOFT_DELETE
+});
+
 if (enableSoftDelete) {
+  console.log('✅ Soft delete middleware ENABLED');
   prisma.$use(async (params, next) => {
     // Check if model has soft delete fields
     const softDeleteModels = [
@@ -81,6 +88,8 @@ if (enableSoftDelete) {
 
     return next(params);
   });
+} else {
+  console.log('❌ Soft delete middleware DISABLED');
 }
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma

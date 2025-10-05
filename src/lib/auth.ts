@@ -24,6 +24,12 @@ export const authOptions: NextAuthOptions = {
 
         try {
           console.log('🔍 Looking for user:', credentials.username)
+          console.log('🔧 Environment:', {
+            NODE_ENV: process.env.NODE_ENV,
+            ENABLE_SOFT_DELETE: process.env.ENABLE_SOFT_DELETE,
+            DATABASE_URL: process.env.DATABASE_URL?.substring(0, 50) + '...'
+          })
+
           // Use findFirst instead of findUnique to avoid middleware conflicts
           // The soft delete middleware modifies findUnique queries in a way that breaks unique constraints
           const user = await prisma.user.findFirst({
@@ -31,6 +37,8 @@ export const authOptions: NextAuthOptions = {
               username: credentials.username
             }
           })
+
+          console.log('📊 Query result:', user ? 'User found' : 'User NOT found')
 
           if (!user) {
             console.log('❌ User not found:', credentials.username)
