@@ -54,7 +54,14 @@ prisma.$use(async (params, next) => {
 
     // Auto-filter deleted records
     if (params.action === 'findUnique' || params.action === 'findFirst') {
-      params.args.where = { ...params.args.where, isDeleted: false };
+      // Only add isDeleted filter if where clause exists and doesn't already have isDeleted
+      if (params.args.where) {
+        if (params.args.where.isDeleted === undefined) {
+          params.args.where = { ...params.args.where, isDeleted: false };
+        }
+      } else {
+        params.args.where = { isDeleted: false };
+      }
     }
 
     if (params.action === 'findMany') {
