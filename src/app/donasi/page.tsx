@@ -405,6 +405,10 @@ export default function DonasiPage() {
                         width={400}
                         height={200}
                         className="w-full h-48 object-cover"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement
+                          target.style.display = 'none'
+                        }}
                       />
                     ) : (
                       <div className="w-full h-48 bg-gray-200 flex items-center justify-center">
@@ -543,6 +547,10 @@ export default function DonasiPage() {
                       alt={selectedCampaign.title}
                       fill
                       className="object-cover"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement
+                        target.style.display = 'none'
+                      }}
                     />
                   </div>
 
