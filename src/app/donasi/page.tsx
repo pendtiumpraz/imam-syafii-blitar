@@ -63,7 +63,7 @@ const iconMap: { [key: string]: any } = {
   Gift: Gift
 }
 
-const getIconComponent = (iconName: string | null) => {
+const getIconComponent = (iconName: string | null | undefined) => {
   if (!iconName) return null
   const IconComponent = iconMap[iconName]
   return IconComponent ? <IconComponent className="w-4 h-4" /> : null
