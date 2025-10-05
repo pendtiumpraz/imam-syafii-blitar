@@ -237,7 +237,7 @@ export async function GET(request: NextRequest) {
 // Helper function to update student progress (same as in record route)
 async function updateStudentProgress(studentId: string) {
   const records = await prisma.hafalanRecord.findMany({
-    where: { 
+    where: {
       studentId,
       status: { in: ['LANCAR', 'MUTQIN'] }
     },
@@ -245,9 +245,9 @@ async function updateStudentProgress(studentId: string) {
   });
 
   const completedSurahs = new Set();
-  let totalAyat = 0;
+  const uniqueAyats = new Set<string>(); // Track unique ayats as "surahNumber:ayatNumber"
   let qualitySum = 0;
-  let juzProgress: { [key: number]: number } = {};
+  let juzProgress: { [key: number]: Set<string> } = {}; // Track unique ayats per juz
 
   function getQualityScore(quality: string): number {
     switch (quality) {
@@ -268,20 +268,29 @@ async function updateStudentProgress(studentId: string) {
           surahAyats.add(i);
         }
       });
-      
+
       if (surahAyats.size === record.surah.totalAyat) {
         completedSurahs.add(record.surahNumber);
       }
     }
 
-    totalAyat += (record.endAyat - record.startAyat + 1);
+    // Track unique ayats across all surahs
+    for (let i = record.startAyat; i <= record.endAyat; i++) {
+      uniqueAyats.add(`${record.surahNumber}:${i}`);
+    }
+
     qualitySum += getQualityScore(record.quality);
 
-    // Calculate juz progress
+    // Calculate juz progress with unique ayats
     const juz = record.surah.juz;
-    if (!juzProgress[juz]) juzProgress[juz] = 0;
-    juzProgress[juz] += (record.endAyat - record.startAyat + 1);
+    if (!juzProgress[juz]) juzProgress[juz] = new Set();
+    for (let i = record.startAyat; i <= record.endAyat; i++) {
+      juzProgress[juz].add(`${record.surahNumber}:${i}`);
+    }
   });
+
+  // Calculate total unique ayats
+  const totalAyat = uniqueAyats.size;
 
   // Calculate overall progress
   const totalQuranAyats = 6236;
@@ -289,7 +298,8 @@ async function updateStudentProgress(studentId: string) {
 
   // Calculate Juz 30 progress
   const juz30Ayats = 564;
-  const juz30Progress = Math.min(((juzProgress[30] || 0) / juz30Ayats) * 100, 100);
+  const juz30UniqueAyats = juzProgress[30] ? juzProgress[30].size : 0;
+  const juz30Progress = Math.min((juz30UniqueAyats / juz30Ayats) * 100, 100);
 
   const avgQuality = records.length > 0 ? qualitySum / records.length : 0;
 
