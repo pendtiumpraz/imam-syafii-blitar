@@ -20,7 +20,8 @@ export async function GET(request: NextRequest) {
     const { default: prisma } = await import('@/lib/prisma');
     
     // Check if admin user already exists
-    const existingAdmin = await prisma.user.findUnique({
+    // Use findFirst to avoid middleware conflicts
+    const existingAdmin = await prisma.user.findFirst({
       where: { username: 'admin' }
     });
     

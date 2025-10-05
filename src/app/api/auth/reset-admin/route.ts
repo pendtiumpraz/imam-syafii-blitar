@@ -1,48 +1,32 @@
-import { NextRequest, NextResponse } from 'next/server';
-import bcrypt from 'bcryptjs';
-import prisma from '@/lib/prisma';
+import { NextRequest, NextResponse } from 'next/server'
+import bcrypt from 'bcryptjs'
 
-export async function GET(request: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
-    // Check secret for security
-    const { searchParams } = new URL(request.url);
-    const secret = searchParams.get('secret');
-    
-    if (secret !== 'reset-2024') {
+    const { searchParams } = new URL(request.url)
+    const secret = searchParams.get('secret')
+
+    const INIT_SECRET = process.env.INIT_SECRET || 'init-secret-2024'
+
+    if (secret !== INIT_SECRET) {
       return NextResponse.json(
         { error: 'Invalid secret' },
         { status: 403 }
-      );
+      )
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash('admin123', 10);
-    
-    // Check if admin exists
-    const existingAdmin = await prisma.user.findUnique({
+    const { default: prisma } = await import('@/lib/prisma')
+
+    // Force update admin password using findFirst + update
+    const hashedPassword = await bcrypt.hash('admin123', 10)
+
+    // Find admin (use findFirst to avoid middleware issues)
+    const admin = await prisma.user.findFirst({
       where: { username: 'admin' }
-    });
-    
-    if (existingAdmin) {
-      // Update existing admin
-      const updatedAdmin = await prisma.user.update({
-        where: { username: 'admin' },
-        data: {
-          password: hashedPassword,
-          isActive: true,
-          role: 'ADMIN'
-        }
-      });
-      
-      return NextResponse.json({
-        success: true,
-        message: 'Admin password reset successfully',
-        username: 'admin',
-        password: 'admin123',
-        role: updatedAdmin.role
-      });
-    } else {
-      // Create new admin
+    })
+
+    if (!admin) {
+      // Create if doesn't exist
       const newAdmin = await prisma.user.create({
         data: {
           username: 'admin',
@@ -52,24 +36,47 @@ export async function GET(request: NextRequest) {
           role: 'ADMIN',
           isActive: true
         }
-      });
-      
+      })
+
       return NextResponse.json({
         success: true,
-        message: 'Admin user created successfully',
-        username: 'admin',
-        password: 'admin123',
-        role: newAdmin.role
-      });
+        message: 'Admin user created',
+        user: {
+          id: newAdmin.id,
+          username: newAdmin.username,
+          password: 'admin123'
+        }
+      })
     }
+
+    // Update existing
+    const updated = await prisma.user.update({
+      where: { id: admin.id },
+      data: {
+        password: hashedPassword,
+        isActive: true
+      }
+    })
+
+    return NextResponse.json({
+      success: true,
+      message: 'Admin password reset successfully',
+      user: {
+        id: updated.id,
+        username: updated.username,
+        isActive: updated.isActive,
+        password: 'admin123'
+      }
+    })
   } catch (error) {
-    console.error('Reset admin error:', error);
+    console.error('Reset admin error:', error)
     return NextResponse.json(
-      { 
+      {
         error: 'Failed to reset admin',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
       },
       { status: 500 }
-    );
+    )
   }
 }
