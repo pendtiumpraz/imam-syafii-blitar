@@ -24,7 +24,9 @@ export const authOptions: NextAuthOptions = {
 
         try {
           console.log('🔍 Looking for user:', credentials.username)
-          const user = await prisma.user.findUnique({
+          // Use findFirst instead of findUnique to avoid middleware conflicts
+          // The soft delete middleware modifies findUnique queries in a way that breaks unique constraints
+          const user = await prisma.user.findFirst({
             where: {
               username: credentials.username
             }
