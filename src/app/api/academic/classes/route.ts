@@ -39,19 +39,22 @@ export async function GET(request: NextRequest) {
     const includeStudentCount = searchParams.get('includeStudentCount') === 'true';
 
     const whereConditions: any = {};
-    
+
+    // Filter out soft deleted records
+    whereConditions.isDeleted = false;
+
     if (academicYearId) {
       whereConditions.academicYearId = academicYearId;
     }
-    
+
     if (level) {
       whereConditions.level = level;
     }
-    
+
     if (grade) {
       whereConditions.grade = grade;
     }
-    
+
     if (isActive === 'true') {
       whereConditions.isActive = true;
     } else if (isActive === 'false') {

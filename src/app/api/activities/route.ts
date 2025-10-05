@@ -19,6 +19,9 @@ export async function GET(request: NextRequest) {
     // Build where conditions
     const whereConditions: any = {};
 
+    // Filter out soft deleted records
+    whereConditions.isDeleted = false;
+
     if (search) {
       whereConditions.OR = [
         {

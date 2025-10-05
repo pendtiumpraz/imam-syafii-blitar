@@ -30,6 +30,9 @@ export async function GET(request: NextRequest) {
 
     const where: any = {}
 
+    // Filter out soft deleted records
+    where.isDeleted = false
+
     if (search) {
       where.OR = [
         { name: { contains: search, mode: 'insensitive' } },

@@ -68,6 +68,9 @@ export async function GET(request: NextRequest) {
 
     const where: any = {};
 
+    // Filter out soft deleted records
+    where.isDeleted = false;
+
     if (institutionType) {
       where.institutionType = institutionType;
     }

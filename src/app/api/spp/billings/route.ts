@@ -75,28 +75,30 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1');
     const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 100);
     
-    const whereConditions: any = {};
-    
+    const whereConditions: any = {
+      isDeleted: false,
+    };
+
     if (studentId) {
       whereConditions.studentId = studentId;
     }
-    
+
     if (classId) {
       whereConditions.classId = classId;
     }
-    
+
     if (semesterId) {
       whereConditions.semesterId = semesterId;
     }
-    
+
     if (month) {
       whereConditions.month = parseInt(month);
     }
-    
+
     if (year) {
       whereConditions.year = parseInt(year);
     }
-    
+
     if (status) {
       whereConditions.status = status;
     }

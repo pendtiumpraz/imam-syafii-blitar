@@ -35,16 +35,18 @@ export async function GET(request: NextRequest) {
     const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100);
     const includeStats = searchParams.get('includeStats') === 'true';
 
-    const whereConditions: any = {};
-    
+    const whereConditions: any = {
+      isDeleted: false,
+    };
+
     if (classId) {
       whereConditions.classId = classId;
     }
-    
+
     if (studentId) {
       whereConditions.studentId = studentId;
     }
-    
+
     if (semesterId) {
       whereConditions.semesterId = semesterId;
     }

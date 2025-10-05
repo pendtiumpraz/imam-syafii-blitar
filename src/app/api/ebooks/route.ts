@@ -15,12 +15,13 @@ export async function GET(request: NextRequest) {
     
     const where: any = {
       isPublic: true,
+      isDeleted: false,
     };
-    
+
     if (category && category !== 'all') {
       where.category = category;
     }
-    
+
     if (featured === 'true') {
       where.isFeatured = true;
     }

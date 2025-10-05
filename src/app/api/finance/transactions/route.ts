@@ -181,6 +181,10 @@ export async function GET(request: NextRequest) {
 
     // Build where clause
     const where: any = {}
+
+    // Filter out soft deleted records
+    where.isDeleted = false
+
     if (query.type) where.type = query.type
     if (query.categoryId) where.categoryId = query.categoryId
     if (query.status) where.status = query.status

@@ -24,6 +24,9 @@ export async function GET(request: NextRequest) {
     // Build where clause based on user role
     const where: any = {}
 
+    // Filter out soft deleted records
+    where.isDeleted = false
+
     // If not admin, only show ACTIVE or COMPLETED campaigns
     if (!session?.user || session.user.role !== 'ADMIN') {
       where.status = {

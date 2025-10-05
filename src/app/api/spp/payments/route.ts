@@ -42,11 +42,14 @@ export async function GET(request: NextRequest) {
     const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 100);
     
     const whereConditions: any = {};
-    
+
+    // Filter out soft deleted records
+    whereConditions.isDeleted = false;
+
     if (billingId) {
       whereConditions.billingId = billingId;
     }
-    
+
     if (status) {
       whereConditions.status = status;
     }

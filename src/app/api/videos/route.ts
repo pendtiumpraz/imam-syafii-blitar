@@ -12,6 +12,7 @@ export async function GET(request: NextRequest) {
     const videos = await prisma.video.findMany({
       where: {
         isPublic: isPublic ? true : undefined,
+        isDeleted: false,
       },
       orderBy: {
         uploadDate: 'desc',

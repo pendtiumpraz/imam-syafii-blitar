@@ -33,20 +33,22 @@ export async function GET(request: NextRequest) {
     const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100);
     const includeTeachers = searchParams.get('includeTeachers') === 'true';
 
-    const whereConditions: any = {};
-    
+    const whereConditions: any = {
+      isDeleted: false,
+    };
+
     if (level) {
       whereConditions.level = level;
     }
-    
+
     if (category) {
       whereConditions.category = category;
     }
-    
+
     if (type) {
       whereConditions.type = type;
     }
-    
+
     if (isActive === 'true') {
       whereConditions.isActive = true;
     }

@@ -19,28 +19,30 @@ export async function GET(request: NextRequest) {
     const type = searchParams.get('type');
     const status = searchParams.get('status');
 
-    const whereConditions: any = {};
-    
+    const whereConditions: any = {
+      isDeleted: false,
+    };
+
     if (classId) {
       whereConditions.classId = classId;
     }
-    
+
     if (subjectId) {
       whereConditions.subjectId = subjectId;
     }
-    
+
     if (semesterId) {
       whereConditions.semesterId = semesterId;
     }
-    
+
     if (teacherId) {
       whereConditions.teacherId = teacherId;
     }
-    
+
     if (type) {
       whereConditions.type = type;
     }
-    
+
     if (status) {
       whereConditions.status = status;
     }

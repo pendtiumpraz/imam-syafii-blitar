@@ -116,6 +116,9 @@ export async function GET(request: NextRequest) {
 
     let where: any = {};
 
+    // Filter out soft deleted records
+    where.isDeleted = false;
+
     if (studentId) where.studentId = studentId;
     if (teacherId) where.teacherId = teacherId;
     if (surahNumber) where.surahNumber = parseInt(surahNumber);

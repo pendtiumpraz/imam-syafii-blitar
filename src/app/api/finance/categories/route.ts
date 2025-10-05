@@ -40,7 +40,9 @@ export async function GET(request: NextRequest) {
       includeChildren: searchParams.get('includeChildren') === 'true',
     })
 
-    const where: any = {}
+    const where: any = {
+      isDeleted: false,
+    }
     if (query.type) where.type = query.type
     if (query.isActive !== undefined) where.isActive = query.isActive
     if (query.parentId) where.parentId = query.parentId

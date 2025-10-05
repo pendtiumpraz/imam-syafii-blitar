@@ -76,16 +76,19 @@ export async function GET(request: NextRequest) {
 
     // Build where clause with better structure
     const where: any = buildPrismaWhereClause(searchParams);
-    
+
+    // Filter out soft deleted records
+    where.isDeleted = false;
+
     // Add specific student filters
     if (searchParams.institutionType) {
       where.institutionType = searchParams.institutionType;
     }
-    
+
     if (searchParams.grade) {
       where.grade = searchParams.grade;
     }
-    
+
     // Override default search for students
     if (searchParams.query) {
       where.OR = [

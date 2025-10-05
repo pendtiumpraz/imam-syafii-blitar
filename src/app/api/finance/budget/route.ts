@@ -110,7 +110,9 @@ export async function GET(request: NextRequest) {
     const skip = (query.page - 1) * query.limit
 
     // Build where clause
-    const where: any = {}
+    const where: any = {
+      isDeleted: false,
+    }
     if (query.type) where.type = query.type
     if (query.status) where.status = query.status
     if (query.year) {

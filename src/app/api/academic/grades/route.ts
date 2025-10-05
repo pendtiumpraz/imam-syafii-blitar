@@ -103,15 +103,18 @@ export async function GET(request: NextRequest) {
     const includeStats = searchParams.get('includeStats') === 'true';
 
     const whereConditions: any = {};
-    
+
+    // Filter out soft deleted records
+    whereConditions.isDeleted = false;
+
     if (semesterId) {
       whereConditions.semesterId = semesterId;
     }
-    
+
     if (studentId) {
       whereConditions.studentId = studentId;
     }
-    
+
     if (subjectId) {
       whereConditions.subjectId = subjectId;
     }

@@ -43,20 +43,22 @@ export async function GET(request: NextRequest) {
     const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100);
     const format = searchParams.get('format');
 
-    const whereConditions: any = {};
-    
+    const whereConditions: any = {
+      isDeleted: false,
+    };
+
     if (classId) {
       whereConditions.classId = classId;
     }
-    
+
     if (teacherId) {
       whereConditions.teacherId = teacherId;
     }
-    
+
     if (day) {
       whereConditions.day = day;
     }
-    
+
     if (isActive === 'true') {
       whereConditions.isActive = true;
     }
