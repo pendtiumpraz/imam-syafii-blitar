@@ -14,55 +14,67 @@ export async function GET(
     }
 
     const hafalanSession = await prisma.hafalan_sessions.findUnique({
-      where: { id: params.id },
-      include: {
-        student: {
-          select: {
-            id: true,
-            fullName: true,
-            nickname: true,
-            photo: true
-          }
-        },
-        teacher: {
-          select: {
-            id: true,
-            name: true
-          }
-        }
-      }
+      where: { id: params.id }
     });
 
     if (!hafalanSession) {
       return NextResponse.json({ error: 'Hafalan session not found' }, { status: 404 });
     }
 
+    // Get student and teacher data
+    const student = await prisma.students.findUnique({
+      where: { id: hafalanSession.studentId },
+      select: {
+        id: true,
+        fullName: true,
+        nickname: true,
+        photo: true
+      }
+    });
+
+    const teacher = await prisma.users.findUnique({
+      where: { id: hafalanSession.teacherId },
+      select: {
+        id: true,
+        name: true
+      }
+    });
+
     // Parse content and get related records
-    const records = await prisma.hafalan_records.findMany({
+    const recordsData = await prisma.hafalan_records.findMany({
       where: {
         studentId: hafalanSession.studentId,
         createdAt: {
           gte: new Date(hafalanSession.createdAt.getTime() - 1000), // 1 second before
           lte: new Date(hafalanSession.createdAt.getTime() + 60000) // 1 minute after
         }
-      },
-      include: {
-        surah: {
-          select: {
-            number: true,
-            name: true,
-            nameArabic: true,
-            totalAyat: true,
-            juz: true
-          }
-        }
       }
     });
+
+    // Get surah data for records
+    const surahNumbers = [...new Set(recordsData.map(r => r.surahNumber))];
+    const surahs = await prisma.quran_surahs.findMany({
+      where: { number: { in: surahNumbers } },
+      select: {
+        number: true,
+        name: true,
+        nameArabic: true,
+        totalAyat: true,
+        juz: true
+      }
+    });
+
+    const records = recordsData.map(record => ({
+      ...record,
+      surah: surahs.find(s => s.number === record.surahNumber)
+    }));
 
     return NextResponse.json({
       session: {
         ...hafalanSession,
-        content: JSON.parse(hafalanSession.content)
+        content: JSON.parse(hafalanSession.content),
+        student,
+        teacher
       },
       records
     });
@@ -137,7 +149,7 @@ export async function PUT(
     // Start transaction
     const result = await prisma.$transaction(async (tx) => {
       // Update hafalan session
-      const updatedSession = await tx.hafalanSession.update({
+      const updatedSession = await tx.hafalan_sessions.update({
         where: { id: params.id },
         data: {
           type,
@@ -160,7 +172,7 @@ export async function PUT(
       });
 
       // Delete existing records for this session (approximate by time range)
-      await tx.hafalanRecord.deleteMany({
+      await tx.hafalan_records.deleteMany({
         where: {
           studentId: existingSession.studentId,
           createdAt: {
@@ -173,7 +185,7 @@ export async function PUT(
       // Create new hafalan records
       const records = [];
       for (const item of content) {
-        const record = await tx.hafalanRecord.create({
+        const record = await tx.hafalan_records.create({
           data: {
             studentId: existingSession.studentId,
             surahNumber: parseInt(item.surahNumber),
@@ -201,43 +213,59 @@ export async function PUT(
     await updateStudentProgress(existingSession.studentId);
 
     // Get updated session with related data
-    const sessionWithData = await prisma.hafalan_sessions.findUnique({
-      where: { id: params.id },
-      include: {
-        student: {
-          select: {
-            id: true,
-            fullName: true,
-            nickname: true,
-            photo: true
-          }
-        },
-        teacher: {
-          select: {
-            id: true,
-            name: true
-          }
-        }
+    const sessionData = await prisma.hafalan_sessions.findUnique({
+      where: { id: params.id }
+    });
+
+    // Get student and teacher data
+    const student = await prisma.students.findUnique({
+      where: { id: existingSession.studentId },
+      select: {
+        id: true,
+        fullName: true,
+        nickname: true,
+        photo: true
       }
     });
 
-    // Get records with surah data
-    const recordsWithData = await prisma.hafalan_records.findMany({
-      where: {
-        id: { in: result.records.map(r => r.id) }
-      },
-      include: {
-        surah: {
-          select: {
-            number: true,
-            name: true,
-            nameArabic: true,
-            totalAyat: true,
-            juz: true
-          }
-        }
+    const teacher = await prisma.users.findUnique({
+      where: { id: session.user.id },
+      select: {
+        id: true,
+        name: true
       }
     });
+
+    const sessionWithData = {
+      ...sessionData,
+      student,
+      teacher
+    };
+
+    // Get records with surah data
+    const recordsData = await prisma.hafalan_records.findMany({
+      where: {
+        id: { in: result.records.map(r => r.id) }
+      }
+    });
+
+    // Get surah data
+    const surahNumbers = [...new Set(recordsData.map(r => r.surahNumber))];
+    const surahs = await prisma.quran_surahs.findMany({
+      where: { number: { in: surahNumbers } },
+      select: {
+        number: true,
+        name: true,
+        nameArabic: true,
+        totalAyat: true,
+        juz: true
+      }
+    });
+
+    const recordsWithData = recordsData.map(record => ({
+      ...record,
+      surah: surahs.find(s => s.number === record.surahNumber)
+    }));
 
     return NextResponse.json({
       session: sessionWithData,
@@ -279,7 +307,7 @@ export async function DELETE(
     // Start transaction to delete session and related records
     await prisma.$transaction(async (tx) => {
       // Delete related records (approximate by time range)
-      await tx.hafalanRecord.deleteMany({
+      await tx.hafalan_records.deleteMany({
         where: {
           studentId: existingSession.studentId,
           createdAt: {
@@ -290,7 +318,7 @@ export async function DELETE(
       });
 
       // Delete session
-      await tx.hafalanSession.delete({
+      await tx.hafalan_sessions.delete({
         where: { id: params.id }
       });
     });
@@ -312,12 +340,19 @@ export async function DELETE(
 // Helper function to update student progress (same as in setoran route)
 async function updateStudentProgress(studentId: string) {
   const records = await prisma.hafalan_records.findMany({
-    where: { 
+    where: {
       studentId,
       status: { in: ['LANCAR', 'MUTQIN'] }
-    },
-    include: { surah: true }
+    }
   });
+
+  // Get surah data for records
+  const surahNumbers = [...new Set(records.map(r => r.surahNumber))];
+  const surahs = await prisma.quran_surahs.findMany({
+    where: { number: { in: surahNumbers } }
+  });
+
+  const surahMap = new Map(surahs.map(s => [s.number, s]));
 
   const completedSurahs = new Set();
   let totalAyat = 0;
@@ -334,7 +369,9 @@ async function updateStudentProgress(studentId: string) {
   }
 
   records.forEach(record => {
-    if (record.status === 'MUTQIN') {
+    const surah = surahMap.get(record.surahNumber);
+
+    if (record.status === 'MUTQIN' && surah) {
       const surahRecords = records.filter(r => r.surahNumber === record.surahNumber);
       const surahAyats = new Set();
       surahRecords.forEach(r => {
@@ -342,8 +379,8 @@ async function updateStudentProgress(studentId: string) {
           surahAyats.add(i);
         }
       });
-      
-      if (surahAyats.size === record.surah.totalAyat) {
+
+      if (surahAyats.size === surah.totalAyat) {
         completedSurahs.add(record.surahNumber);
       }
     }
@@ -351,9 +388,11 @@ async function updateStudentProgress(studentId: string) {
     totalAyat += (record.endAyat - record.startAyat + 1);
     qualitySum += getQualityScore(record.quality);
 
-    const juz = record.surah.juz;
-    if (!juzProgress[juz]) juzProgress[juz] = 0;
-    juzProgress[juz] += (record.endAyat - record.startAyat + 1);
+    if (surah) {
+      const juz = surah.juz;
+      if (!juzProgress[juz]) juzProgress[juz] = 0;
+      juzProgress[juz] += (record.endAyat - record.startAyat + 1);
+    }
   });
 
   const totalQuranAyats = 6236;

@@ -61,24 +61,15 @@ export async function GET(request: NextRequest) {
 
       const records = await prisma.hafalan_records.findMany({
         where,
-        include: {
-          student: true,
-          surah: true,
-          teacher: true
-        },
         orderBy: [
           { date: 'desc' },
-          { student: { fullName: 'asc' } }
+          { studentId: 'asc' }
         ]
       });
 
       const exportData = records.map(record => ({
         'Tanggal': record.date.toISOString().split('T')[0],
-        'Nama Siswa': record.student.fullName,
-        'NIS': record.student.nis,
-        'Institusi': record.student.institutionType,
-        'Kelas': record.student.grade || '',
-        'Nama Surah': record.surah.name,
+        'Student ID': record.studentId,
         'Nomor Surah': record.surahNumber,
         'Ayat Mulai': record.startAyat,
         'Ayat Selesai': record.endAyat,
@@ -90,10 +81,7 @@ export async function GET(request: NextRequest) {
         'Makharijul': record.makharijul || '',
         'Durasi (menit)': record.duration || 0,
         'Metode': record.method,
-        'Suasana Hati': (record as any).studentMood || '',
-        'Engagement': (record as any).engagement || '',
-        'Kepercayaan Diri': (record as any).confidence || '',
-        'Guru': record.teacher.name,
+        'Teacher ID': record.teacherId,
         'Catatan': record.notes || '',
         'Koreksi': record.corrections || '',
         'Target Selanjutnya': record.nextTarget || ''
@@ -105,11 +93,7 @@ export async function GET(request: NextRequest) {
         total: exportData.length,
         columns: [
           { key: 'Tanggal', header: 'Tanggal', width: 12, type: 'date' },
-          { key: 'Nama Siswa', header: 'Nama Siswa', width: 25 },
-          { key: 'NIS', header: 'NIS', width: 15 },
-          { key: 'Institusi', header: 'Institusi', width: 10 },
-          { key: 'Kelas', header: 'Kelas', width: 8 },
-          { key: 'Nama Surah', header: 'Nama Surah', width: 20 },
+          { key: 'Student ID', header: 'Student ID', width: 25 },
           { key: 'Nomor Surah', header: 'Nomor Surah', width: 12, type: 'number' },
           { key: 'Ayat Mulai', header: 'Ayat Mulai', width: 10, type: 'number' },
           { key: 'Ayat Selesai', header: 'Ayat Selesai', width: 12, type: 'number' },
@@ -121,10 +105,7 @@ export async function GET(request: NextRequest) {
           { key: 'Makharijul', header: 'Makharijul', width: 12 },
           { key: 'Durasi (menit)', header: 'Durasi (menit)', width: 15, type: 'number' },
           { key: 'Metode', header: 'Metode', width: 15 },
-          { key: 'Suasana Hati', header: 'Suasana Hati', width: 15 },
-          { key: 'Engagement', header: 'Engagement', width: 12 },
-          { key: 'Kepercayaan Diri', header: 'Kepercayaan Diri', width: 15 },
-          { key: 'Guru', header: 'Guru', width: 20 },
+          { key: 'Teacher ID', header: 'Teacher ID', width: 25 },
           { key: 'Catatan', header: 'Catatan', width: 40 },
           { key: 'Koreksi', header: 'Koreksi', width: 40 },
           { key: 'Target Selanjutnya', header: 'Target Selanjutnya', width: 30 }
@@ -149,21 +130,15 @@ export async function GET(request: NextRequest) {
 
       const progress = await prisma.hafalan_progress.findMany({
         where,
-        include: {
-          student: true
-        },
         orderBy: [
           { totalSurah: 'desc' },
           { totalAyat: 'desc' },
-          { student: { fullName: 'asc' } }
+          { studentId: 'asc' }
         ]
       });
 
       const exportData = progress.map(prog => ({
-        'Nama Siswa': prog.student.fullName,
-        'NIS': prog.student.nis,
-        'Institusi': prog.student.institutionType,
-        'Kelas': prog.student.grade || '',
+        'Student ID': prog.studentId,
         'Total Surah Hafal': prog.totalSurah,
         'Total Ayat Hafal': prog.totalAyat,
         'Total Juz': prog.totalJuz.toNumber(),
@@ -189,10 +164,7 @@ export async function GET(request: NextRequest) {
         data: exportData,
         total: exportData.length,
         columns: [
-          { key: 'Nama Siswa', header: 'Nama Siswa', width: 25 },
-          { key: 'NIS', header: 'NIS', width: 15 },
-          { key: 'Institusi', header: 'Institusi', width: 10 },
-          { key: 'Kelas', header: 'Kelas', width: 8 },
+          { key: 'Student ID', header: 'Student ID', width: 25 },
           { key: 'Total Surah Hafal', header: 'Total Surah Hafal', width: 15, type: 'number' },
           { key: 'Total Ayat Hafal', header: 'Total Ayat Hafal', width: 15, type: 'number' },
           { key: 'Total Juz', header: 'Total Juz', width: 10, type: 'number' },

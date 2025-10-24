@@ -89,7 +89,7 @@ export async function GET(
     const grades = await prisma.grades.findMany({
       where: whereConditions,
       include: {
-        subject: {
+        subjects: {
           select: {
             id: true,
             code: true,
@@ -99,32 +99,16 @@ export async function GET(
             credits: true,
             type: true
           }
-        },
-        semester: {
-          select: {
-            id: true,
-            name: true,
-            startDate: true,
-            endDate: true,
-            academicYear: {
-              select: {
-                name: true,
-                isActive: true
-              }
-            }
-          }
         }
       },
       orderBy: [
-        { semester: { startDate: 'desc' } },
-        { subject: { category: 'asc' } },
-        { subject: { name: 'asc' } }
+        { semesterId: 'desc' }
       ]
     });
 
     // Filter by subject category if specified
-    const filteredGrades = subjectCategory 
-      ? grades.filter(grade => grade.subject.category === subjectCategory)
+    const filteredGrades = subjectCategory
+      ? grades.filter(grade => grade.subjects?.category === subjectCategory)
       : grades;
 
     // Calculate statistics
@@ -148,7 +132,7 @@ export async function GET(
 
     // Group grades by category
     const gradesByCategory = filteredGrades.reduce((acc, grade) => {
-      const category = grade.subject.category;
+      const category = grade.subjects?.category || 'UMUM';
       if (!acc[category]) {
         acc[category] = [];
       }
@@ -173,17 +157,40 @@ export async function GET(
       };
     });
 
+    // Get semester info for all unique semester IDs
+    const semesterIds = [...new Set(filteredGrades.map(g => g.semesterId))];
+    const semesters = await prisma.semesters.findMany({
+      where: { id: { in: semesterIds } },
+      include: {
+        academic_years: {
+          select: { name: true, isActive: true }
+        }
+      }
+    });
+
+    const semesterMap = new Map(semesters.map(s => [s.id, s]));
+
     // Get semester-wise performance
     const semesterPerformance = Object.entries(
       filteredGrades.reduce((acc, grade) => {
-        const semesterId = grade.semester.id;
-        const semesterName = `${grade.semester.name} - ${grade.semester.academicYear.name}`;
-        
+        const semesterId = grade.semesterId;
+        const semester = semesterMap.get(semesterId);
+        const semesterName = semester ? `${semester.name} - ${semester.academic_years?.name || 'Unknown'}` : 'Unknown';
+
         if (!acc[semesterId]) {
           acc[semesterId] = {
             id: semesterId,
             name: semesterName,
-            semester: grade.semester,
+            semester: semester ? {
+              id: semester.id,
+              name: semester.name,
+              startDate: semester.startDate,
+              endDate: semester.endDate,
+              academicYear: {
+                name: semester.academic_years?.name || 'Unknown',
+                isActive: semester.academic_years?.isActive || false
+              }
+            } : null,
             grades: [],
             stats: {
               totalSubjects: 0,
@@ -193,26 +200,29 @@ export async function GET(
             }
           };
         }
-        
+
         acc[semesterId].grades.push(grade);
         return acc;
       }, {} as any)
     ).map(([semesterId, semesterData]: [string, any]) => {
       const gradesWithScores = semesterData.grades.filter((grade: any) => grade.total !== null);
-      
+
       semesterData.stats = {
         totalSubjects: semesterData.grades.length,
         gradedSubjects: gradesWithScores.length,
-        average: gradesWithScores.length > 0 
+        average: gradesWithScores.length > 0
           ? Math.round(gradesWithScores.reduce((sum: number, grade: any) => sum + (grade.total?.toNumber() || 0), 0) / gradesWithScores.length * 100) / 100
           : 0,
         gpa: gradesWithScores.length > 0
           ? Math.round(gradesWithScores.reduce((sum: number, grade: any) => sum + (grade.point?.toNumber() || 0), 0) / gradesWithScores.length * 100) / 100
           : 0
       };
-      
+
       return semesterData;
-    }).sort((a, b) => new Date(b.semester.startDate).getTime() - new Date(a.semester.startDate).getTime());
+    }).sort((a, b) => {
+      if (!a.semester || !b.semester) return 0;
+      return new Date(b.semester.startDate).getTime() - new Date(a.semester.startDate).getTime();
+    });
 
     // Get grade trends (improvement/decline analysis)
     const gradeTrends = semesterPerformance.length >= 2 ? {
@@ -224,29 +234,41 @@ export async function GET(
     } : null;
 
     // Format grades for response
-    const formattedGrades = filteredGrades.map(grade => ({
-      id: grade.id,
-      subject: grade.subject,
-      semester: grade.semester,
-      scores: {
-        midterm: grade.midterm?.toNumber(),
-        final: grade.final?.toNumber(),
-        assignment: grade.assignment?.toNumber(),
-        quiz: grade.quiz?.toNumber(),
-        participation: grade.participation?.toNumber(),
-        project: grade.project?.toNumber(),
-        daily: grade.daily?.toNumber()
-      },
-      total: grade.total?.toNumber(),
-      grade: grade.grade,
-      point: grade.point?.toNumber(),
-      gradeInfo: grade.total ? getGradeLevel(grade.total.toNumber()) : null,
-      akhlak: grade.akhlak,
-      quranMemory: grade.quranMemory,
-      notes: grade.notes,
-      enteredAt: grade.enteredAt,
-      isLocked: grade.isLocked
-    }));
+    const formattedGrades = filteredGrades.map(grade => {
+      const semester = semesterMap.get(grade.semesterId);
+      return {
+        id: grade.id,
+        subject: grade.subjects || { name: 'Unknown', code: 'N/A', category: 'UMUM' },
+        semester: semester ? {
+          id: semester.id,
+          name: semester.name,
+          startDate: semester.startDate,
+          endDate: semester.endDate,
+          academicYear: {
+            name: semester.academic_years?.name || 'Unknown',
+            isActive: semester.academic_years?.isActive || false
+          }
+        } : null,
+        scores: {
+          midterm: grade.midterm?.toNumber(),
+          final: grade.final?.toNumber(),
+          assignment: grade.assignment?.toNumber(),
+          quiz: grade.quiz?.toNumber(),
+          participation: grade.participation?.toNumber(),
+          project: grade.project?.toNumber(),
+          daily: grade.daily?.toNumber()
+        },
+        total: grade.total?.toNumber(),
+        grade: grade.grade,
+        point: grade.point?.toNumber(),
+        gradeInfo: grade.total ? getGradeLevel(grade.total.toNumber()) : null,
+        akhlak: grade.akhlak,
+        quranMemory: grade.quranMemory,
+        notes: grade.notes,
+        enteredAt: grade.enteredAt,
+        isLocked: grade.isLocked
+      };
+    });
 
     const result = {
       studentInfo: {
@@ -259,29 +281,29 @@ export async function GET(
       },
       overallStats: stats,
       highestGrade: highestGrade ? {
-        subject: highestGrade.subject.name,
+        subject: highestGrade.subjects?.name || 'Unknown',
         score: highestGrade.total?.toNumber(),
         grade: highestGrade.grade,
-        semester: highestGrade.semester.name
+        semester: semesterMap.get(highestGrade.semesterId)?.name || 'Unknown'
       } : null,
       lowestGrade: lowestGrade ? {
-        subject: lowestGrade.subject.name,
+        subject: lowestGrade.subjects?.name || 'Unknown',
         score: lowestGrade.total?.toNumber(),
         grade: lowestGrade.grade,
-        semester: lowestGrade.semester.name
+        semester: semesterMap.get(lowestGrade.semesterId)?.name || 'Unknown'
       } : null,
       categoryStats,
       semesterPerformance,
       gradeTrends,
       grades: formattedGrades,
       // Helper data for UI
-      availableSemesters: [...new Set(filteredGrades.map(grade => ({
-        id: grade.semester.id,
-        name: grade.semester.name,
-        academicYear: grade.semester.academicYear.name,
-        isActive: grade.semester.academicYear.isActive
-      })))],
-      availableCategories: [...new Set(filteredGrades.map(grade => grade.subject.category))]
+      availableSemesters: semesters.map(semester => ({
+        id: semester.id,
+        name: semester.name,
+        academicYear: semester.academic_years?.name || 'Unknown',
+        isActive: semester.academic_years?.isActive || false
+      })),
+      availableCategories: [...new Set(filteredGrades.map(grade => grade.subjects?.category || 'UMUM'))]
     };
 
     return NextResponse.json(result);

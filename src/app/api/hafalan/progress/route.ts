@@ -119,7 +119,7 @@ async function generateProgressReport(studentId: string) {
   if (!student) return null;
 
   // Get progress data
-  const progress = await prisma.hafalan_progress.findUnique({
+  const progress = await prisma.hafalan_progress.findFirst({
     where: { studentId }
   });
 
@@ -127,11 +127,20 @@ async function generateProgressReport(studentId: string) {
   const recentSessions = await prisma.hafalan_sessions.findMany({
     where: { studentId },
     orderBy: { sessionDate: 'desc' },
-    take: 5,
-    include: {
-      teacher: { select: { name: true } }
-    }
+    take: 5
   });
+
+  // Get teacher data for sessions
+  const teacherIds = recentSessions.map(s => s.teacherId).filter(Boolean);
+  const teachers = await prisma.users.findMany({
+    where: { id: { in: teacherIds } },
+    select: { id: true, name: true }
+  });
+
+  const sessionsWithTeacher = recentSessions.map(session => ({
+    ...session,
+    teacher: teachers.find(t => t.id === session.teacherId)
+  }));
 
   // Get achievements
   const achievements = await prisma.hafalan_achievements.findMany({
@@ -175,23 +184,32 @@ async function generateProgressReport(studentId: string) {
       studentId,
       status: 'ACTIVE'
     },
-    include: {
-      surah: { select: { name: true, nameArabic: true } }
-    },
     orderBy: { targetDate: 'asc' }
   });
+
+  // Get surah data for targets
+  const targetSurahNumbers = currentTargets.map(t => t.targetSurah);
+  const targetSurahs = await prisma.quran_surahs.findMany({
+    where: { number: { in: targetSurahNumbers } },
+    select: { number: true, name: true, nameArabic: true }
+  });
+
+  const targetsWithSurah = currentTargets.map(target => ({
+    ...target,
+    surah: targetSurahs.find(s => s.number === target.targetSurah)
+  }));
 
   return {
     student,
     progress,
-    recentSessions: recentSessions.map(session => ({
+    recentSessions: sessionsWithTeacher.map(session => ({
       ...session,
       content: JSON.parse(session.content)
     })),
     achievements,
     monthlyStats,
     juzProgress,
-    currentTargets,
+    currentTargets: targetsWithSurah,
     generatedAt: new Date()
   };
 }
@@ -292,11 +310,6 @@ async function handleAnalytics(classId?: string | null, level?: string | null, p
     // Top performers
     prisma.hafalan_progress.findMany({
       where: { studentId: { in: studentIds } },
-      include: {
-        student: {
-          select: { fullName: true, photo: true, institutionType: true }
-        }
-      },
       orderBy: [
         { overallProgress: 'desc' },
         { totalSurah: 'desc' }
@@ -304,6 +317,18 @@ async function handleAnalytics(classId?: string | null, level?: string | null, p
       take: 10
     })
   ]);
+
+  // Get student data for top performers
+  const topPerformerStudentIds = topPerformers.map(p => p.studentId);
+  const topPerformerStudents = await prisma.students.findMany({
+    where: { id: { in: topPerformerStudentIds } },
+    select: { id: true, fullName: true, photo: true, institutionType: true }
+  });
+
+  const topPerformersWithStudent = topPerformers.map(performer => ({
+    ...performer,
+    student: topPerformerStudents.find(s => s.id === performer.studentId)
+  }));
 
   // Process completion rates
   const levelStats = {
@@ -340,7 +365,7 @@ async function handleAnalytics(classId?: string | null, level?: string | null, p
       totalRecords,
       levelStats,
       monthlyTrends,
-      topPerformers
+      topPerformers: topPerformersWithStudent
     },
     generatedAt: new Date()
   });
@@ -427,23 +452,14 @@ export async function GET(request: NextRequest) {
           weeklyStats
         ] = await Promise.all([
           // Progress data
-          prisma.hafalan_progress.findUnique({
+          prisma.hafalan_progress.findFirst({
             where: { studentId: student.id }
           }),
           
           // Most recent record
           prisma.hafalan_records.findFirst({
             where: { studentId: student.id },
-            orderBy: { date: 'desc' },
-            include: {
-              surah: {
-                select: {
-                  number: true,
-                  name: true,
-                  nameArabic: true
-                }
-              }
-            }
+            orderBy: { date: 'desc' }
           }),
           
           // Current active target
@@ -451,15 +467,6 @@ export async function GET(request: NextRequest) {
             where: {
               studentId: student.id,
               status: 'ACTIVE'
-            },
-            include: {
-              surah: {
-                select: {
-                  number: true,
-                  name: true,
-                  nameArabic: true
-                }
-              }
             },
             orderBy: { targetDate: 'asc' }
           }),
@@ -498,6 +505,32 @@ export async function GET(request: NextRequest) {
             _avg: { duration: true }
           })
         ]);
+
+        // Get surah data for recent record and target
+        let recentRecordWithSurah = recentRecord;
+        let currentTargetWithSurah = currentTarget;
+
+        if (recentRecord) {
+          const surah = await prisma.quran_surahs.findFirst({
+            where: { number: recentRecord.surahNumber },
+            select: { number: true, name: true, nameArabic: true }
+          });
+          recentRecordWithSurah = recentRecord as any;
+          if (surah) {
+            recentRecordWithSurah = { ...recentRecord, surah };
+          }
+        }
+
+        if (currentTarget) {
+          const surah = await prisma.quran_surahs.findFirst({
+            where: { number: currentTarget.targetSurah },
+            select: { number: true, name: true, nameArabic: true }
+          });
+          currentTargetWithSurah = currentTarget as any;
+          if (surah) {
+            currentTargetWithSurah = { ...currentTarget, surah };
+          }
+        }
 
         // Calculate days since last activity
         let daysSinceLastActivity = null;
@@ -546,8 +579,8 @@ export async function GET(request: NextRequest) {
             totalSessions: 0,
             avgQuality: 0
           },
-          recentRecord,
-          currentTarget,
+          recentRecord: recentRecordWithSurah,
+          currentTarget: currentTargetWithSurah,
           achievementCount,
           recentSession,
           weeklyStats: {
@@ -558,8 +591,8 @@ export async function GET(request: NextRequest) {
           daysSinceLastActivity,
           activityStatus,
           // Legacy status for backward compatibility
-          status: activityStatus === 'SANGAT_AKTIF' ? 'AKTIF' : 
-                  activityStatus === 'PERLU_MOTIVASI' ? 'KURANG_AKTIF' : 
+          status: activityStatus === 'SANGAT_AKTIF' ? 'AKTIF' :
+                  activityStatus === 'PERLU_MOTIVASI' ? 'KURANG_AKTIF' :
                   activityStatus
         };
       })
@@ -671,7 +704,7 @@ export async function POST(request: NextRequest) {
       case 'recalculate':
         // Recalculate progress based on existing records
         await updateStudentProgressFromRecords(studentId);
-        result = await prisma.hafalan_progress.findUnique({
+        result = await prisma.hafalan_progress.findFirst({
           where: { studentId }
         });
         break;
@@ -685,7 +718,7 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        result = await prisma.hafalan_targets.create({
+        const target = await prisma.hafalan_targets.create({
           data: {
             studentId,
             targetSurah: data.surahNumber,
@@ -698,11 +731,16 @@ export async function POST(request: NextRequest) {
             motivation: data.motivation,
             createdBy: session.user.id,
             notes: data.notes
-          },
-          include: {
-            surah: { select: { name: true, nameArabic: true } }
           }
         });
+
+        // Get surah data
+        const surah = await prisma.quran_surahs.findFirst({
+          where: { number: data.surahNumber },
+          select: { name: true, nameArabic: true }
+        });
+
+        result = { ...target, surah } as any;
         break;
 
       case 'update_level':
@@ -781,12 +819,20 @@ export async function PUT(request: NextRequest) {
           await updateStudentProgressFromRecords(studentId);
         }
         
-        results = await prisma.hafalan_progress.findMany({
-          where: { studentId: { in: studentIds } },
-          include: {
-            student: { select: { fullName: true } }
-          }
+        const progressData = await prisma.hafalan_progress.findMany({
+          where: { studentId: { in: studentIds } }
         });
+
+        // Get student data
+        const progressStudents = await prisma.students.findMany({
+          where: { id: { in: studentIds } },
+          select: { id: true, fullName: true }
+        });
+
+        results = progressData.map(progress => ({
+          ...progress,
+          student: progressStudents.find(s => s.id === progress.studentId)
+        }));
         break;
 
       case 'bulk_target':
@@ -816,17 +862,32 @@ export async function PUT(request: NextRequest) {
           });
         }
 
-        results = await prisma.hafalan_targets.findMany({
+        const targetsData = await prisma.hafalan_targets.findMany({
           where: {
             studentId: { in: studentIds },
             createdBy: session.user.id
           },
-          include: {
-            student: { select: { fullName: true } },
-            surah: { select: { name: true, nameArabic: true } }
-          },
           orderBy: { createdAt: 'desc' }
         });
+
+        // Get student data
+        const targetStudents = await prisma.students.findMany({
+          where: { id: { in: studentIds } },
+          select: { id: true, fullName: true }
+        });
+
+        // Get surah data
+        const targetSurahNumbers = [...new Set(targetsData.map(t => t.targetSurah))];
+        const targetSurahs = await prisma.quran_surahs.findMany({
+          where: { number: { in: targetSurahNumbers } },
+          select: { number: true, name: true, nameArabic: true }
+        });
+
+        results = targetsData.map(target => ({
+          ...target,
+          student: targetStudents.find(s => s.id === target.studentId),
+          surah: targetSurahs.find(s => s.number === target.targetSurah)
+        }));
         break;
 
       default:
@@ -854,12 +915,19 @@ export async function PUT(request: NextRequest) {
 // Helper function to recalculate progress from records
 async function updateStudentProgressFromRecords(studentId: string) {
   const records = await prisma.hafalan_records.findMany({
-    where: { 
+    where: {
       studentId,
       status: { in: ['LANCAR', 'MUTQIN'] }
-    },
-    include: { surah: true }
+    }
   });
+
+  // Get surah data for records
+  const surahNumbers = [...new Set(records.map(r => r.surahNumber))];
+  const surahs = await prisma.quran_surahs.findMany({
+    where: { number: { in: surahNumbers } }
+  });
+
+  const surahMap = new Map(surahs.map(s => [s.number, s]));
 
   const completedSurahs = new Set();
   let totalAyat = 0;
@@ -869,31 +937,34 @@ async function updateStudentProgressFromRecords(studentId: string) {
   records.forEach(record => {
     // Count ayats
     totalAyat += (record.endAyat - record.startAyat + 1);
-    
+
     // Calculate quality score
     const qualityScore = record.quality === 'A' ? 4 : record.quality === 'B' ? 3 : 2;
     qualitySum += qualityScore;
 
     // Calculate juz progress
-    const juz = record.surah.juz;
-    if (!juzProgress[juz]) juzProgress[juz] = 0;
-    juzProgress[juz] += (record.endAyat - record.startAyat + 1);
+    const surah = surahMap.get(record.surahNumber);
+    if (surah) {
+      const juz = surah.juz;
+      if (!juzProgress[juz]) juzProgress[juz] = 0;
+      juzProgress[juz] += (record.endAyat - record.startAyat + 1);
 
-    // Check if entire surah is completed with MUTQIN status
-    if (record.status === 'MUTQIN') {
-      const surahRecords = records.filter(r => 
-        r.surahNumber === record.surahNumber && r.status === 'MUTQIN'
-      );
-      
-      const completedAyats = new Set();
-      surahRecords.forEach(r => {
-        for (let i = r.startAyat; i <= r.endAyat; i++) {
-          completedAyats.add(i);
+      // Check if entire surah is completed with MUTQIN status
+      if (record.status === 'MUTQIN') {
+        const surahRecords = records.filter(r =>
+          r.surahNumber === record.surahNumber && r.status === 'MUTQIN'
+        );
+
+        const completedAyats = new Set();
+        surahRecords.forEach(r => {
+          for (let i = r.startAyat; i <= r.endAyat; i++) {
+            completedAyats.add(i);
+          }
+        });
+
+        if (completedAyats.size === surah.totalAyat) {
+          completedSurahs.add(record.surahNumber);
         }
-      });
-      
-      if (completedAyats.size === record.surah.totalAyat) {
-        completedSurahs.add(record.surahNumber);
       }
     }
   });

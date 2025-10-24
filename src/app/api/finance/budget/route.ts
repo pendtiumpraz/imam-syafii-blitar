@@ -34,13 +34,10 @@ const querySchema = z.object({
 async function calculateBudgetActuals(budgetId: string, budget: any) {
   const budgetItems = await prisma.budget_items.findMany({
     where: { budgetId },
-    include: {
-      category: true,
-    },
   })
 
   // Get actual transactions for the budget period
-  const actualTransactions = await prisma.transaction.groupBy({
+  const actualTransactions = await prisma.transactions.groupBy({
     by: ['categoryId'],
     _sum: {
       amount: true,
@@ -127,30 +124,6 @@ export async function GET(request: NextRequest) {
     const [budgets, total] = await Promise.all([
       prisma.budgets.findMany({
         where,
-        include: {
-          creator: {
-            select: {
-              id: true,
-              name: true,
-              username: true,
-            },
-          },
-          items: query.includeItems ? {
-            include: {
-              category: {
-                include: {
-                  account: true,
-                },
-              },
-            },
-          } : false,
-          _count: {
-            select: {
-              items: true,
-              reports: true,
-            },
-          },
-        },
         orderBy: [
           { startDate: 'desc' },
           { createdAt: 'desc' },
@@ -161,12 +134,96 @@ export async function GET(request: NextRequest) {
       prisma.budgets.count({ where }),
     ])
 
+    // Get creators for budgets
+    const creatorIds = [...new Set(budgets.map(b => b.createdBy))]
+    const creators = await prisma.users.findMany({
+      where: { id: { in: creatorIds } },
+      select: {
+        id: true,
+        name: true,
+        username: true,
+      },
+    })
+
+    // Get budget items if requested
+    let budgetItemsMap = new Map()
+    let categoriesMap = new Map()
+    let accountsMap = new Map()
+
+    if (query.includeItems) {
+      const allBudgetItems = await prisma.budget_items.findMany({
+        where: { budgetId: { in: budgets.map(b => b.id) } },
+      })
+
+      // Group items by budget
+      allBudgetItems.forEach(item => {
+        if (!budgetItemsMap.has(item.budgetId)) {
+          budgetItemsMap.set(item.budgetId, [])
+        }
+        budgetItemsMap.get(item.budgetId).push(item)
+      })
+
+      // Get categories for items
+      const categoryIds = [...new Set(allBudgetItems.map(i => i.categoryId))]
+      const categories = await prisma.financial_categories.findMany({
+        where: { id: { in: categoryIds } },
+      })
+      categories.forEach(c => categoriesMap.set(c.id, c))
+
+      // Get accounts for categories
+      const accountIds = [...new Set(categories.map(c => c.accountId))]
+      const accounts = await prisma.financial_accounts.findMany({
+        where: { id: { in: accountIds } },
+      })
+      accounts.forEach(a => accountsMap.set(a.id, a))
+    }
+
+    // Get counts
+    const itemCounts = await prisma.budget_items.groupBy({
+      by: ['budgetId'],
+      _count: true,
+      where: { budgetId: { in: budgets.map(b => b.id) } },
+    })
+
+    const reportCounts = await prisma.financial_reports.groupBy({
+      by: ['budgetId'],
+      _count: true,
+      where: {
+        budgetId: { in: budgets.map(b => b.id) },
+        isDeleted: false,
+      },
+    })
+
+    // Combine data
+    const budgetsWithRelations = budgets.map(budget => {
+      const items = budgetItemsMap.get(budget.id) || []
+      const itemsWithRelations = items.map((item: any) => {
+        const category = categoriesMap.get(item.categoryId)
+        const account = category ? accountsMap.get(category.accountId) : null
+        return {
+          ...item,
+          category: category ? {
+            ...category,
+            account,
+          } : null,
+        }
+      })
+
+      return {
+        ...budget,
+        creator: creators.find(c => c.id === budget.createdBy),
+        items: query.includeItems ? itemsWithRelations : undefined,
+        _count: {
+          items: itemCounts.find(ic => ic.budgetId === budget.id)?._count || 0,
+          reports: reportCounts.find(rc => rc.budgetId === budget.id)?._count || 0,
+        },
+      }
+    })
+
     // Calculate actuals if requested
     if (query.includeActuals) {
-      for (const budget of budgets) {
-        if (budget.items) {
-          await calculateBudgetActuals(budget.id, budget)
-        }
+      for (const budget of budgetsWithRelations) {
+        await calculateBudgetActuals(budget.id, budget)
       }
     }
 
@@ -181,7 +238,7 @@ export async function GET(request: NextRequest) {
     })
 
     return NextResponse.json({
-      budgets,
+      budgets: budgetsWithRelations,
       pagination: {
         page: query.page,
         limit: query.limit,
@@ -272,7 +329,7 @@ export async function POST(request: NextRequest) {
 
     // Verify all categories exist and are active
     const categoryIds = data.items.map(item => item.categoryId)
-    const categories = await prisma.financialCategory.findMany({
+    const categories = await prisma.financial_categories.findMany({
       where: {
         id: { in: categoryIds },
         isActive: true,
@@ -289,7 +346,7 @@ export async function POST(request: NextRequest) {
     // Calculate total budget
     const totalBudget = data.items.reduce((sum, item) => sum + item.budgetAmount, 0)
 
-    // Create budget with items
+    // Create budget
     const budget = await prisma.budgets.create({
       data: {
         name: data.name,
@@ -299,42 +356,66 @@ export async function POST(request: NextRequest) {
         totalBudget,
         description: data.description,
         createdBy: session.user.id,
-        items: {
-          create: data.items.map(item => ({
-            categoryId: item.categoryId,
-            budgetAmount: item.budgetAmount,
-            notes: item.notes,
-          })),
-        },
-      },
-      include: {
-        creator: {
-          select: {
-            id: true,
-            name: true,
-            username: true,
-          },
-        },
-        items: {
-          include: {
-            category: {
-              include: {
-                account: true,
-              },
-            },
-          },
-        },
-        _count: {
-          select: {
-            items: true,
-            reports: true,
-          },
-        },
       },
     })
 
+    // Create budget items
+    await prisma.budget_items.createMany({
+      data: data.items.map(item => ({
+        budgetId: budget.id,
+        categoryId: item.categoryId,
+        budgetAmount: item.budgetAmount,
+        notes: item.notes,
+      })),
+    })
+
+    // Get creator info
+    const creator = await prisma.users.findUnique({
+      where: { id: session.user.id },
+      select: {
+        id: true,
+        name: true,
+        username: true,
+      },
+    })
+
+    // Get budget items with categories and accounts
+    const items = await prisma.budget_items.findMany({
+      where: { budgetId: budget.id },
+    })
+
+    const itemCategories = await prisma.financial_categories.findMany({
+      where: { id: { in: items.map(i => i.categoryId) } },
+    })
+
+    const itemAccounts = await prisma.financial_accounts.findMany({
+      where: { id: { in: itemCategories.map(c => c.accountId) } },
+    })
+
+    const itemsWithRelations = items.map(item => {
+      const category = itemCategories.find(c => c.id === item.categoryId)
+      const account = category ? itemAccounts.find(a => a.id === category.accountId) : null
+      return {
+        ...item,
+        category: category ? {
+          ...category,
+          account,
+        } : null,
+      }
+    })
+
+    const budgetWithRelations = {
+      ...budget,
+      creator,
+      items: itemsWithRelations,
+      _count: {
+        items: items.length,
+        reports: 0,
+      },
+    }
+
     return NextResponse.json({
-      budget,
+      budget: budgetWithRelations,
       message: 'Budget created successfully',
     }, { status: 201 })
 

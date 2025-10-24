@@ -44,18 +44,22 @@ export async function POST(
     
     // Check if question exists and is still pending
     const question = await prisma.questions.findUnique({
-      where: { id: params.id },
-      include: { answer: true }
+      where: { id: params.id }
     })
-    
+
     if (!question) {
       return NextResponse.json({
         success: false,
         message: 'Pertanyaan tidak ditemukan'
       }, { status: 404 })
     }
-    
-    if (question.answer) {
+
+    // Check if answer already exists
+    const existingAnswer = await prisma.answers.findFirst({
+      where: { questionId: params.id }
+    })
+
+    if (existingAnswer) {
       return NextResponse.json({
         success: false,
         message: 'Pertanyaan sudah dijawab. Gunakan endpoint PUT untuk mengedit jawaban.'
@@ -65,32 +69,30 @@ export async function POST(
     // Create answer and update question status in a transaction
     const result = await prisma.$transaction(async (tx) => {
       // Create the answer
-      const answer = await tx.answer.create({
+      const answer = await tx.answers.create({
         data: {
           questionId: params.id,
           ustadzId: user.id,
           answer: validatedData.answer.trim()
-        },
-        include: {
-          ustadz: {
-            select: {
-              id: true,
-              name: true
-            }
-          }
         }
       })
-      
+
       // Update question status to answered
-      await tx.question.update({
+      await tx.questions.update({
         where: { id: params.id },
-        data: { 
+        data: {
           status: 'answered',
           updatedAt: new Date()
         }
       })
-      
+
       return answer
+    })
+
+    // Get user info for response
+    const ustadz = await prisma.users.findUnique({
+      where: { id: user.id },
+      select: { id: true, name: true }
     })
     
     return NextResponse.json({
@@ -99,7 +101,7 @@ export async function POST(
       data: {
         id: result.id,
         answer: result.answer,
-        ustadz: result.ustadz,
+        ustadz: ustadz,
         createdAt: result.createdAt
       }
     }, { status: 201 })
@@ -159,39 +161,32 @@ export async function PUT(
     const body = await request.json()
     const validatedData = answerSchema.parse(body)
     
-    // Check if question exists and has an answer
+    // Check if question exists
     const question = await prisma.questions.findUnique({
-      where: { id: params.id },
-      include: { 
-        answer: {
-          include: {
-            ustadz: {
-              select: {
-                id: true,
-                name: true
-              }
-            }
-          }
-        }
-      }
+      where: { id: params.id }
     })
-    
+
     if (!question) {
       return NextResponse.json({
         success: false,
         message: 'Pertanyaan tidak ditemukan'
       }, { status: 404 })
     }
-    
-    if (!question.answer) {
+
+    // Check if answer exists
+    const answer = await prisma.answers.findFirst({
+      where: { questionId: params.id }
+    })
+
+    if (!answer) {
       return NextResponse.json({
         success: false,
         message: 'Pertanyaan belum dijawab. Gunakan endpoint POST untuk membuat jawaban.'
       }, { status: 404 })
     }
-    
+
     // Only allow the original answerer or admin to edit
-    if (question.answer.ustadzId !== user.id && !['ADMIN', 'SUPER_ADMIN'].includes(user.role)) {
+    if (answer.ustadzId !== user.id && !['ADMIN', 'SUPER_ADMIN'].includes(user.role)) {
       return NextResponse.json({
         success: false,
         message: 'Forbidden. You can only edit your own answers.'
@@ -200,25 +195,23 @@ export async function PUT(
     
     // Update the answer
     const updatedAnswer = await prisma.answers.update({
-      where: { id: question.answer.id },
+      where: { id: answer.id },
       data: {
         answer: validatedData.answer.trim(),
         updatedAt: new Date()
-      },
-      include: {
-        ustadz: {
-          select: {
-            id: true,
-            name: true
-          }
-        }
       }
     })
-    
+
     // Also update question's updatedAt
     await prisma.questions.update({
       where: { id: params.id },
       data: { updatedAt: new Date() }
+    })
+
+    // Get user info for response
+    const ustadz = await prisma.users.findUnique({
+      where: { id: answer.ustadzId },
+      select: { id: true, name: true }
     })
     
     return NextResponse.json({
@@ -227,7 +220,7 @@ export async function PUT(
       data: {
         id: updatedAnswer.id,
         answer: updatedAnswer.answer,
-        ustadz: updatedAnswer.ustadz,
+        ustadz: ustadz,
         createdAt: updatedAnswer.createdAt,
         updatedAt: updatedAnswer.updatedAt
       }
@@ -284,30 +277,39 @@ export async function GET(
       }, { status: 403 })
     }
     
-    // Get question with answer
+    // Get question
     const question = await prisma.questions.findUnique({
-      where: { id: params.id },
-      include: {
-        answer: {
-          include: {
-            ustadz: {
-              select: {
-                id: true,
-                name: true
-              }
-            }
-          }
-        }
-      }
+      where: { id: params.id }
     })
-    
+
     if (!question) {
       return NextResponse.json({
         success: false,
         message: 'Pertanyaan tidak ditemukan'
       }, { status: 404 })
     }
-    
+
+    // Get answer if exists
+    const answer = await prisma.answers.findFirst({
+      where: { questionId: params.id }
+    })
+
+    let answerData = null;
+    if (answer) {
+      const ustadz = await prisma.users.findUnique({
+        where: { id: answer.ustadzId },
+        select: { id: true, name: true }
+      });
+
+      answerData = {
+        id: answer.id,
+        answer: answer.answer,
+        ustadz: ustadz,
+        createdAt: answer.createdAt,
+        updatedAt: answer.updatedAt
+      };
+    }
+
     return NextResponse.json({
       success: true,
       data: {
@@ -319,13 +321,7 @@ export async function GET(
         status: question.status,
         createdAt: question.createdAt,
         updatedAt: question.updatedAt,
-        answer: question.answer ? {
-          id: question.answer.id,
-          answer: question.answer.answer,
-          ustadz: question.answer.ustadz,
-          createdAt: question.answer.createdAt,
-          updatedAt: question.answer.updatedAt
-        } : null
+        answer: answerData
       }
     })
     

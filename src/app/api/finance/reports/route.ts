@@ -27,72 +27,83 @@ const querySchema = z.object({
 
 // Helper functions for generating different types of reports
 async function generateIncomeStatement(startDate: Date, endDate: Date, includeDetails: boolean) {
-  // Get income categories and transactions
+  // Get income categories
   const incomeCategories = await prisma.financial_categories.findMany({
-    where: { 
+    where: {
       type: { in: ['INCOME', 'DONATION'] },
       isActive: true,
     },
-    include: {
-      transactions: {
-        where: {
-          status: 'POSTED',
-          date: {
-            gte: startDate,
-            lte: endDate,
-          },
-        },
-        ...(includeDetails ? {
-          select: {
-            id: true,
-            transactionNo: true,
-            amount: true,
-            description: true,
-            date: true,
-          },
-        } : {}),
+  })
+
+  // Get transactions for income categories
+  const incomeTransactions = await prisma.transactions.findMany({
+    where: {
+      categoryId: { in: incomeCategories.map(c => c.id) },
+      status: 'POSTED',
+      date: {
+        gte: startDate,
+        lte: endDate,
       },
-      account: true,
+    },
+    select: includeDetails ? {
+      id: true,
+      transactionNo: true,
+      amount: true,
+      description: true,
+      date: true,
+      categoryId: true,
+    } : {
+      amount: true,
+      categoryId: true,
     },
   })
 
-  // Get expense categories and transactions
+  // Get accounts for income categories
+  const incomeAccountIds = incomeCategories.map(c => c.accountId)
+  const incomeAccounts = await prisma.financial_accounts.findMany({
+    where: { id: { in: incomeAccountIds } },
+  })
+
+  // Get expense categories
   const expenseCategories = await prisma.financial_categories.findMany({
-    where: { 
+    where: {
       type: 'EXPENSE',
       isActive: true,
     },
-    include: {
-      transactions: {
-        where: {
-          status: 'POSTED',
-          date: {
-            gte: startDate,
-            lte: endDate,
-          },
-        },
-        ...(includeDetails ? {
-          select: {
-            id: true,
-            transactionNo: true,
-            amount: true,
-            description: true,
-            date: true,
-          },
-        } : {}),
+  })
+
+  // Get transactions for expense categories
+  const expenseTransactions = await prisma.transactions.findMany({
+    where: {
+      categoryId: { in: expenseCategories.map(c => c.id) },
+      status: 'POSTED',
+      date: {
+        gte: startDate,
+        lte: endDate,
       },
-      account: true,
+    },
+    select: includeDetails ? {
+      id: true,
+      transactionNo: true,
+      amount: true,
+      description: true,
+      date: true,
+      categoryId: true,
+    } : {
+      amount: true,
+      categoryId: true,
     },
   })
 
-  // Calculate totals
-  const totalIncome = incomeCategories.reduce((sum, category) => 
-    sum + category.transactions.reduce((catSum, tx) => catSum + tx.amount, 0), 0
-  )
+  // Get accounts for expense categories
+  const expenseAccountIds = expenseCategories.map(c => c.accountId)
+  const expenseAccounts = await prisma.financial_accounts.findMany({
+    where: { id: { in: expenseAccountIds } },
+  })
 
-  const totalExpenses = expenseCategories.reduce((sum, category) => 
-    sum + category.transactions.reduce((catSum, tx) => catSum + tx.amount, 0), 0
-  )
+  // Calculate totals
+  const totalIncome = incomeTransactions.reduce((sum, tx) => sum + tx.amount, 0)
+  const totalExpenses = expenseTransactions.reduce((sum, tx) => sum + tx.amount, 0)
 
   const netIncome = totalIncome - totalExpenses
 
@@ -104,28 +115,36 @@ async function generateIncomeStatement(startDate: Date, endDate: Date, includeDe
       totalExpenses,
       netIncome,
     },
-    income: incomeCategories.map(category => ({
-      category: {
-        id: category.id,
-        name: category.name,
-        type: category.type,
-        account: category.account,
-      },
-      total: category.transactions.reduce((sum, tx) => sum + tx.amount, 0),
-      transactionCount: category.transactions.length,
-      ...(includeDetails ? { transactions: category.transactions } : {}),
-    })),
-    expenses: expenseCategories.map(category => ({
-      category: {
-        id: category.id,
-        name: category.name,
-        type: category.type,
-        account: category.account,
-      },
-      total: category.transactions.reduce((sum, tx) => sum + tx.amount, 0),
-      transactionCount: category.transactions.length,
-      ...(includeDetails ? { transactions: category.transactions } : {}),
-    })),
+    income: incomeCategories.map(category => {
+      const categoryTransactions = incomeTransactions.filter(tx => tx.categoryId === category.id)
+      const account = incomeAccounts.find(a => a.id === category.accountId)
+      return {
+        category: {
+          id: category.id,
+          name: category.name,
+          type: category.type,
+          account,
+        },
+        total: categoryTransactions.reduce((sum, tx) => sum + tx.amount, 0),
+        transactionCount: categoryTransactions.length,
+        ...(includeDetails ? { transactions: categoryTransactions } : {}),
+      }
+    }),
+    expenses: expenseCategories.map(category => {
+      const categoryTransactions = expenseTransactions.filter(tx => tx.categoryId === category.id)
+      const account = expenseAccounts.find(a => a.id === category.accountId)
+      return {
+        category: {
+          id: category.id,
+          name: category.name,
+          type: category.type,
+          account,
+        },
+        total: categoryTransactions.reduce((sum, tx) => sum + tx.amount, 0),
+        transactionCount: categoryTransactions.length,
+        ...(includeDetails ? { transactions: categoryTransactions } : {}),
+      }
+    }),
   }
 }
 
@@ -133,10 +152,6 @@ async function generateBalanceSheet(asOfDate: Date) {
   // Get all accounts with their current balances
   const accounts = await prisma.financial_accounts.findMany({
     where: { isActive: true },
-    include: {
-      parent: true,
-      children: true,
-    },
     orderBy: [
       { type: 'asc' },
       { code: 'asc' },
@@ -190,27 +205,38 @@ async function generateCashFlowStatement(startDate: Date, endDate: Date, include
   const journalLines = await prisma.journal_entry_lines.findMany({
     where: {
       accountId: cashAccount.id,
-      journal: {
-        status: 'POSTED',
-        date: {
-          gte: startDate,
-          lte: endDate,
-        },
-      },
     },
-    include: {
-      journal: {
-        include: {
-          transaction: {
-            include: {
-              category: true,
-            },
-          },
-        },
+  })
+
+  // Get journal entries
+  const journalIds = journalLines.map(l => l.journalId)
+  const journals = await prisma.journal_entries.findMany({
+    where: {
+      id: { in: journalIds },
+      status: 'POSTED',
+      date: {
+        gte: startDate,
+        lte: endDate,
       },
     },
     orderBy: {
-      journal: { date: 'asc' },
+      date: 'asc',
+    },
+  })
+
+  // Get transactions for journals
+  const transactionIds = journals.filter(j => j.transactionId).map(j => j.transactionId!)
+  const transactions = await prisma.transactions.findMany({
+    where: {
+      id: { in: transactionIds },
+    },
+  })
+
+  // Get categories for transactions
+  const categoryIds = transactions.map(t => t.categoryId)
+  const categories = await prisma.financial_categories.findMany({
+    where: {
+      id: { in: categoryIds },
     },
   })
 
@@ -220,19 +246,28 @@ async function generateCashFlowStatement(startDate: Date, endDate: Date, include
   const financingActivities: any[] = []
 
   journalLines.forEach(line => {
+    const journal = journals.find(j => j.id === line.journalId)
+    if (!journal) return
+
+    const transaction = transactions.find(t => t.id === journal.transactionId)
+    const category = transaction ? categories.find(c => c.id === transaction.categoryId) : undefined
+
     const netAmount = line.debitAmount - line.creditAmount
     const activity = {
-      date: line.journal.date,
-      description: line.journal.description,
-      reference: line.journal.reference,
+      date: journal.date,
+      description: journal.description,
+      reference: journal.reference,
       amount: netAmount,
-      transaction: line.journal.transaction,
+      transaction: transaction ? {
+        ...transaction,
+        category,
+      } : undefined,
     }
 
-    // Categorize based on transaction type and category
-    if (line.journal.transaction?.type === 'INCOME' || line.journal.transaction?.type === 'EXPENSE') {
+    // Categorize based on transaction type
+    if (transaction?.type === 'INCOME' || transaction?.type === 'EXPENSE') {
       operatingActivities.push(activity)
-    } else if (line.journal.transaction?.type === 'DONATION') {
+    } else if (transaction?.type === 'DONATION') {
       financingActivities.push(activity)
     } else {
       // Default to operating for now
@@ -264,44 +299,68 @@ async function generateCashFlowStatement(startDate: Date, endDate: Date, include
 async function generateBudgetVarianceReport(budgetId: string, includeDetails: boolean) {
   const budget = await prisma.budgets.findUnique({
     where: { id: budgetId },
-    include: {
-      items: {
-        include: {
-          category: {
-            include: {
-              account: true,
-              transactions: {
-                where: {
-                  status: 'POSTED',
-                },
-              },
-            },
-          },
-        },
-      },
-    },
   })
 
   if (!budget) {
     throw new Error('Budget not found')
   }
 
+  // Get budget items
+  const budgetItems = await prisma.budget_items.findMany({
+    where: { budgetId },
+  })
+
+  // Get categories for budget items
+  const categoryIds = budgetItems.map(item => item.categoryId)
+  const categories = await prisma.financial_categories.findMany({
+    where: { id: { in: categoryIds } },
+  })
+
+  // Get accounts for categories
+  const accountIds = categories.map(c => c.accountId)
+  const accounts = await prisma.financial_accounts.findMany({
+    where: { id: { in: accountIds } },
+  })
+
+  // Get transactions for budget period
+  const transactions = await prisma.transactions.findMany({
+    where: {
+      categoryId: { in: categoryIds },
+      status: 'POSTED',
+      date: {
+        gte: budget.startDate,
+        lte: budget.endDate,
+      },
+    },
+    select: includeDetails ? {
+      id: true,
+      transactionNo: true,
+      amount: true,
+      description: true,
+      date: true,
+      categoryId: true,
+    } : {
+      amount: true,
+      categoryId: true,
+    },
+  })
+
   // Calculate actual amounts for each budget item
-  const reportItems = budget.items.map(item => {
-    const actualTransactions = item.category.transactions.filter(tx => 
-      tx.date >= budget.startDate && tx.date <= budget.endDate
-    )
-    
+  const reportItems = budgetItems.map(item => {
+    const category = categories.find(c => c.id === item.categoryId)!
+    const account = accounts.find(a => a.id === category.accountId)
+    const actualTransactions = transactions.filter(tx => tx.categoryId === item.categoryId)
+
     const actualAmount = actualTransactions.reduce((sum, tx) => sum + tx.amount, 0)
     const variance = actualAmount - item.budgetAmount
     const variancePercent = item.budgetAmount > 0 ? (variance / item.budgetAmount) * 100 : 0
 
     return {
       category: {
-        id: item.category.id,
-        name: item.category.name,
-        type: item.category.type,
-        account: item.category.account,
+        id: category.id,
+        name: category.name,
+        type: category.type,
+        account,
       },
       budgetAmount: item.budgetAmount,
       actualAmount,
@@ -312,7 +371,7 @@ async function generateBudgetVarianceReport(budgetId: string, includeDetails: bo
     }
   })
 
-  const totalBudget = budget.items.reduce((sum, item) => sum + item.budgetAmount, 0)
+  const totalBudget = budgetItems.reduce((sum, item) => sum + item.budgetAmount, 0)
   const totalActual = reportItems.reduce((sum, item) => sum + item.actualAmount, 0)
   const totalVariance = totalActual - totalBudget
   const totalVariancePercent = totalBudget > 0 ? (totalVariance / totalBudget) * 100 : 0
@@ -374,22 +433,6 @@ export async function GET(request: NextRequest) {
     const [reports, total] = await Promise.all([
       prisma.financial_reports.findMany({
         where,
-        include: {
-          creator: {
-            select: {
-              id: true,
-              name: true,
-              username: true,
-            },
-          },
-          budget: {
-            select: {
-              id: true,
-              name: true,
-              type: true,
-            },
-          },
-        },
         orderBy: [
           { createdAt: 'desc' },
         ],
@@ -399,10 +442,34 @@ export async function GET(request: NextRequest) {
       prisma.financial_reports.count({ where }),
     ])
 
-    // Parse JSON data for each report
+    // Get creators for reports
+    const creatorIds = [...new Set(reports.map(r => r.createdBy))]
+    const creators = await prisma.users.findMany({
+      where: { id: { in: creatorIds } },
+      select: {
+        id: true,
+        name: true,
+        username: true,
+      },
+    })
+
+    // Get budgets for reports
+    const budgetIds = [...new Set(reports.filter(r => r.budgetId).map(r => r.budgetId!))]
+    const budgets = await prisma.budgets.findMany({
+      where: { id: { in: budgetIds } },
+      select: {
+        id: true,
+        name: true,
+        type: true,
+      },
+    })
+
+    // Parse JSON data for each report and add creator and budget
     const reportsWithParsedData = reports.map(report => ({
       ...report,
       data: JSON.parse(report.data),
+      creator: creators.find(c => c.id === report.createdBy),
+      budget: report.budgetId ? budgets.find(b => b.id === report.budgetId) : null,
     }))
 
     return NextResponse.json({
@@ -507,28 +574,34 @@ export async function POST(request: NextRequest) {
         data: JSON.stringify(reportData),
         createdBy: session.user.id,
       },
-      include: {
-        creator: {
-          select: {
-            id: true,
-            name: true,
-            username: true,
-          },
-        },
-        budget: {
-          select: {
-            id: true,
-            name: true,
-            type: true,
-          },
-        },
+    })
+
+    // Get creator info
+    const creator = await prisma.users.findUnique({
+      where: { id: session.user.id },
+      select: {
+        id: true,
+        name: true,
+        username: true,
       },
     })
+
+    // Get budget info if applicable
+    const budget = data.budgetId ? await prisma.budgets.findUnique({
+      where: { id: data.budgetId },
+      select: {
+        id: true,
+        name: true,
+        type: true,
+      },
+    }) : null
 
     return NextResponse.json({
       report: {
         ...report,
         data: reportData,
+        creator,
+        budget,
       },
       message: 'Report generated successfully',
     }, { status: 201 })

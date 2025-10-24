@@ -37,31 +37,7 @@ export async function GET(
     }
 
     const supplier = await prisma.suppliers.findUnique({
-      where: { id: params.id },
-      include: {
-        purchaseOrders: {
-          include: {
-            items: {
-              include: {
-                product: {
-                  select: {
-                    id: true,
-                    name: true,
-                    code: true,
-                    unit: true,
-                  },
-                },
-              },
-            },
-          },
-          orderBy: { orderDate: 'desc' },
-        },
-        _count: {
-          select: {
-            purchaseOrders: true,
-          },
-        },
-      },
+      where: { id: params.id }
     })
 
     if (!supplier) {
@@ -71,56 +47,40 @@ export async function GET(
       )
     }
 
-    // Calculate supplier metrics
+    // Calculate supplier metrics from purchase orders
+    const purchaseOrders = await prisma.purchase_orders.findMany({
+      where: { supplierId: params.id },
+      orderBy: { orderDate: 'desc' }
+    });
+
     const metrics = {
-      totalPurchaseOrders: supplier.purchaseOrders.length,
-      totalPurchaseValue: supplier.purchaseOrders.reduce(
+      totalPurchaseOrders: purchaseOrders.length,
+      totalPurchaseValue: purchaseOrders.reduce(
         (sum, po) => sum + Number(po.totalAmount), 0
       ),
-      averageOrderValue: supplier.purchaseOrders.length > 0 
-        ? supplier.purchaseOrders.reduce((sum, po) => sum + Number(po.totalAmount), 0) / supplier.purchaseOrders.length
+      averageOrderValue: purchaseOrders.length > 0
+        ? purchaseOrders.reduce((sum, po) => sum + Number(po.totalAmount), 0) / purchaseOrders.length
         : 0,
-      pendingOrders: supplier.purchaseOrders.filter(po => 
+      pendingOrders: purchaseOrders.filter(po =>
         ['DRAFT', 'SENT', 'CONFIRMED', 'PARTIALLY_RECEIVED'].includes(po.status)
       ).length,
-      completedOrders: supplier.purchaseOrders.filter(po => 
+      completedOrders: purchaseOrders.filter(po =>
         po.status === 'RECEIVED'
       ).length,
-      cancelledOrders: supplier.purchaseOrders.filter(po => 
+      cancelledOrders: purchaseOrders.filter(po =>
         po.status === 'CANCELLED'
       ).length,
-      lastOrderDate: supplier.purchaseOrders[0]?.orderDate,
-      outstandingAmount: supplier.purchaseOrders
+      lastOrderDate: purchaseOrders[0]?.orderDate,
+      outstandingAmount: purchaseOrders
         .filter(po => po.paymentStatus !== 'PAID')
         .reduce((sum, po) => sum + (Number(po.totalAmount) - Number(po.paidAmount)), 0),
     }
-
-    // Get top products purchased from this supplier
-    const productStats = supplier.purchaseOrders.flatMap(po => po.items).reduce((acc, item) => {
-      const key = item.product.id
-      if (!acc[key]) {
-        acc[key] = {
-          product: item.product,
-          totalQuantity: 0,
-          totalValue: 0,
-          orderCount: 0,
-        }
-      }
-      acc[key].totalQuantity += item.quantity
-      acc[key].totalValue += Number(item.totalCost)
-      acc[key].orderCount += 1
-      return acc
-    }, {} as any)
-
-    const topProducts = Object.values(productStats)
-      .sort((a: any, b: any) => b.totalValue - a.totalValue)
-      .slice(0, 10)
 
     return NextResponse.json({
       supplier: {
         ...supplier,
         metrics,
-        topProducts,
+        purchaseOrders: purchaseOrders.slice(0, 10), // Latest 10 orders
       },
     })
 
@@ -196,14 +156,7 @@ export async function PUT(
 
     const supplier = await prisma.suppliers.update({
       where: { id: params.id },
-      data,
-      include: {
-        _count: {
-          select: {
-            purchaseOrders: true,
-          },
-        },
-      },
+      data
     })
 
     return NextResponse.json({
@@ -239,11 +192,8 @@ export async function DELETE(
 
     // Check if supplier exists
     const supplier = await prisma.suppliers.findUnique({
-      where: { id: params.id },
-      include: {
-        purchaseOrders: true,
-      },
-    })
+      where: { id: params.id }
+    });
 
     if (!supplier) {
       return NextResponse.json(
@@ -253,7 +203,10 @@ export async function DELETE(
     }
 
     // Check if supplier has purchase orders
-    const hasPurchaseOrders = supplier.purchaseOrders.length > 0
+    const purchaseOrderCount = await prisma.purchase_orders.count({
+      where: { supplierId: params.id }
+    });
+    const hasPurchaseOrders = purchaseOrderCount > 0
 
     if (hasPurchaseOrders) {
       // Soft delete if has purchase orders

@@ -67,7 +67,7 @@ async function getGradeStats(studentId: string, currentSemesterId: string) {
       total: { not: null }
     },
     include: {
-      subject: {
+      subjects: {
         select: { name: true, category: true }
       }
     }
@@ -92,18 +92,18 @@ async function getGradeStats(studentId: string, currentSemesterId: string) {
     average,
     totalSubjects: grades.length,
     highestGrade: sortedGrades[0] ? {
-      subject: sortedGrades[0].subject.name,
+      subject: sortedGrades[0].subjects?.name || 'Unknown',
       score: sortedGrades[0].total?.toNumber(),
       grade: sortedGrades[0].grade
     } : null,
     lowestGrade: sortedGrades[sortedGrades.length - 1] ? {
-      subject: sortedGrades[sortedGrades.length - 1].subject.name,
+      subject: sortedGrades[sortedGrades.length - 1].subjects?.name || 'Unknown',
       score: sortedGrades[sortedGrades.length - 1].total?.toNumber(),
       grade: sortedGrades[sortedGrades.length - 1].grade
     } : null,
     subjectBreakdown: grades.map(g => ({
-      subject: g.subject.name,
-      category: g.subject.category,
+      subject: g.subjects?.name || 'Unknown',
+      category: g.subjects?.category || 'UMUM',
       score: g.total?.toNumber(),
       grade: g.grade
     }))
@@ -168,7 +168,7 @@ export async function GET(request: NextRequest) {
     const currentSemester = await prisma.semesters.findFirst({
       where: { isActive: true },
       include: {
-        academicYear: {
+        academic_years: {
           select: { name: true }
         }
       }
@@ -279,7 +279,7 @@ export async function GET(request: NextRequest) {
       currentSemester: {
         id: currentSemester.id,
         name: currentSemester.name,
-        academicYear: currentSemester.academicYear.name,
+        academicYear: currentSemester.academic_years?.name || 'Unknown',
         startDate: currentSemester.startDate,
         endDate: currentSemester.endDate
       },

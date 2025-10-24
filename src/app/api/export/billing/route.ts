@@ -63,17 +63,6 @@ export async function GET(request: NextRequest) {
     if (reportType === 'payments') {
       // Export payment history
       const payments = await prisma.bill_payments.findMany({
-        where: {
-          bill: where
-        },
-        include: {
-          bill: {
-            include: {
-              student: true,
-              billType: true
-            }
-          }
-        },
         orderBy: [
           { paymentDate: 'desc' }
         ]
@@ -81,13 +70,7 @@ export async function GET(request: NextRequest) {
 
       const exportData = payments.map(payment => ({
         'No Pembayaran': payment.paymentNo,
-        'No Tagihan': payment.bill.billNo,
-        'Nama Siswa': payment.bill.student.fullName,
-        'NIS': payment.bill.student.nis,
-        'Institusi': payment.bill.student.institutionType,
-        'Kelas': payment.bill.student.grade || '',
-        'Jenis Tagihan': payment.bill.billType.name,
-        'Periode': payment.bill.period,
+        'Bill ID': payment.billId,
         'Jumlah Bayar': payment.amount.toNumber(),
         'Tanggal Bayar': payment.paymentDate.toISOString().split('T')[0],
         'Metode Bayar': payment.method,
@@ -106,13 +89,7 @@ export async function GET(request: NextRequest) {
         total: exportData.length,
         columns: [
           { key: 'No Pembayaran', header: 'No Pembayaran', width: 20 },
-          { key: 'No Tagihan', header: 'No Tagihan', width: 20 },
-          { key: 'Nama Siswa', header: 'Nama Siswa', width: 25 },
-          { key: 'NIS', header: 'NIS', width: 15 },
-          { key: 'Institusi', header: 'Institusi', width: 10 },
-          { key: 'Kelas', header: 'Kelas', width: 8 },
-          { key: 'Jenis Tagihan', header: 'Jenis Tagihan', width: 20 },
-          { key: 'Periode', header: 'Periode', width: 12 },
+          { key: 'Bill ID', header: 'Bill ID', width: 25 },
           { key: 'Jumlah Bayar', header: 'Jumlah Bayar', width: 15, type: 'number' },
           { key: 'Tanggal Bayar', header: 'Tanggal Bayar', width: 15, type: 'date' },
           { key: 'Metode Bayar', header: 'Metode Bayar', width: 15 },
@@ -129,24 +106,16 @@ export async function GET(request: NextRequest) {
       // Export bills
       const bills = await prisma.bills.findMany({
         where,
-        include: {
-          student: true,
-          billType: true
-        },
         orderBy: [
           { dueDate: 'asc' },
-          { student: { fullName: 'asc' } }
+          { studentId: 'asc' }
         ]
       });
 
       const exportData = bills.map(bill => ({
         'No Tagihan': bill.billNo,
-        'Nama Siswa': bill.student.fullName,
-        'NIS': bill.student.nis,
-        'Institusi': bill.student.institutionType,
-        'Kelas': bill.student.grade || '',
-        'Jenis Tagihan': bill.billType.name,
-        'Kategori': bill.billType.category,
+        'Student ID': bill.studentId,
+        'Bill Type ID': bill.billTypeId,
         'Periode': bill.period,
         'Jumlah Tagihan': bill.amount.toNumber(),
         'Jumlah Asli': bill.originalAmount.toNumber(),
@@ -171,12 +140,8 @@ export async function GET(request: NextRequest) {
         total: exportData.length,
         columns: [
           { key: 'No Tagihan', header: 'No Tagihan', width: 20 },
-          { key: 'Nama Siswa', header: 'Nama Siswa', width: 25 },
-          { key: 'NIS', header: 'NIS', width: 15 },
-          { key: 'Institusi', header: 'Institusi', width: 10 },
-          { key: 'Kelas', header: 'Kelas', width: 8 },
-          { key: 'Jenis Tagihan', header: 'Jenis Tagihan', width: 20 },
-          { key: 'Kategori', header: 'Kategori', width: 15 },
+          { key: 'Student ID', header: 'Student ID', width: 25 },
+          { key: 'Bill Type ID', header: 'Bill Type ID', width: 25 },
           { key: 'Periode', header: 'Periode', width: 12 },
           { key: 'Jumlah Tagihan', header: 'Jumlah Tagihan', width: 15, type: 'number' },
           { key: 'Jumlah Asli', header: 'Jumlah Asli', width: 15, type: 'number' },

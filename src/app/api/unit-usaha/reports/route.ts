@@ -57,9 +57,6 @@ export async function GET(request: NextRequest) {
 
     const reports = await prisma.business_unit_reports.findMany({
       where: whereConditions,
-      include: {
-        unit: true
-      },
       orderBy: [
         { year: 'desc' },
         { month: 'desc' }
@@ -224,9 +221,6 @@ export async function POST(request: NextRequest) {
         notes,
         highlights,
         status: 'DRAFT'
-      },
-      include: {
-        unit: true
       }
     });
 
@@ -265,8 +259,7 @@ export async function PUT(request: NextRequest) {
           status: 'SUBMITTED',
           submittedAt: new Date(),
           submittedBy: session.user.id
-        },
-        include: { unit: true }
+        }
       });
       return NextResponse.json(report);
     }
@@ -282,8 +275,7 @@ export async function PUT(request: NextRequest) {
           status: 'APPROVED',
           approvedAt: new Date(),
           approvedBy: session.user.id
-        },
-        include: { unit: true }
+        }
       });
       return NextResponse.json(report);
     }
@@ -327,8 +319,7 @@ export async function PUT(request: NextRequest) {
 
     const report = await prisma.business_unit_reports.update({
       where: { id },
-      data: updateData,
-      include: { unit: true }
+      data: updateData
     });
 
     return NextResponse.json(report);

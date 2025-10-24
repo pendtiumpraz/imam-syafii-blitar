@@ -62,83 +62,87 @@ export async function GET(
           id: reportCardId,
           studentId,
           status: { not: 'DRAFT' } // Only show finalized report cards
-        },
-        include: {
-          student: {
-            select: {
-              id: true,
-              nis: true,
-              fullName: true,
-              photo: true,
-              institutionType: true,
-              grade: true
-            }
-          },
-          semester: {
-            select: {
-              id: true,
-              name: true,
-              startDate: true,
-              endDate: true,
-              academicYear: {
-                select: {
-                  name: true
-                }
-              }
-            }
-          },
-          class: {
-            select: {
-              name: true,
-              level: true,
-              program: true,
-              teacher: {
-                select: {
-                  name: true
-                }
-              }
-            }
-          }
         }
       });
 
       if (!reportCard) {
-        return NextResponse.json({ 
-          error: 'Report card not found or not available' 
+        return NextResponse.json({
+          error: 'Report card not found or not available'
         }, { status: 404 });
       }
 
-      // Get detailed grades for this semester
-      const grades = await prisma.grades.findMany({
-        where: {
-          studentId,
-          semesterId: reportCard.semesterId,
-          total: { not: null }
-        },
-        include: {
-          subject: {
-            select: {
-              code: true,
-              name: true,
-              nameArabic: true,
-              category: true,
-              credits: true
+      // Get related data
+      const [student, semester, classInfo, grades] = await Promise.all([
+        prisma.students.findUnique({
+          where: { id: studentId },
+          select: {
+            id: true,
+            nis: true,
+            fullName: true,
+            photo: true,
+            institutionType: true,
+            grade: true
+          }
+        }),
+        prisma.semesters.findUnique({
+          where: { id: reportCard.semesterId },
+          include: {
+            academic_years: {
+              select: { name: true }
             }
           }
-        },
-        orderBy: [
-          { subject: { category: 'asc' } },
-          { subject: { name: 'asc' } }
-        ]
-      });
+        }),
+        prisma.classes.findUnique({
+          where: { id: reportCard.classId },
+          include: {
+            teacher: {
+              select: { name: true }
+            }
+          }
+        }),
+        prisma.grades.findMany({
+          where: {
+            studentId,
+            semesterId: reportCard.semesterId,
+            total: { not: null }
+          },
+          include: {
+            subjects: {
+              select: {
+                code: true,
+                name: true,
+                nameArabic: true,
+                category: true,
+                credits: true
+              }
+            }
+          }
+        })
+      ]);
 
       const formattedReportCard = {
         ...reportCard,
+        student,
+        semester: semester ? {
+          id: semester.id,
+          name: semester.name,
+          startDate: semester.startDate,
+          endDate: semester.endDate,
+          academicYear: {
+            name: semester.academic_years?.name || 'Unknown'
+          }
+        } : null,
+        class: classInfo ? {
+          name: classInfo.name,
+          level: classInfo.level,
+          program: classInfo.program,
+          teacher: classInfo.teacher
+        } : null,
         personality: JSON.parse(reportCard.personality),
         extracurricular: JSON.parse(reportCard.extracurricular),
         achievements: JSON.parse(reportCard.achievements),
         grades: grades.map(grade => ({
-          subject: grade.subject,
+          subject: grade.subjects,
           scores: {
             midterm: grade.midterm?.toNumber(),
             final: grade.final?.toNumber(),
@@ -181,38 +185,36 @@ export async function GET(
     // Get report cards list
     const reportCards = await prisma.report_cards.findMany({
       where: whereConditions,
-      include: {
-        semester: {
-          select: {
-            id: true,
-            name: true,
-            startDate: true,
-            endDate: true,
-            academicYear: {
-              select: {
-                name: true,
-                isActive: true
-              }
-            }
-          }
-        },
-        class: {
-          select: {
-            name: true,
-            level: true,
-            program: true,
-            teacher: {
-              select: {
-                name: true
-              }
-            }
-          }
-        }
-      },
       orderBy: [
-        { semester: { startDate: 'desc' } }
+        { semesterId: 'desc' }
       ]
     });
+
+    // Get related semesters and classes
+    const semesterIds = [...new Set(reportCards.map(rc => rc.semesterId))];
+    const classIds = [...new Set(reportCards.map(rc => rc.classId))];
+
+    const [semesters, classes] = await Promise.all([
+      prisma.semesters.findMany({
+        where: { id: { in: semesterIds } },
+        include: {
+          academic_years: {
+            select: { name: true, isActive: true }
+          }
+        }
+      }),
+      prisma.classes.findMany({
+        where: { id: { in: classIds } },
+        include: {
+          teacher: {
+            select: { name: true }
+          }
+        }
+      })
+    ]);
+
+    const semesterMap = new Map(semesters.map(s => [s.id, s]));
+    const classMap = new Map(classes.map(c => [c.id, c]));
 
     // Calculate overall performance trends
     const performanceTrends = reportCards.length >= 2 ? {
@@ -228,42 +230,61 @@ export async function GET(
     } : null;
 
     // Format report cards for response
-    const formattedReportCards = reportCards.map(reportCard => ({
-      id: reportCard.id,
-      semester: reportCard.semester,
-      class: reportCard.class,
-      totalScore: reportCard.totalScore?.toNumber(),
-      rank: reportCard.rank,
-      totalSubjects: reportCard.totalSubjects,
-      attendanceStats: {
-        totalDays: reportCard.totalDays,
-        presentDays: reportCard.presentDays,
-        sickDays: reportCard.sickDays,
-        permittedDays: reportCard.permittedDays,
-        absentDays: reportCard.absentDays,
-        lateDays: reportCard.lateDays,
-        percentage: reportCard.attendancePercentage?.toNumber()
-      },
-      behavior: reportCard.behavior,
-      personality: JSON.parse(reportCard.personality),
-      extracurricular: JSON.parse(reportCard.extracurricular),
-      achievements: JSON.parse(reportCard.achievements),
-      notes: reportCard.notes,
-      recommendations: reportCard.recommendations,
-      parentNotes: reportCard.parentNotes,
-      status: reportCard.status,
-      generatedAt: reportCard.generatedAt,
-      signedAt: reportCard.signedAt,
-      pdfUrl: reportCard.pdfUrl
-    }));
+    const formattedReportCards = reportCards.map(reportCard => {
+      const semester = semesterMap.get(reportCard.semesterId);
+      const classInfo = classMap.get(reportCard.classId);
+
+      return {
+        id: reportCard.id,
+        semester: semester ? {
+          id: semester.id,
+          name: semester.name,
+          startDate: semester.startDate,
+          endDate: semester.endDate,
+          academicYear: {
+            name: semester.academic_years?.name || 'Unknown',
+            isActive: semester.academic_years?.isActive || false
+          }
+        } : null,
+        class: classInfo ? {
+          name: classInfo.name,
+          level: classInfo.level,
+          program: classInfo.program,
+          teacher: classInfo.teacher
+        } : null,
+        totalScore: reportCard.totalScore?.toNumber(),
+        rank: reportCard.rank,
+        totalSubjects: reportCard.totalSubjects,
+        attendanceStats: {
+          totalDays: reportCard.totalDays,
+          presentDays: reportCard.presentDays,
+          sickDays: reportCard.sickDays,
+          permittedDays: reportCard.permittedDays,
+          absentDays: reportCard.absentDays,
+          lateDays: reportCard.lateDays,
+          percentage: reportCard.attendancePercentage?.toNumber()
+        },
+        behavior: reportCard.behavior,
+        personality: JSON.parse(reportCard.personality),
+        extracurricular: JSON.parse(reportCard.extracurricular),
+        achievements: JSON.parse(reportCard.achievements),
+        notes: reportCard.notes,
+        recommendations: reportCard.recommendations,
+        parentNotes: reportCard.parentNotes,
+        status: reportCard.status,
+        generatedAt: reportCard.generatedAt,
+        signedAt: reportCard.signedAt,
+        pdfUrl: reportCard.pdfUrl
+      };
+    });
 
     // Get available semesters and academic years
-    const availableSemesters = [...new Set(reportCards.map(rc => ({
-      id: rc.semester.id,
-      name: rc.semester.name,
-      academicYear: rc.semester.academicYear.name,
-      isActive: rc.semester.academicYear.isActive
-    })))];
+    const availableSemesters = semesters.map(semester => ({
+      id: semester.id,
+      name: semester.name,
+      academicYear: semester.academic_years?.name || 'Unknown',
+      isActive: semester.academic_years?.isActive || false
+    }));
 
     const result = {
       studentInfo: {
@@ -281,8 +302,8 @@ export async function GET(
         totalReportCards: reportCards.length,
         latestReportCard: reportCards[0] ? {
           id: reportCards[0].id,
-          semester: reportCards[0].semester.name,
-          academicYear: reportCards[0].semester.academicYear.name,
+          semester: semesterMap.get(reportCards[0].semesterId)?.name || 'Unknown',
+          academicYear: semesterMap.get(reportCards[0].semesterId)?.academic_years?.name || 'Unknown',
           totalScore: reportCards[0].totalScore?.toNumber(),
           rank: reportCards[0].rank,
           status: reportCards[0].status

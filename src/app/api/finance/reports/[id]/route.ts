@@ -20,24 +20,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     const report = await prisma.financial_reports.findUnique({
       where: { id: params.id },
-      include: {
-        creator: {
-          select: {
-            id: true,
-            name: true,
-            username: true,
-          },
-        },
-        budget: {
-          select: {
-            id: true,
-            name: true,
-            type: true,
-            startDate: true,
-            endDate: true,
-          },
-        },
-      },
     })
 
     if (!report) {
@@ -47,10 +29,34 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       )
     }
 
+    // Get creator
+    const creator = await prisma.users.findUnique({
+      where: { id: report.createdBy },
+      select: {
+        id: true,
+        name: true,
+        username: true,
+      },
+    })
+
+    // Get budget if applicable
+    const budget = report.budgetId ? await prisma.budgets.findUnique({
+      where: { id: report.budgetId },
+      select: {
+        id: true,
+        name: true,
+        type: true,
+        startDate: true,
+        endDate: true,
+      },
+    }) : null
+
     // Parse JSON data
     const reportWithParsedData = {
       ...report,
       data: JSON.parse(report.data),
+      creator,
+      budget,
     }
 
     return NextResponse.json(reportWithParsedData)

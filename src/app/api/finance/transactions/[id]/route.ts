@@ -29,16 +29,15 @@ interface RouteParams {
 async function reverseJournalEntry(transactionId: string, userId: string) {
   const originalEntry = await prisma.journal_entries.findFirst({
     where: { transactionId },
-    include: {
-      entries: {
-        include: {
-          account: true,
-        },
-      },
-    },
   })
 
   if (!originalEntry) return null
+
+  // Get original entry lines
+  const originalEntryLines = await prisma.journal_entry_lines.findMany({
+    where: { journalId: originalEntry.id },
+    orderBy: { lineOrder: 'asc' },
+  })
 
   // Generate reversal entry number
   const year = new Date().getFullYear()
@@ -62,27 +61,23 @@ async function reverseJournalEntry(transactionId: string, userId: string) {
       totalCredit: originalEntry.totalCredit,
       isBalanced: true,
       createdBy: userId,
-      entries: {
-        create: originalEntry.entries.map((entry, index) => ({
-          accountId: entry.accountId,
-          debitAmount: entry.creditAmount, // Swap debit and credit
-          creditAmount: entry.debitAmount,
-          description: `Reversal: ${entry.description}`,
-          lineOrder: index + 1,
-        })),
-      },
-    },
-    include: {
-      entries: {
-        include: {
-          account: true,
-        },
-      },
     },
   })
 
+  // Create reversal entry lines
+  await prisma.journal_entry_lines.createMany({
+    data: originalEntryLines.map((entry, index) => ({
+      journalId: reversalEntry.id,
+      accountId: entry.accountId,
+      debitAmount: entry.creditAmount, // Swap debit and credit
+      creditAmount: entry.debitAmount,
+      description: `Reversal: ${entry.description}`,
+      lineOrder: index + 1,
+    })),
+  })
+
   // Update account balances (reverse the original entries)
-  for (const entry of originalEntry.entries) {
+  for (const entry of originalEntryLines) {
     await prisma.financial_accounts.update({
       where: { id: entry.accountId },
       data: {
@@ -116,29 +111,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     const transaction = await prisma.transactions.findUnique({
       where: { id: params.id },
-      include: {
-        category: {
-          include: {
-            account: true,
-          },
-        },
-        creator: {
-          select: {
-            id: true,
-            name: true,
-            username: true,
-          },
-        },
-        journalEntry: {
-          include: {
-            entries: {
-              include: {
-                account: true,
-              },
-            },
-          },
-        },
-      },
     })
 
     if (!transaction) {
@@ -148,11 +120,64 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       )
     }
 
+    // Get category
+    const category = await prisma.financial_categories.findUnique({
+      where: { id: transaction.categoryId },
+    })
+
+    // Get account for category
+    const account = category ? await prisma.financial_accounts.findUnique({
+      where: { id: category.accountId },
+    }) : null
+
+    // Get creator
+    const creator = await prisma.users.findUnique({
+      where: { id: transaction.createdBy },
+      select: {
+        id: true,
+        name: true,
+        username: true,
+      },
+    })
+
+    // Get journal entry
+    const journalEntry = await prisma.journal_entries.findFirst({
+      where: { transactionId: params.id },
+    })
+
+    // Get journal entry lines if journal exists
+    let entries = null
+    let accountsForEntries: any[] = []
+    if (journalEntry) {
+      entries = await prisma.journal_entry_lines.findMany({
+        where: { journalId: journalEntry.id },
+        orderBy: { lineOrder: 'asc' },
+      })
+
+      // Get accounts for entries
+      const accountIds = entries.map(e => e.accountId)
+      accountsForEntries = await prisma.financial_accounts.findMany({
+        where: { id: { in: accountIds } },
+      })
+    }
+
     // Parse JSON fields
     const transactionData = {
       ...transaction,
       tags: JSON.parse(transaction.tags || '[]'),
       attachments: JSON.parse(transaction.attachments || '[]'),
+      category: category ? {
+        ...category,
+        account,
+      } : null,
+      creator,
+      journalEntry: journalEntry ? {
+        ...journalEntry,
+        entries: entries?.map(entry => ({
+          ...entry,
+          account: accountsForEntries.find(a => a.id === entry.accountId),
+        })),
+      } : null,
     }
 
     return NextResponse.json(transactionData)
@@ -180,9 +205,6 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     // Check if transaction exists
     const existingTransaction = await prisma.transactions.findUnique({
       where: { id: params.id },
-      include: {
-        journalEntry: true,
-      },
     })
 
     if (!existingTransaction) {
@@ -243,8 +265,12 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     // Handle status changes
     if (data.status && data.status !== existingTransaction.status) {
       if (data.status === 'CANCELLED' || data.status === 'REVERSED') {
+        // Check if journal entry exists
+        const journalEntry = await prisma.journal_entries.findFirst({
+          where: { transactionId: params.id },
+        })
         // Reverse journal entries if moving to cancelled or reversed
-        if (existingTransaction.journalEntry) {
+        if (journalEntry) {
           await reverseJournalEntry(params.id, session.user.id)
         }
       }
@@ -258,36 +284,66 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     const transaction = await prisma.transactions.update({
       where: { id: params.id },
       data: updateData,
-      include: {
-        category: {
-          include: {
-            account: true,
-          },
-        },
-        creator: {
-          select: {
-            id: true,
-            name: true,
-            username: true,
-          },
-        },
-        journalEntry: {
-          include: {
-            entries: {
-              include: {
-                account: true,
-              },
-            },
-          },
-        },
+    })
+
+    // Get category
+    const category = await prisma.financial_categories.findUnique({
+      where: { id: transaction.categoryId },
+    })
+
+    // Get account for category
+    const account = category ? await prisma.financial_accounts.findUnique({
+      where: { id: category.accountId },
+    }) : null
+
+    // Get creator
+    const creator = await prisma.users.findUnique({
+      where: { id: transaction.createdBy },
+      select: {
+        id: true,
+        name: true,
+        username: true,
       },
     })
+
+    // Get journal entry
+    const journalEntry = await prisma.journal_entries.findFirst({
+      where: { transactionId: params.id },
+    })
+
+    // Get journal entry lines if journal exists
+    let entries = null
+    let accountsForEntries: any[] = []
+    if (journalEntry) {
+      entries = await prisma.journal_entry_lines.findMany({
+        where: { journalId: journalEntry.id },
+        orderBy: { lineOrder: 'asc' },
+      })
+
+      // Get accounts for entries
+      const accountIds = entries.map(e => e.accountId)
+      accountsForEntries = await prisma.financial_accounts.findMany({
+        where: { id: { in: accountIds } },
+      })
+    }
 
     // Parse JSON fields for response
     const transactionData = {
       ...transaction,
       tags: JSON.parse(transaction.tags || '[]'),
       attachments: JSON.parse(transaction.attachments || '[]'),
+      category: category ? {
+        ...category,
+        account,
+      } : null,
+      creator,
+      journalEntry: journalEntry ? {
+        ...journalEntry,
+        entries: entries?.map(entry => ({
+          ...entry,
+          account: accountsForEntries.find(a => a.id === entry.accountId),
+        })),
+      } : null,
     }
 
     return NextResponse.json({
@@ -321,9 +377,6 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     // Check if transaction exists
     const transaction = await prisma.transactions.findUnique({
       where: { id: params.id },
-      include: {
-        journalEntry: true,
-      },
     })
 
     if (!transaction) {
@@ -342,8 +395,13 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     // For posted transactions, reverse the journal entry first
-    if (transaction.status === 'POSTED' && transaction.journalEntry) {
-      await reverseJournalEntry(params.id, session.user.id)
+    if (transaction.status === 'POSTED') {
+      const journalEntry = await prisma.journal_entries.findFirst({
+        where: { transactionId: params.id },
+      })
+      if (journalEntry) {
+        await reverseJournalEntry(params.id, session.user.id)
+      }
     }
 
     // Soft delete by setting status to CANCELLED

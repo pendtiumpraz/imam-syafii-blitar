@@ -10,9 +10,16 @@ async function updateStudentProgress(studentId: string) {
     where: {
       studentId,
       status: { in: ['LANCAR', 'MUTQIN'] }
-    },
-    include: { surah: true }
+    }
   });
+
+  // Get surah data for records
+  const surahNumbers = [...new Set(records.map(r => r.surahNumber))];
+  const surahs = await prisma.quran_surahs.findMany({
+    where: { number: { in: surahNumbers } }
+  });
+
+  const surahMap = new Map(surahs.map(s => [s.number, s]));
 
   const completedSurahs = new Set();
   let totalAyat = 0;
@@ -29,7 +36,9 @@ async function updateStudentProgress(studentId: string) {
   }
 
   records.forEach(record => {
-    if (record.status === 'MUTQIN') {
+    const surah = surahMap.get(record.surahNumber);
+
+    if (record.status === 'MUTQIN' && surah) {
       const surahRecords = records.filter(r => r.surahNumber === record.surahNumber);
       const surahAyats = new Set();
       surahRecords.forEach(r => {
@@ -38,7 +47,7 @@ async function updateStudentProgress(studentId: string) {
         }
       });
 
-      if (surahAyats.size === record.surah.totalAyat) {
+      if (surahAyats.size === surah.totalAyat) {
         completedSurahs.add(record.surahNumber);
       }
     }
@@ -46,9 +55,11 @@ async function updateStudentProgress(studentId: string) {
     totalAyat += (record.endAyat - record.startAyat + 1);
     qualitySum += getQualityScore(record.quality);
 
-    const juz = record.surah.juz;
-    if (!juzProgress[juz]) juzProgress[juz] = 0;
-    juzProgress[juz] += (record.endAyat - record.startAyat + 1);
+    if (surah) {
+      const juz = surah.juz;
+      if (!juzProgress[juz]) juzProgress[juz] = 0;
+      juzProgress[juz] += (record.endAyat - record.startAyat + 1);
+    }
   });
 
   const totalQuranAyats = 6236;
@@ -57,31 +68,36 @@ async function updateStudentProgress(studentId: string) {
   const juz30Ayats = 564;
   const juz30Progress = Math.min(((juzProgress[30] || 0) / juz30Ayats) * 100, 100);
 
-  await prisma.hafalan_progress.upsert({
-    where: { studentId },
-    create: {
-      studentId,
-      totalSurah: completedSurahs.size,
-      totalAyat,
-      totalJuz: Object.keys(juzProgress).length,
-      juz30Progress,
-      overallProgress,
-      avgQuality: records.length > 0 ? qualitySum / records.length : 0,
-      totalSessions: records.length,
-      lastSetoranDate: new Date(),
-      lastUpdated: new Date()
-    },
-    update: {
-      totalSurah: completedSurahs.size,
-      totalAyat,
-      totalJuz: Object.keys(juzProgress).length,
-      juz30Progress,
-      overallProgress,
-      avgQuality: records.length > 0 ? qualitySum / records.length : 0,
-      lastSetoranDate: new Date(),
-      lastUpdated: new Date()
-    }
+  // Check if progress exists
+  const existingProgress = await prisma.hafalan_progress.findFirst({
+    where: { studentId }
   });
+
+  const progressData = {
+    totalSurah: completedSurahs.size,
+    totalAyat,
+    totalJuz: Object.keys(juzProgress).length,
+    juz30Progress,
+    overallProgress,
+    avgQuality: records.length > 0 ? qualitySum / records.length : 0,
+    lastSetoranDate: new Date(),
+    lastUpdated: new Date()
+  };
+
+  if (existingProgress) {
+    await prisma.hafalan_progress.update({
+      where: { id: existingProgress.id },
+      data: progressData
+    });
+  } else {
+    await prisma.hafalan_progress.create({
+      data: {
+        studentId,
+        ...progressData,
+        totalSessions: records.length
+      }
+    });
+  }
 }
 
 export async function GET(
@@ -95,39 +111,51 @@ export async function GET(
     }
 
     const record = await prisma.hafalan_records.findUnique({
-      where: { id: params.id },
-      include: {
-        student: {
-          select: {
-            id: true,
-            fullName: true,
-            nickname: true,
-            photo: true
-          }
-        },
-        surah: {
-          select: {
-            number: true,
-            name: true,
-            nameArabic: true,
-            totalAyat: true,
-            juz: true
-          }
-        },
-        teacher: {
-          select: {
-            id: true,
-            name: true
-          }
-        }
-      }
+      where: { id: params.id }
     });
 
     if (!record) {
       return NextResponse.json({ error: 'Record not found' }, { status: 404 });
     }
 
-    return NextResponse.json({ record });
+    // Get related data
+    const [student, teacher, surah] = await Promise.all([
+      prisma.students.findUnique({
+        where: { id: record.studentId },
+        select: {
+          id: true,
+          fullName: true,
+          nickname: true,
+          photo: true
+        }
+      }),
+      prisma.users.findUnique({
+        where: { id: record.teacherId },
+        select: {
+          id: true,
+          name: true
+        }
+      }),
+      prisma.quran_surahs.findFirst({
+        where: { number: record.surahNumber },
+        select: {
+          number: true,
+          name: true,
+          nameArabic: true,
+          totalAyat: true,
+          juz: true
+        }
+      })
+    ]);
+
+    return NextResponse.json({
+      record: {
+        ...record,
+        student,
+        teacher,
+        surah
+      }
+    });
 
   } catch (error) {
     console.error('Error fetching hafalan record:', error);
@@ -196,20 +224,20 @@ export async function PUT(
 
     // Check if surah exists and ayat numbers are valid
     if (surahNumber) {
-      const surah = await prisma.quran_surahs.findUnique({
+      const surahCheck = await prisma.quran_surahs.findFirst({
         where: { number: parseInt(surahNumber) }
       });
 
-      if (!surah) {
+      if (!surahCheck) {
         return NextResponse.json(
           { error: 'Surah not found' },
           { status: 404 }
         );
       }
 
-      if (endAyat && endAyat > surah.totalAyat) {
+      if (endAyat && endAyat > surahCheck.totalAyat) {
         return NextResponse.json(
-          { error: `Surah ${surah.name} only has ${surah.totalAyat} ayat` },
+          { error: `Surah ${surahCheck.name} only has ${surahCheck.totalAyat} ayat` },
           { status: 400 }
         );
       }
@@ -232,39 +260,49 @@ export async function PUT(
         ...(notes !== undefined && { notes }),
         ...(corrections !== undefined && { corrections }),
         ...(voiceNoteUrl !== undefined && { voiceNoteUrl })
-      },
-      include: {
-        student: {
-          select: {
-            id: true,
-            fullName: true,
-            nickname: true,
-            photo: true
-          }
-        },
-        surah: {
-          select: {
-            number: true,
-            name: true,
-            nameArabic: true,
-            totalAyat: true,
-            juz: true
-          }
-        },
-        teacher: {
-          select: {
-            id: true,
-            name: true
-          }
-        }
       }
     });
+
+    // Get related data
+    const [student, teacher, surah] = await Promise.all([
+      prisma.students.findUnique({
+        where: { id: record.studentId },
+        select: {
+          id: true,
+          fullName: true,
+          nickname: true,
+          photo: true
+        }
+      }),
+      prisma.users.findUnique({
+        where: { id: record.teacherId },
+        select: {
+          id: true,
+          name: true
+        }
+      }),
+      prisma.quran_surahs.findFirst({
+        where: { number: record.surahNumber },
+        select: {
+          number: true,
+          name: true,
+          nameArabic: true,
+          totalAyat: true,
+          juz: true
+        }
+      })
+    ]);
 
     // Update student progress
     await updateStudentProgress(existingRecord.studentId);
 
     return NextResponse.json({
-      record,
+      record: {
+        ...record,
+        student,
+        teacher,
+        surah
+      },
       message: 'Record updated successfully'
     });
 

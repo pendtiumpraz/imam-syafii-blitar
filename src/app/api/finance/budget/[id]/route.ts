@@ -94,43 +94,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     const budget = await prisma.budgets.findUnique({
       where: { id: params.id },
-      include: {
-        creator: {
-          select: {
-            id: true,
-            name: true,
-            username: true,
-          },
-        },
-        items: {
-          include: {
-            category: {
-              include: {
-                account: true,
-              },
-            },
-          },
-          orderBy: [
-            { category: { type: 'asc' } },
-            { category: { name: 'asc' } },
-          ],
-        },
-        reports: {
-          select: {
-            id: true,
-            name: true,
-            type: true,
-            createdAt: true,
-          },
-          orderBy: { createdAt: 'desc' },
-        },
-        _count: {
-          select: {
-            items: true,
-            reports: true,
-          },
-        },
-      },
     })
 
     if (!budget) {
@@ -140,33 +103,105 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       )
     }
 
+    // Get creator
+    const creator = await prisma.users.findUnique({
+      where: { id: budget.createdBy },
+      select: {
+        id: true,
+        name: true,
+        username: true,
+      },
+    })
+
+    // Get budget items
+    const items = await prisma.budget_items.findMany({
+      where: { budgetId: params.id },
+    })
+
+    // Get categories for items
+    const categoryIds = items.map(i => i.categoryId)
+    const categories = await prisma.financial_categories.findMany({
+      where: { id: { in: categoryIds } },
+    })
+
+    // Get accounts for categories
+    const accountIds = categories.map(c => c.accountId)
+    const accounts = await prisma.financial_accounts.findMany({
+      where: { id: { in: accountIds } },
+    })
+
+    // Sort items by category type and name
+    const itemsWithRelations = items.map(item => {
+      const category = categories.find(c => c.id === item.categoryId)
+      const account = category ? accounts.find(a => a.id === category.accountId) : null
+      return {
+        ...item,
+        category: category ? {
+          ...category,
+          account,
+        } : null,
+      }
+    }).sort((a, b) => {
+      const typeCompare = (a.category?.type || '').localeCompare(b.category?.type || '')
+      if (typeCompare !== 0) return typeCompare
+      return (a.category?.name || '').localeCompare(b.category?.name || '')
+    })
+
+    // Get reports
+    const reports = await prisma.financial_reports.findMany({
+      where: {
+        budgetId: params.id,
+        isDeleted: false,
+      },
+      select: {
+        id: true,
+        name: true,
+        type: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    })
+
     // Recalculate actuals for active budgets
     if (budget.status === 'ACTIVE') {
       await recalculateBudgetActuals(params.id)
-      
+
       // Fetch updated budget items
       const updatedItems = await prisma.budget_items.findMany({
         where: { budgetId: params.id },
-        include: {
-          category: {
-            include: {
-              account: true,
-            },
-          },
-        },
-        orderBy: [
-          { category: { type: 'asc' } },
-          { category: { name: 'asc' } },
-        ],
+      })
+
+      // Update items with actual values
+      const updatedItemsWithRelations = updatedItems.map(item => {
+        const originalItem = itemsWithRelations.find(i => i.id === item.id)
+        return {
+          ...originalItem,
+          ...item,
+        }
       })
 
       return NextResponse.json({
         ...budget,
-        items: updatedItems,
+        creator,
+        items: updatedItemsWithRelations,
+        reports,
+        _count: {
+          items: items.length,
+          reports: reports.length,
+        },
       })
     }
 
-    return NextResponse.json(budget)
+    return NextResponse.json({
+      ...budget,
+      creator,
+      items: itemsWithRelations,
+      reports,
+      _count: {
+        items: items.length,
+        reports: reports.length,
+      },
+    })
 
   } catch (error: any) {
     console.error('Error fetching budget:', error)
@@ -191,9 +226,6 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     // Check if budget exists
     const existingBudget = await prisma.budgets.findUnique({
       where: { id: params.id },
-      include: {
-        items: true,
-      },
     })
 
     if (!existingBudget) {
@@ -276,7 +308,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       if (data.items) {
         // Verify all categories exist and are active
         const categoryIds = data.items.map(item => item.categoryId)
-        const categories = await tx.financialCategory.findMany({
+        const categories = await tx.financial_categories.findMany({
           where: {
             id: { in: categoryIds },
             isActive: true,
@@ -292,12 +324,12 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         updateData.totalBudget = totalBudget
 
         // Delete existing items
-        await tx.budgetItem.deleteMany({
+        await tx.budget_items.deleteMany({
           where: { budgetId: params.id },
         })
 
         // Create new items
-        await tx.budgetItem.createMany({
+        await tx.budget_items.createMany({
           data: data.items.map(item => ({
             budgetId: params.id,
             categoryId: item.categoryId,
@@ -308,49 +340,66 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       }
 
       // Update budget
-      const updatedBudget = await tx.budget.update({
+      const updatedBudget = await tx.budgets.update({
         where: { id: params.id },
         data: updateData,
-        include: {
-          creator: {
-            select: {
-              id: true,
-              name: true,
-              username: true,
-            },
-          },
-          items: {
-            include: {
-              category: {
-                include: {
-                  account: true,
-                },
-              },
-            },
-            orderBy: [
-              { category: { type: 'asc' } },
-              { category: { name: 'asc' } },
-            ],
-          },
-          reports: {
-            select: {
-              id: true,
-              name: true,
-              type: true,
-              createdAt: true,
-            },
-            orderBy: { createdAt: 'desc' },
-          },
-          _count: {
-            select: {
-              items: true,
-              reports: true,
-            },
-          },
-        },
       })
 
       return updatedBudget
+    })
+
+    // Get updated budget with relations
+    const creator = await prisma.users.findUnique({
+      where: { id: result.createdBy },
+      select: {
+        id: true,
+        name: true,
+        username: true,
+      },
+    })
+
+    const items = await prisma.budget_items.findMany({
+      where: { budgetId: params.id },
+    })
+
+    const categoryIds = items.map(i => i.categoryId)
+    const categories = await prisma.financial_categories.findMany({
+      where: { id: { in: categoryIds } },
+    })
+
+    const accountIds = categories.map(c => c.accountId)
+    const accounts = await prisma.financial_accounts.findMany({
+      where: { id: { in: accountIds } },
+    })
+
+    const itemsWithRelations = items.map(item => {
+      const category = categories.find(c => c.id === item.categoryId)
+      const account = category ? accounts.find(a => a.id === category.accountId) : null
+      return {
+        ...item,
+        category: category ? {
+          ...category,
+          account,
+        } : null,
+      }
+    }).sort((a, b) => {
+      const typeCompare = (a.category?.type || '').localeCompare(b.category?.type || '')
+      if (typeCompare !== 0) return typeCompare
+      return (a.category?.name || '').localeCompare(b.category?.name || '')
+    })
+
+    const reports = await prisma.financial_reports.findMany({
+      where: {
+        budgetId: params.id,
+        isDeleted: false,
+      },
+      select: {
+        id: true,
+        name: true,
+        type: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: 'desc' },
     })
 
     // Recalculate actuals if budget is active
@@ -359,7 +408,16 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     }
 
     return NextResponse.json({
-      budget: result,
+      budget: {
+        ...result,
+        creator,
+        items: itemsWithRelations,
+        reports,
+        _count: {
+          items: items.length,
+          reports: reports.length,
+        },
+      },
       message: 'Budget updated successfully',
     })
 
@@ -395,13 +453,6 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     // Check if budget exists
     const budget = await prisma.budgets.findUnique({
       where: { id: params.id },
-      include: {
-        _count: {
-          select: {
-            reports: true,
-          },
-        },
-      },
     })
 
     if (!budget) {
@@ -419,8 +470,16 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       )
     }
 
+    // Check for associated reports
+    const reportCount = await prisma.financial_reports.count({
+      where: {
+        budgetId: params.id,
+        isDeleted: false,
+      },
+    })
+
     // Prevent deletion if there are associated reports
-    if (budget._count.reports > 0) {
+    if (reportCount > 0) {
       return NextResponse.json(
         { error: 'Cannot delete budget with associated reports' },
         { status: 409 }

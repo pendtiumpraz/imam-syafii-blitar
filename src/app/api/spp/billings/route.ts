@@ -110,47 +110,6 @@ export async function GET(request: NextRequest) {
         where: whereConditions,
         skip,
         take: limit,
-        include: {
-          student: {
-            select: {
-              id: true,
-              nis: true,
-              fullName: true,
-              institutionType: true,
-              grade: true
-            }
-          },
-          class: {
-            select: {
-              id: true,
-              name: true,
-              level: true
-            }
-          },
-          semester: {
-            select: {
-              id: true,
-              name: true,
-              academicYear: {
-                select: {
-                  name: true
-                }
-              }
-            }
-          },
-          payments: {
-            where: { status: 'VERIFIED' },
-            select: {
-              amount: true,
-              paymentDate: true
-            }
-          },
-          _count: {
-            select: {
-              reminders: true
-            }
-          }
-        },
         orderBy: [
           { year: 'desc' },
           { month: 'desc' },
@@ -299,15 +258,6 @@ export async function POST(request: NextRequest) {
         dueDate: new Date(dueDate),
         notes,
         generatedBy: session.user.id
-      },
-      include: {
-        student: {
-          select: {
-            id: true,
-            nis: true,
-            fullName: true
-          }
-        }
       }
     });
     
@@ -376,16 +326,7 @@ export async function PUT(request: NextRequest) {
     // Update billing
     const billing = await prisma.spp_billings.update({
       where: { id },
-      data: updateData,
-      include: {
-        student: {
-          select: {
-            id: true,
-            nis: true,
-            fullName: true
-          }
-        }
-      }
+      data: updateData
     });
     
     return NextResponse.json(billing);

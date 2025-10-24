@@ -69,14 +69,6 @@ export async function POST(request: NextRequest) {
       where: {
         isActive: true,
       },
-      include: {
-        sponsors: {
-          where: {
-            month: prevMonth,
-            isPaid: true,
-          }
-        }
-      }
     });
 
     const resetOperations = [];
@@ -84,10 +76,19 @@ export async function POST(request: NextRequest) {
     let totalProgramsPromoted = 0;
 
     for (const program of activePrograms) {
-      const monthlyCollected = program.sponsors.reduce((sum, sponsor) => 
+      // Get sponsors for this program for the previous month
+      const programSponsors = await prisma.ota_sponsors.findMany({
+        where: {
+          programId: program.id,
+          month: prevMonth,
+          isPaid: true,
+        }
+      });
+
+      const monthlyCollected = programSponsors.reduce((sum, sponsor) =>
         sum + parseFloat(sponsor.amount.toString()), 0
       );
-      
+
       const monthlyTarget = parseFloat(program.monthlyTarget.toString());
       const isFullyFunded = monthlyCollected >= monthlyTarget;
       
@@ -178,54 +179,46 @@ async function generateMonthlyReport(month: string) {
   // Get all active OTA programs
   const programs = await prisma.ota_programs.findMany({
     where: {
-      OR: [
-        { isActive: true },
-        // Include programs that were active during this month
-        { 
-          sponsors: {
-            some: {
-              month: month
-            }
-          }
-        }
-      ]
+      isActive: true,
     },
-    include: {
-      student: {
-        select: {
-          id: true,
-          nis: true,
-          fullName: true,
-          institutionType: true,
-          grade: true,
-        }
-      },
-      sponsors: {
-        where: {
-          month: month,
-        }
-      }
+  });
+
+  // Get all sponsors for this month
+  const allSponsors = await prisma.ota_sponsors.findMany({
+    where: {
+      month: month,
     }
   });
 
+  // Get student info for all programs
+  const studentIds = programs.map(p => p.studentId);
+  const students = await prisma.students.findMany({
+    where: {
+      id: { in: studentIds }
+    },
+    select: {
+      id: true,
+      nis: true,
+      fullName: true,
+      institutionType: true,
+      grade: true,
+    }
+  });
+
+  const studentMap = new Map(students.map(s => [s.id, s]));
+
   // Calculate statistics
-  const totalTarget = programs.reduce((sum, program) => 
+  const totalTarget = programs.reduce((sum, program) =>
     sum + parseFloat(program.monthlyTarget.toString()), 0
   );
 
-  const totalCollected = programs.reduce((sum, program) => {
-    const paidSponsors = program.sponsors.filter(s => s.isPaid);
-    return sum + paidSponsors.reduce((sponsorSum, sponsor) => 
-      sponsorSum + parseFloat(sponsor.amount.toString()), 0
-    );
-  }, 0);
+  const totalCollected = allSponsors
+    .filter(s => s.isPaid)
+    .reduce((sum, sponsor) => sum + parseFloat(sponsor.amount.toString()), 0);
 
-  const totalPending = programs.reduce((sum, program) => {
-    const pendingSponsors = program.sponsors.filter(s => !s.isPaid);
-    return sum + pendingSponsors.reduce((sponsorSum, sponsor) => 
-      sponsorSum + parseFloat(sponsor.amount.toString()), 0
-    );
-  }, 0);
+  const totalPending = allSponsors
+    .filter(s => !s.isPaid)
+    .reduce((sum, sponsor) => sum + parseFloat(sponsor.amount.toString()), 0);
 
   let fullyFundedCount = 0;
   let partialFundedCount = 0;
@@ -233,10 +226,13 @@ async function generateMonthlyReport(month: string) {
 
   // Student-level details
   const details = programs.map(program => {
-    const paidAmount = program.sponsors
+    const student = studentMap.get(program.studentId);
+    const programSponsors = allSponsors.filter(s => s.programId === program.id);
+
+    const paidAmount = programSponsors
       .filter(s => s.isPaid)
       .reduce((sum, sponsor) => sum + parseFloat(sponsor.amount.toString()), 0);
-    
+
     const targetAmount = parseFloat(program.monthlyTarget.toString());
     const percentage = Math.round((paidAmount / targetAmount) * 100);
 
@@ -250,27 +246,27 @@ async function generateMonthlyReport(month: string) {
 
     return {
       programId: program.id,
-      studentInitials: program.student.nis ? 
-        program.student.nis.slice(-3).split('').map(n => String.fromCharCode(65 + parseInt(n) % 26)).join('.') :
+      studentInitials: student?.nis ?
+        student.nis.slice(-3).split('').map(n => String.fromCharCode(65 + parseInt(n) % 26)).join('.') :
         'A.B.C',
-      institutionType: program.student.institutionType,
-      grade: program.student.grade,
+      institutionType: student?.institutionType || 'UNKNOWN',
+      grade: student?.grade || 'N/A',
       monthlyTarget: targetAmount,
       collectedAmount: paidAmount,
-      pendingAmount: program.sponsors
+      pendingAmount: programSponsors
         .filter(s => !s.isPaid)
         .reduce((sum, sponsor) => sum + parseFloat(sponsor.amount.toString()), 0),
-      donorCount: program.sponsors.filter(s => s.isPaid).length,
+      donorCount: programSponsors.filter(s => s.isPaid).length,
       completionPercentage: percentage,
-      status: paidAmount >= targetAmount ? 'FULLY_FUNDED' : 
+      status: paidAmount >= targetAmount ? 'FULLY_FUNDED' :
               paidAmount > 0 ? 'PARTIALLY_FUNDED' : 'UNFUNDED',
     };
   });
 
   // Donor statistics
-  const allSponsors = programs.flatMap(p => p.sponsors.filter(s => s.isPaid));
-  const uniqueDonors = new Set(allSponsors.map(s => s.donorEmail || s.donorName)).size;
-  
+  const paidSponsors = allSponsors.filter(s => s.isPaid);
+  const uniqueDonors = new Set(paidSponsors.map(s => s.donorEmail || s.donorName)).size;
+
   // Get previous month data for comparison
   const prevMonth = getPreviousMonth(month);
   const prevMonthSponsors = await prisma.ota_sponsors.findMany({
@@ -279,10 +275,10 @@ async function generateMonthlyReport(month: string) {
       isPaid: true,
     }
   });
-  
+
   const prevDonors = new Set(prevMonthSponsors.map(s => s.donorEmail || s.donorName));
-  const newDonors = allSponsors.filter(s => !prevDonors.has(s.donorEmail || s.donorName)).length;
-  const recurringDonors = allSponsors.filter(s => prevDonors.has(s.donorEmail || s.donorName)).length;
+  const newDonors = paidSponsors.filter(s => !prevDonors.has(s.donorEmail || s.donorName)).length;
+  const recurringDonors = paidSponsors.filter(s => prevDonors.has(s.donorEmail || s.donorName)).length;
 
   // Get carry-over amount from previous month
   const prevReport = await prisma.ota_reports.findFirst({

@@ -15,67 +15,14 @@ export async function GET(request: NextRequest) {
     const whereConditions: any = {
       isActive: true,
       showProgress: true,
-      student: {
-        isOrphan: true,
-        status: 'ACTIVE',
-      },
     };
 
-    if (institution !== 'all') {
-      whereConditions.student.institutionType = institution;
-    }
+    const currentMonth = new Date().toISOString().substring(0, 7);
 
     const [programs, total, overallStats] = await Promise.all([
-      // Get active OTA programs with anonymized student info
+      // Get active OTA programs
       prisma.ota_programs.findMany({
         where: whereConditions,
-        include: {
-          student: {
-            select: {
-              id: true,
-              nis: true, // We'll mask this
-              institutionType: true,
-              grade: true,
-              otaProfile: true,
-              photo: true,
-              achievements: true,
-              hafalan_progress: {
-                select: {
-                  totalSurah: true,
-                  totalAyat: true,
-                  totalJuz: true,
-                  level: true,
-                }
-              }
-            }
-          },
-          sponsors: {
-            where: {
-              month: new Date().toISOString().substring(0, 7), // Current month
-              isPaid: true,
-              allowPublicDisplay: true,
-            },
-            select: {
-              publicName: true,
-              amount: true,
-              createdAt: true,
-              donorMessage: true,
-            },
-            orderBy: {
-              createdAt: 'desc'
-            },
-            take: 5, // Show latest 5 donors per student
-          },
-          _count: {
-            select: {
-              sponsors: {
-                where: {
-                  isPaid: true,
-                }
-              }
-            }
-          }
-        },
         orderBy: [
           { displayOrder: 'asc' },
           { monthlyProgress: 'asc' }, // Show students who need more help first
@@ -98,34 +45,104 @@ export async function GET(request: NextRequest) {
       })
     ]);
 
-    // Anonymize student data for public consumption
-    const anonymizedPrograms = programs.map(program => ({
-      id: program.id,
-      monthlyTarget: program.monthlyTarget,
-      currentMonth: program.currentMonth,
-      monthlyProgress: program.monthlyProgress,
-      totalCollected: program.totalCollected,
-      monthsCompleted: program.monthsCompleted,
-      programStart: program.programStart,
-      progressPercentage: Math.round((parseFloat(program.monthlyProgress.toString()) / parseFloat(program.monthlyTarget.toString())) * 100),
-      student: {
-        // Anonymize student info
-        initials: anonymizeFullName(program.student.nis || `Student-${program.id.slice(-4)}`),
-        institutionType: program.student.institutionType,
-        grade: program.student.grade,
-        otaProfile: program.student.otaProfile || 'Bantuan untuk siswa yatim berprestasi',
-        photo: program.student.photo ? maskPhotoUrl(program.student.photo) : null,
-        achievements: program.student.achievements ? JSON.parse(program.student.achievements).slice(0, 3) : [],
-        hafalan_progress: program.student.hafalanProgress ? {
-          totalSurah: program.student.hafalanProgress.totalSurah,
-          totalAyat: program.student.hafalanProgress.totalAyat,
-          totalJuz: program.student.hafalanProgress.totalJuz,
-          level: program.student.hafalanProgress.level,
-        } : null,
+    // Get student info for all programs
+    const studentIds = programs.map(p => p.studentId);
+    const studentWhere: any = {
+      id: { in: studentIds },
+      isOrphan: true,
+      status: 'ACTIVE',
+    };
+
+    if (institution !== 'all') {
+      studentWhere.institutionType = institution;
+    }
+
+    const students = await prisma.students.findMany({
+      where: studentWhere,
+      select: {
+        id: true,
+        nis: true,
+        institutionType: true,
+        grade: true,
+        otaProfile: true,
+        photo: true,
+        achievements: true,
+      }
+    });
+
+    // Get sponsors for current month for these programs
+    const allSponsors = await prisma.ota_sponsors.findMany({
+      where: {
+        programId: { in: programs.map(p => p.id) },
+        month: currentMonth,
+        isPaid: true,
+        allowPublicDisplay: true,
       },
-      sponsors: program.sponsors,
-      donorCount: program._count.sponsors,
-    }));
+      select: {
+        programId: true,
+        publicName: true,
+        amount: true,
+        createdAt: true,
+        donorMessage: true,
+      },
+      orderBy: {
+        createdAt: 'desc'
+      },
+    });
+
+    // Get total sponsor counts
+    const sponsorCounts = await prisma.ota_sponsors.groupBy({
+      by: ['programId'],
+      where: {
+        programId: { in: programs.map(p => p.id) },
+        isPaid: true,
+      },
+      _count: true,
+    });
+
+    const studentMap = new Map(students.map(s => [s.id, s]));
+    const sponsorMap = new Map<string, typeof allSponsors>();
+    allSponsors.forEach(sponsor => {
+      if (!sponsorMap.has(sponsor.programId)) {
+        sponsorMap.set(sponsor.programId, []);
+      }
+      sponsorMap.get(sponsor.programId)?.push(sponsor);
+    });
+    const countMap = new Map(sponsorCounts.map(c => [c.programId, c._count]));
+
+    // Filter programs to only include those with valid students
+    const validStudentIds = new Set(students.map(s => s.id));
+    const filteredPrograms = programs.filter(p => validStudentIds.has(p.studentId));
+
+    // Anonymize student data for public consumption
+    const anonymizedPrograms = filteredPrograms.map(program => {
+      const student = studentMap.get(program.studentId);
+      const programSponsors = sponsorMap.get(program.id) || [];
+      const donorCount = countMap.get(program.id) || 0;
+
+      return {
+        id: program.id,
+        monthlyTarget: program.monthlyTarget,
+        currentMonth: program.currentMonth,
+        monthlyProgress: program.monthlyProgress,
+        totalCollected: program.totalCollected,
+        monthsCompleted: program.monthsCompleted,
+        programStart: program.programStart,
+        progressPercentage: Math.round((parseFloat(program.monthlyProgress.toString()) / parseFloat(program.monthlyTarget.toString())) * 100),
+        student: {
+          // Anonymize student info
+          initials: anonymizeFullName(student?.nis || `Student-${program.id.slice(-4)}`),
+          institutionType: student?.institutionType || 'UNKNOWN',
+          grade: student?.grade || 'N/A',
+          otaProfile: student?.otaProfile || 'Bantuan untuk siswa yatim berprestasi',
+          photo: student?.photo ? maskPhotoUrl(student.photo) : null,
+          achievements: student?.achievements ? JSON.parse(student.achievements).slice(0, 3) : [],
+          hafalan_progress: null, // Removed since relation doesn't exist
+        },
+        sponsors: programSponsors.slice(0, 5), // Show latest 5 donors
+        donorCount: donorCount,
+      };
+    });
 
     return NextResponse.json({
       programs: anonymizedPrograms,
@@ -197,17 +214,6 @@ export async function POST(request: NextRequest) {
     // Check if program exists and is active
     const program = await prisma.ota_programs.findUnique({
       where: { id: programId },
-      include: { 
-        student: {
-          select: {
-            id: true,
-            nis: true,
-            fullName: true,
-            institutionType: true,
-            grade: true,
-          }
-        }
-      }
     });
 
     if (!program) {
@@ -221,6 +227,25 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'This OTA program is currently not accepting donations' },
         { status: 400 }
+      );
+    }
+
+    // Get student info
+    const student = await prisma.students.findUnique({
+      where: { id: program.studentId },
+      select: {
+        id: true,
+        nis: true,
+        institutionType: true,
+        grade: true,
+        otaProfile: true,
+      }
+    });
+
+    if (!student) {
+      return NextResponse.json(
+        { error: 'Student not found for this program' },
+        { status: 404 }
       );
     }
 
@@ -245,19 +270,6 @@ export async function POST(request: NextRequest) {
         paymentStatus: 'PENDING',
         donationType: isAnonymous ? 'ANONYMOUS' : 'REGULAR',
       },
-      include: {
-        program: {
-          include: {
-            student: {
-              select: {
-                institutionType: true,
-                grade: true,
-                otaProfile: true,
-              }
-            }
-          }
-        }
-      }
     });
 
     // Generate donation ID for reference
@@ -268,9 +280,9 @@ export async function POST(request: NextRequest) {
       donationId: sponsor.id,
       donationRef,
       program: {
-        studentInitials: anonymizeFullName(program.student.nis || `Student-${program.id.slice(-4)}`),
-        institutionType: program.student.institutionType,
-        grade: program.student.grade,
+        studentInitials: anonymizeFullName(student.nis || `Student-${program.id.slice(-4)}`),
+        institutionType: student.institutionType,
+        grade: student.grade,
         monthlyTarget: program.monthlyTarget,
       },
       donation: {

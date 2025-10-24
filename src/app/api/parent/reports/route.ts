@@ -39,17 +39,12 @@ export async function GET(request: NextRequest) {
                 },
                 grades: {
                   include: {
-                    semester: true,
-                    subject: {
+                    subjects: {
                       select: { name: true, category: true }
                     }
                   }
                 },
-                attendances: {
-                  include: {
-                    semester: true
-                  }
-                }
+                attendances: true
               }
             }
           }
@@ -67,7 +62,7 @@ export async function GET(request: NextRequest) {
     const currentSemester = await prisma.semesters.findFirst({
       where: { isActive: true },
       include: {
-        academicYear: { select: { name: true } }
+        academic_years: { select: { name: true } }
       }
     });
 
@@ -237,7 +232,7 @@ export async function GET(request: NextRequest) {
       semester: {
         id: currentSemester.id,
         name: currentSemester.name,
-        academicYear: currentSemester.academicYear.name
+        academicYear: currentSemester.academic_years?.name || 'Unknown'
       },
       summary,
       monthlyTrends,

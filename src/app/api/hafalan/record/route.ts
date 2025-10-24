@@ -19,9 +19,16 @@ async function updateStudentProgress(studentId: string) {
     where: {
       studentId,
       status: { in: ['LANCAR', 'MUTQIN'] }
-    },
-    include: { surah: true }
+    }
   });
+
+  // Get surah data for records
+  const surahNumbers = [...new Set(records.map(r => r.surahNumber))];
+  const surahs = await prisma.quran_surahs.findMany({
+    where: { number: { in: surahNumbers } }
+  });
+
+  const surahMap = new Map(surahs.map(s => [s.number, s]));
 
   const completedSurahs = new Set();
   const uniqueAyats = new Set<string>(); // Track unique ayats as "surahNumber:ayatNumber"
@@ -29,7 +36,9 @@ async function updateStudentProgress(studentId: string) {
   let juzProgress: { [key: number]: Set<string> } = {}; // Track unique ayats per juz
 
   records.forEach(record => {
-    if (record.status === 'MUTQIN') {
+    const surah = surahMap.get(record.surahNumber);
+
+    if (record.status === 'MUTQIN' && surah) {
       // Check if entire surah is completed
       const surahRecords = records.filter(r => r.surahNumber === record.surahNumber);
       const surahAyats = new Set();
@@ -39,7 +48,7 @@ async function updateStudentProgress(studentId: string) {
         }
       });
 
-      if (surahAyats.size === record.surah.totalAyat) {
+      if (surahAyats.size === surah.totalAyat) {
         completedSurahs.add(record.surahNumber);
       }
     }
@@ -52,10 +61,12 @@ async function updateStudentProgress(studentId: string) {
     qualitySum += getQualityScore(record.quality);
 
     // Calculate juz progress with unique ayats
-    const juz = record.surah.juz;
-    if (!juzProgress[juz]) juzProgress[juz] = new Set();
-    for (let i = record.startAyat; i <= record.endAyat; i++) {
-      juzProgress[juz].add(`${record.surahNumber}:${i}`);
+    if (surah) {
+      const juz = surah.juz;
+      if (!juzProgress[juz]) juzProgress[juz] = new Set();
+      for (let i = record.startAyat; i <= record.endAyat; i++) {
+        juzProgress[juz].add(`${record.surahNumber}:${i}`);
+      }
     }
   });
 
@@ -134,38 +145,54 @@ export async function GET(request: NextRequest) {
       where,
       orderBy: { date: 'desc' },
       take: parseInt(limit),
-      skip: (parseInt(page) - 1) * parseInt(limit),
-      include: {
-        student: {
-          select: {
-            id: true,
-            fullName: true,
-            nickname: true,
-            photo: true
-          }
-        },
-        surah: {
-          select: {
-            number: true,
-            name: true,
-            nameArabic: true,
-            totalAyat: true,
-            juz: true
-          }
-        },
-        teacher: {
-          select: {
-            id: true,
-            name: true
-          }
-        }
+      skip: (parseInt(page) - 1) * parseInt(limit)
+    });
+
+    // Get student, teacher, and surah data
+    const studentIds = [...new Set(records.map(r => r.studentId))];
+    const teacherIds = [...new Set(records.map(r => r.teacherId))];
+    const surahNumbers = [...new Set(records.map(r => r.surahNumber))];
+
+    const students = await prisma.students.findMany({
+      where: { id: { in: studentIds } },
+      select: {
+        id: true,
+        fullName: true,
+        nickname: true,
+        photo: true
       }
     });
+
+    const teachers = await prisma.users.findMany({
+      where: { id: { in: teacherIds } },
+      select: {
+        id: true,
+        name: true
+      }
+    });
+
+    const surahs = await prisma.quran_surahs.findMany({
+      where: { number: { in: surahNumbers } },
+      select: {
+        number: true,
+        name: true,
+        nameArabic: true,
+        totalAyat: true,
+        juz: true
+      }
+    });
+
+    const recordsWithData = records.map(record => ({
+      ...record,
+      student: students.find(s => s.id === record.studentId),
+      teacher: teachers.find(t => t.id === record.teacherId),
+      surah: surahs.find(s => s.number === record.surahNumber)
+    }));
 
     const total = await prisma.hafalan_records.count({ where });
 
     return NextResponse.json({
-      records,
+      records: recordsWithData,
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
@@ -227,7 +254,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if surah exists and ayat numbers are valid
-    const surah = await prisma.quran_surahs.findUnique({
+    const surah = await prisma.quran_surahs.findFirst({
       where: { number: parseInt(surahNumber) }
     });
 
@@ -309,33 +336,45 @@ export async function POST(request: NextRequest) {
         notes,
         corrections,
         voiceNoteUrl
-      },
-      include: {
-        student: {
-          select: {
-            id: true,
-            fullName: true,
-            nickname: true,
-            photo: true
-          }
-        },
-        surah: {
-          select: {
-            number: true,
-            name: true,
-            nameArabic: true,
-            totalAyat: true,
-            juz: true
-          }
-        },
-        teacher: {
-          select: {
-            id: true,
-            name: true
-          }
-        }
       }
     });
+
+    // Get student, teacher, and surah data
+    const student = await prisma.students.findUnique({
+      where: { id: studentId },
+      select: {
+        id: true,
+        fullName: true,
+        nickname: true,
+        photo: true
+      }
+    });
+
+    const teacherData = await prisma.users.findUnique({
+      where: { id: teacherId },
+      select: {
+        id: true,
+        name: true
+      }
+    });
+
+    const surah = await prisma.quran_surahs.findFirst({
+      where: { number: parseInt(surahNumber) },
+      select: {
+        number: true,
+        name: true,
+        nameArabic: true,
+        totalAyat: true,
+        juz: true
+      }
+    });
+
+    const recordWithData = {
+      ...record,
+      student,
+      teacher: teacherData,
+      surah
+    };
 
     // Update student progress
     await updateStudentProgress(studentId);
@@ -392,7 +431,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({
-      record,
+      record: recordWithData,
       message: 'Hafalan record created successfully'
     });
 
@@ -447,39 +486,51 @@ export async function PUT(request: NextRequest) {
 
     const record = await prisma.hafalan_records.update({
       where: { id },
-      data: updateData,
-      include: {
-        student: {
-          select: {
-            id: true,
-            fullName: true,
-            nickname: true,
-            photo: true
-          }
-        },
-        surah: {
-          select: {
-            number: true,
-            name: true,
-            nameArabic: true,
-            totalAyat: true,
-            juz: true
-          }
-        },
-        teacher: {
-          select: {
-            id: true,
-            name: true
-          }
-        }
+      data: updateData
+    });
+
+    // Get student, teacher, and surah data
+    const student = await prisma.students.findUnique({
+      where: { id: existingRecord.studentId },
+      select: {
+        id: true,
+        fullName: true,
+        nickname: true,
+        photo: true
       }
     });
+
+    const teacher = await prisma.users.findUnique({
+      where: { id: existingRecord.teacherId },
+      select: {
+        id: true,
+        name: true
+      }
+    });
+
+    const surah = await prisma.quran_surahs.findFirst({
+      where: { number: record.surahNumber },
+      select: {
+        number: true,
+        name: true,
+        nameArabic: true,
+        totalAyat: true,
+        juz: true
+      }
+    });
+
+    const recordWithData = {
+      ...record,
+      student,
+      teacher,
+      surah
+    };
 
     // Update student progress
     await updateStudentProgress(existingRecord.studentId);
 
     return NextResponse.json({
-      record,
+      record: recordWithData,
       message: 'Record updated successfully'
     });
 

@@ -82,23 +82,6 @@ export async function GET(request: NextRequest) {
     const [suppliers, total, stats] = await Promise.all([
       prisma.suppliers.findMany({
         where,
-        include: {
-          purchaseOrders: {
-            select: {
-              id: true,
-              orderDate: true,
-              totalAmount: true,
-              status: true,
-            },
-            orderBy: { orderDate: 'desc' },
-            take: 5, // Latest 5 purchase orders
-          },
-          _count: {
-            select: {
-              purchaseOrders: true,
-            },
-          },
-        },
         orderBy: {
           [query.sortBy]: query.sortOrder,
         },
@@ -116,12 +99,7 @@ export async function GET(request: NextRequest) {
         }),
         prisma.purchase_orders.aggregate({
           _sum: { totalAmount: true },
-          _count: true,
-          where: {
-            supplier: {
-              isActive: true,
-            },
-          },
+          _count: true
         }),
       ]).then(([activeCount, inactiveCount, ratingStats, purchaseStats]) => ({
         activeCount,
@@ -132,26 +110,31 @@ export async function GET(request: NextRequest) {
       })),
     ])
 
-    // Calculate additional metrics for each supplier
-    const suppliersWithMetrics = suppliers.map(supplier => {
-      const totalPurchaseValue = supplier.purchaseOrders.reduce(
-        (sum, po) => sum + Number(po.totalAmount), 0
-      )
-      const activePurchaseOrders = supplier.purchaseOrders.filter(
-        po => po.status !== 'CANCELLED'
-      ).length
-      const lastPurchaseDate = supplier.purchaseOrders[0]?.orderDate
+    // Get purchase order stats for each supplier
+    const suppliersWithMetrics = await Promise.all(
+      suppliers.map(async (supplier) => {
+        const poStats = await prisma.purchase_orders.aggregate({
+          where: { supplierId: supplier.id },
+          _sum: { totalAmount: true },
+          _count: true
+        });
 
-      return {
-        ...supplier,
-        metrics: {
-          totalPurchaseValue,
-          activePurchaseOrders,
-          lastPurchaseDate,
-          totalPurchaseOrders: supplier._count.purchaseOrders,
-        },
-      }
-    })
+        const latestPO = await prisma.purchase_orders.findFirst({
+          where: { supplierId: supplier.id },
+          orderBy: { orderDate: 'desc' },
+          select: { orderDate: true }
+        });
+
+        return {
+          ...supplier,
+          metrics: {
+            totalPurchaseValue: Number(poStats._sum.totalAmount || 0),
+            totalPurchaseOrders: poStats._count,
+            lastPurchaseDate: latestPO?.orderDate,
+          },
+        }
+      })
+    )
 
     return NextResponse.json({
       suppliers: suppliersWithMetrics,
@@ -230,14 +213,7 @@ export async function POST(request: NextRequest) {
     }
 
     const supplier = await prisma.suppliers.create({
-      data,
-      include: {
-        _count: {
-          select: {
-            purchaseOrders: true,
-          },
-        },
-      },
+      data
     })
 
     return NextResponse.json(

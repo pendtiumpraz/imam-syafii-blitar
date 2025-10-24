@@ -90,12 +90,6 @@ export async function GET(request: NextRequest) {
         where: whereConditions,
         skip,
         take: limit,
-        include: {
-          activities: {
-            orderBy: { performedAt: 'desc' },
-            take: 1
-          }
-        },
         orderBy: { createdAt: 'desc' }
       }),
       prisma.ppdb_registrations.count({ where: whereConditions })
@@ -310,22 +304,24 @@ export async function POST(request: NextRequest) {
         transcriptUrl,
         registrationFee,
         status: submitNow ? 'SUBMITTED' : 'DRAFT',
-        submittedAt: submitNow ? new Date() : null,
-        activities: {
-          create: {
-            activity: submitNow ? 'SUBMITTED' : 'CREATED',
-            description: submitNow ? 
-              `Pendaftaran ${registrationNo} telah disubmit` : 
-              `Draft pendaftaran ${registrationNo} telah dibuat`,
-            metadata: JSON.stringify({ ip: request.headers.get('x-forwarded-for') })
-          }
-        }
-      },
-      include: {
-        activities: true
+        submittedAt: submitNow ? new Date() : null
       }
     });
-    
+
+    // Create activity log
+    if (registration) {
+      await prisma.ppdb_activities.create({
+        data: {
+          registrationId: registration.id,
+          activity: submitNow ? 'SUBMITTED' : 'CREATED',
+          description: submitNow ?
+            `Pendaftaran ${registrationNo} telah disubmit` :
+            `Draft pendaftaran ${registrationNo} telah dibuat`,
+          metadata: JSON.stringify({ ip: request.headers.get('x-forwarded-for') })
+        }
+      });
+    }
+
     return NextResponse.json(registration, { status: 201 });
   } catch (error) {
     console.error('Error creating registration:', error);
@@ -401,18 +397,19 @@ export async function PUT(request: NextRequest) {
       where: { id },
       data: {
         ...updateData,
-        status,
-        activities: activityData ? {
-          create: activityData
-        } : undefined
-      },
-      include: {
-        activities: {
-          orderBy: { performedAt: 'desc' },
-          take: 5
-        }
+        status
       }
     });
+
+    // Create activity log if needed
+    if (activityData) {
+      await prisma.ppdb_activities.create({
+        data: {
+          registrationId: id,
+          ...activityData
+        }
+      });
+    }
     
     return NextResponse.json(registration);
   } catch (error) {

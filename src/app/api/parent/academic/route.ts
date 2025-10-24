@@ -45,14 +45,7 @@ export async function GET(request: NextRequest) {
                 },
                 grades: {
                   include: {
-                    semester: {
-                      include: {
-                        academicYear: {
-                          select: { name: true }
-                        }
-                      }
-                    },
-                    subject: {
+                    subjects: {
                       select: {
                         name: true,
                         code: true,
@@ -61,11 +54,7 @@ export async function GET(request: NextRequest) {
                     }
                   }
                 },
-                attendances: {
-                  include: {
-                    semester: true
-                  }
-                }
+                attendances: true
               }
             }
           }
@@ -83,7 +72,7 @@ export async function GET(request: NextRequest) {
     const currentSemester = await prisma.semesters.findFirst({
       where: { isActive: true },
       include: {
-        academicYear: {
+        academic_years: {
           select: { name: true }
         }
       }
@@ -127,9 +116,9 @@ export async function GET(request: NextRequest) {
           ? Math.round(currentGrades.reduce((sum, grade) => sum + (grade.total?.toNumber() || 0), 0) / currentGrades.length * 100) / 100
           : 0,
         subjects: currentGrades.map((grade) => ({
-          name: grade.subject.name,
-          code: grade.subject.code,
-          category: grade.subject.category,
+          name: grade.subjects?.name || 'Unknown',
+          code: grade.subjects?.code || 'N/A',
+          category: grade.subjects?.category || 'UMUM',
           score: grade.total?.toNumber() || 0,
           grade: grade.grade || 'N/A',
           point: grade.point?.toNumber() || 0
@@ -170,12 +159,12 @@ export async function GET(request: NextRequest) {
           gte: new Date(),
           lte: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // Next 30 days
         },
-        classId: {
+        classesId: {
           in: children.map(child => child.currentClass?.id).filter((id): id is string => !!id)
         }
       },
       include: {
-        subject: {
+        subjects: {
           select: {
             name: true,
             code: true
@@ -203,13 +192,7 @@ export async function GET(request: NextRequest) {
         }
       },
       include: {
-        student: {
-          select: {
-            fullName: true,
-            nickname: true
-          }
-        },
-        subject: {
+        subjects: {
           select: {
             name: true,
             code: true
@@ -222,27 +205,38 @@ export async function GET(request: NextRequest) {
       take: 20
     });
 
+    // Get student names for recent grades
+    const studentIds = [...new Set(recentGrades.map(g => g.studentId))];
+    const students = await prisma.students.findMany({
+      where: { id: { in: studentIds } },
+      select: { id: true, fullName: true, nickname: true }
+    });
+    const studentMap = new Map(students.map(s => [s.id, s]));
+
     // Get teacher feedback (simulated for now as there's no specific feedback model)
     const teacherFeedback = [
       // This would normally come from a dedicated feedback/notes table
       // For now, we'll generate some sample data based on recent activities
-      ...recentGrades.slice(0, 5).map(grade => ({
-        id: `feedback-${grade.id}`,
-        studentName: grade.student.fullName,
-        teacher: 'Guru Mata Pelajaran',
-        subject: grade.subject.name,
-        message: grade.total && grade.total.toNumber() >= 85 
-          ? 'Hasil yang sangat memuaskan! Pertahankan semangat belajar.'
-          : grade.total && grade.total.toNumber() >= 70
-          ? 'Hasil cukup baik, namun masih bisa ditingkatkan dengan latihan lebih.'
-          : 'Perlu bimbingan ekstra untuk mata pelajaran ini.',
-        date: grade.updatedAt.toISOString(),
-        type: grade.total && grade.total.toNumber() >= 85 
-          ? 'positive' 
-          : grade.total && grade.total.toNumber() >= 70 
-          ? 'neutral' 
-          : 'concern' as 'positive' | 'neutral' | 'concern'
-      }))
+      ...recentGrades.slice(0, 5).map(grade => {
+        const student = studentMap.get(grade.studentId);
+        return {
+          id: `feedback-${grade.id}`,
+          studentName: student?.fullName || 'Unknown',
+          teacher: 'Guru Mata Pelajaran',
+          subject: grade.subjects?.name || 'Unknown',
+          message: grade.total && grade.total.toNumber() >= 85
+            ? 'Hasil yang sangat memuaskan! Pertahankan semangat belajar.'
+            : grade.total && grade.total.toNumber() >= 70
+            ? 'Hasil cukup baik, namun masih bisa ditingkatkan dengan latihan lebih.'
+            : 'Perlu bimbingan ekstra untuk mata pelajaran ini.',
+          date: grade.updatedAt.toISOString(),
+          type: grade.total && grade.total.toNumber() >= 85
+            ? 'positive'
+            : grade.total && grade.total.toNumber() >= 70
+            ? 'neutral'
+            : 'concern' as 'positive' | 'neutral' | 'concern'
+        };
+      })
     ];
 
     const academicData = {
@@ -250,26 +244,29 @@ export async function GET(request: NextRequest) {
       semester: {
         id: currentSemester.id,
         name: currentSemester.name,
-        academicYear: currentSemester.academicYear.name,
+        academicYear: currentSemester.academic_years?.name || 'Unknown',
         startDate: currentSemester.startDate,
         endDate: currentSemester.endDate
       },
       upcomingExams: upcomingExams.map(exam => ({
         id: exam.id,
-        subject: (exam as any).subject?.name || 'Unknown Subject',
+        subject: exam.subjects?.name || 'Unknown Subject',
         date: exam.date.toISOString(),
         type: exam.type,
         description: exam.name
       })),
-      recentGrades: recentGrades.map(grade => ({
-        id: grade.id,
-        studentName: grade.student.fullName,
-        subject: grade.subject.name,
-        score: grade.total?.toNumber() || 0,
-        grade: grade.grade || 'N/A',
-        date: grade.updatedAt.toISOString(),
-        type: 'REGULAR' // This could be expanded based on grade type
-      })),
+      recentGrades: recentGrades.map(grade => {
+        const student = studentMap.get(grade.studentId);
+        return {
+          id: grade.id,
+          studentName: student?.fullName || 'Unknown',
+          subject: grade.subjects?.name || 'Unknown',
+          score: grade.total?.toNumber() || 0,
+          grade: grade.grade || 'N/A',
+          date: grade.updatedAt.toISOString(),
+          type: 'REGULAR' // This could be expanded based on grade type
+        };
+      }),
       teacherFeedback
     };
 

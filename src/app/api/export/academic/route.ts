@@ -45,30 +45,20 @@ export async function GET(request: NextRequest) {
 
       const attendance = await prisma.attendances.findMany({
         where,
-        include: {
-          student: true,
-          class: true,
-          semester: true,
-          marker: true
-        },
         orderBy: [
-          { date: 'desc' },
-          { student: { fullName: 'asc' } }
+          { date: 'desc' }
         ]
       });
 
       const exportData = attendance.map(record => ({
         'Tanggal': record.date.toISOString().split('T')[0],
-        'Nama Siswa': record.student.fullName,
-        'NIS': record.student.nis,
-        'Institusi': record.student.institutionType,
-        'Kelas': record.student.grade || '',
-        'Nama Kelas': record.class.name,
-        'Semester': record.semester.name,
+        'Student ID': record.studentId,
+        'Class ID': record.classId,
+        'Semester ID': record.semesterId,
         'Status Kehadiran': record.status,
         'Jam Masuk': record.timeIn ? record.timeIn.toISOString().split('T')[1].substring(0, 5) : '',
         'Catatan': record.notes || '',
-        'Dicatat Oleh': record.marker.name,
+        'Marked By': record.markedBy,
         'Tanggal Dicatat': record.markedAt.toISOString().split('T')[0]
       }));
 
@@ -78,16 +68,13 @@ export async function GET(request: NextRequest) {
         total: exportData.length,
         columns: [
           { key: 'Tanggal', header: 'Tanggal', width: 12, type: 'date' },
-          { key: 'Nama Siswa', header: 'Nama Siswa', width: 25 },
-          { key: 'NIS', header: 'NIS', width: 15 },
-          { key: 'Institusi', header: 'Institusi', width: 10 },
-          { key: 'Kelas', header: 'Kelas', width: 8 },
-          { key: 'Nama Kelas', header: 'Nama Kelas', width: 15 },
-          { key: 'Semester', header: 'Semester', width: 12 },
+          { key: 'Student ID', header: 'Student ID', width: 25 },
+          { key: 'Class ID', header: 'Class ID', width: 20 },
+          { key: 'Semester ID', header: 'Semester ID', width: 20 },
           { key: 'Status Kehadiran', header: 'Status Kehadiran', width: 15 },
           { key: 'Jam Masuk', header: 'Jam Masuk', width: 10 },
           { key: 'Catatan', header: 'Catatan', width: 30 },
-          { key: 'Dicatat Oleh', header: 'Dicatat Oleh', width: 20 },
+          { key: 'Marked By', header: 'Marked By', width: 20 },
           { key: 'Tanggal Dicatat', header: 'Tanggal Dicatat', width: 15, type: 'date' }
         ]
       });
@@ -122,26 +109,18 @@ export async function GET(request: NextRequest) {
 
       const grades = await prisma.grades.findMany({
         where,
-        include: {
-          student: true,
-          subject: true,
-          semester: true
-        },
         orderBy: [
-          { semester: { name: 'asc' } },
-          { student: { fullName: 'asc' } },
-          { subject: { name: 'asc' } }
+          { semesterId: 'asc' },
+          { studentId: 'asc' },
+          { subjectId: 'asc' }
         ]
       });
 
       const exportData = grades.map(grade => ({
-        'Nama Siswa': grade.student.fullName,
-        'NIS': grade.student.nis,
-        'Institusi': grade.student.institutionType,
-        'Kelas': grade.student.grade || '',
-        'Mata Pelajaran': grade.subject.name,
-        'Kode Mapel': grade.subject.code,
-        'Semester': grade.semester.name,
+        'Student ID': grade.studentId,
+        'Subject ID': grade.subjectId,
+        'Semester ID': grade.semesterId,
+        'Class ID': grade.classId || '',
         'UTS': grade.midterm?.toNumber() || '',
         'UAS': grade.final?.toNumber() || '',
         'Tugas': grade.assignment?.toNumber() || '',
@@ -166,13 +145,10 @@ export async function GET(request: NextRequest) {
         data: exportData,
         total: exportData.length,
         columns: [
-          { key: 'Nama Siswa', header: 'Nama Siswa', width: 25 },
-          { key: 'NIS', header: 'NIS', width: 15 },
-          { key: 'Institusi', header: 'Institusi', width: 10 },
-          { key: 'Kelas', header: 'Kelas', width: 8 },
-          { key: 'Mata Pelajaran', header: 'Mata Pelajaran', width: 20 },
-          { key: 'Kode Mapel', header: 'Kode Mapel', width: 12 },
-          { key: 'Semester', header: 'Semester', width: 12 },
+          { key: 'Student ID', header: 'Student ID', width: 25 },
+          { key: 'Subject ID', header: 'Subject ID', width: 20 },
+          { key: 'Semester ID', header: 'Semester ID', width: 20 },
+          { key: 'Class ID', header: 'Class ID', width: 20 },
           { key: 'UTS', header: 'UTS', width: 8, type: 'number' },
           { key: 'UAS', header: 'UAS', width: 8, type: 'number' },
           { key: 'Tugas', header: 'Tugas', width: 8, type: 'number' },

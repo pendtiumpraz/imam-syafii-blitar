@@ -93,34 +93,38 @@ export async function GET(
     // Get attendance records
     const attendances = await prisma.attendances.findMany({
       where: whereConditions,
-      include: {
-        class: {
-          select: {
-            name: true,
-            level: true,
-            program: true
-          }
-        },
-        semester: {
-          select: {
-            name: true,
-            academicYear: {
-              select: {
-                name: true
-              }
-            }
-          }
-        },
-        marker: {
-          select: {
-            name: true
-          }
-        }
-      },
       orderBy: {
         date: 'desc'
       }
     });
+
+    // Get related classes, semesters, and markers
+    const classIds = [...new Set(attendances.map(a => a.classesId).filter((id): id is string => !!id))];
+    const semesterIds = [...new Set(attendances.map(a => a.semesterId))];
+    const markerIds = [...new Set(attendances.map(a => a.markedBy))];
+
+    const [classes, semesters, markers] = await Promise.all([
+      classIds.length > 0 ? prisma.classes.findMany({
+        where: { id: { in: classIds } },
+        select: { id: true, name: true, level: true, program: true }
+      }) : [],
+      semesterIds.length > 0 ? prisma.semesters.findMany({
+        where: { id: { in: semesterIds } },
+        include: {
+          academic_years: {
+            select: { name: true }
+          }
+        }
+      }) : [],
+      markerIds.length > 0 ? prisma.users.findMany({
+        where: { id: { in: markerIds } },
+        select: { id: true, name: true }
+      }) : []
+    ]);
+
+    const classMap = new Map(classes.map(c => [c.id, c]));
+    const semesterMap = new Map(semesters.map(s => [s.id, s]));
+    const markerMap = new Map(markers.map(m => [m.id, m]));
 
     // Calculate statistics
     const stats = {
@@ -235,24 +239,38 @@ export async function GET(
       stats,
       monthlyStats,
       dayPatterns,
-      recentAlerts: recentAlerts.map(att => ({
-        date: att.date,
-        status: att.status,
-        notes: att.notes,
-        class: att.class?.name,
-        markedBy: att.marker?.name
-      })),
-      attendanceRecords: attendances.map(att => ({
-        id: att.id,
-        date: att.date,
-        status: att.status,
-        timeIn: att.timeIn,
-        notes: att.notes,
-        class: att.class,
-        semester: att.semester,
-        markedBy: att.marker?.name,
-        markedAt: att.markedAt
-      }))
+      recentAlerts: recentAlerts.map(att => {
+        const classInfo = att.classesId ? classMap.get(att.classesId) : null;
+        const marker = markerMap.get(att.markedBy);
+        return {
+          date: att.date,
+          status: att.status,
+          notes: att.notes,
+          class: classInfo?.name || null,
+          markedBy: marker?.name || 'Unknown'
+        };
+      }),
+      attendanceRecords: attendances.map(att => {
+        const classInfo = att.classesId ? classMap.get(att.classesId) : null;
+        const semester = semesterMap.get(att.semesterId);
+        const marker = markerMap.get(att.markedBy);
+        return {
+          id: att.id,
+          date: att.date,
+          status: att.status,
+          timeIn: att.timeIn,
+          notes: att.notes,
+          class: classInfo,
+          semester: semester ? {
+            name: semester.name,
+            academicYear: {
+              name: semester.academic_years?.name || 'Unknown'
+            }
+          } : null,
+          markedBy: marker?.name || 'Unknown',
+          markedAt: att.markedAt
+        };
+      })
     };
 
     return NextResponse.json(result);

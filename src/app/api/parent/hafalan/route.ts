@@ -59,23 +59,6 @@ export async function GET(request: NextRequest) {
               gte: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000) // Last 3 months
             }
           },
-          include: {
-            surah: {
-              select: {
-                number: true,
-                name: true,
-                nameArabic: true,
-                totalAyat: true,
-                juz: true,
-                type: true
-              }
-            },
-            teacher: {
-              select: {
-                name: true
-              }
-            }
-          },
           orderBy: {
             createdAt: 'desc'
           },
@@ -90,21 +73,6 @@ export async function GET(request: NextRequest) {
               in: ['ACTIVE', 'COMPLETED']
             }
           },
-          include: {
-            surah: {
-              select: {
-                number: true,
-                name: true,
-                nameArabic: true,
-                totalAyat: true
-              }
-            },
-            creator: {
-              select: {
-                name: true
-              }
-            }
-          },
           orderBy: {
             createdAt: 'desc'
           }
@@ -116,13 +84,6 @@ export async function GET(request: NextRequest) {
             studentId: student.id,
             sessionDate: {
               gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-            }
-          },
-          include: {
-            teacher: {
-              select: {
-                name: true
-              }
             }
           },
           orderBy: {
@@ -145,40 +106,64 @@ export async function GET(request: NextRequest) {
           take: 10
         });
 
+        // Get Quran surahs for reference
+        const allSurahs = await prisma.quran_surahs.findMany({
+          orderBy: { number: 'asc' }
+        });
+
+        // Get unique teacher and creator IDs
+        const teacherIds = [...new Set([
+          ...recentRecords.map(r => r.teacherId),
+          ...recentSessions.map(s => s.teacherId)
+        ])];
+        const creatorIds = [...new Set(targets.map(t => t.createdBy))];
+
+        // Fetch teacher and creator names
+        const [teachers, creators] = await Promise.all([
+          prisma.users.findMany({
+            where: { id: { in: teacherIds } },
+            select: { id: true, name: true }
+          }),
+          prisma.users.findMany({
+            where: { id: { in: creatorIds } },
+            select: { id: true, name: true }
+          })
+        ]);
+
+        const teacherMap = new Map(teachers.map(t => [t.id, t]));
+        const creatorMap = new Map(creators.map(c => [c.id, c]));
+        const surahMap = new Map(allSurahs.map(s => [s.number, s]));
+
         // Calculate surah completion status
         const completedSurahs = recentRecords.filter(record => record.status === 'MUTQIN');
         const surahStats = completedSurahs.reduce((acc, record) => {
           const surahNumber = record.surahNumber;
+          const surah = surahMap.get(surahNumber);
+
           if (!acc[surahNumber]) {
             acc[surahNumber] = {
-              surah: record.surah,
+              surah: surah || { number: surahNumber, name: 'Unknown', nameArabic: 'Unknown', totalAyat: 0, juz: 0, type: 'MAKKIYAH', meaningId: '' },
               lastRecord: record,
-              totalAyat: 0,
+              totalAyat: surah?.totalAyat || 0,
               completedAyat: 0,
               status: record.status,
               quality: record.quality
             };
           }
           acc[surahNumber].completedAyat += (record.endAyat - record.startAyat + 1);
-          acc[surahNumber].totalAyat = record.surah.totalAyat;
-          
+
           // Update status to the most recent one
           if (new Date(record.createdAt) > new Date(acc[surahNumber].lastRecord.createdAt)) {
             acc[surahNumber].lastRecord = record;
             acc[surahNumber].status = record.status;
             acc[surahNumber].quality = record.quality;
           }
-          
+
           return acc;
         }, {} as Record<number, any>);
 
         // Calculate current memorization target
         const currentTarget = targets.find(target => target.status === 'ACTIVE');
-        
-        // Get Quran surahs for reference
-        const allSurahs = await prisma.quran_surahs.findMany({
-          orderBy: { number: 'asc' }
-        });
 
         return {
           student: {
@@ -226,49 +211,56 @@ export async function GET(request: NextRequest) {
             avgTajweed: 0
           },
           surahProgress: Object.values(surahStats),
-          recentRecords: recentRecords.map(record => ({
-            id: record.id,
-            surah: record.surah,
-            startAyat: record.startAyat,
-            endAyat: record.endAyat,
-            status: record.status,
-            quality: record.quality,
-            fluency: record.fluency,
-            tajweed: record.tajweed,
-            makharijul: record.makharijul,
-            teacher: record.teacher.name,
-            date: record.date,
-            notes: record.notes,
-            voiceNoteUrl: record.voiceNoteUrl,
-            duration: record.duration
-          })),
+          recentRecords: recentRecords.map(record => {
+            const surah = surahMap.get(record.surahNumber);
+            const teacher = teacherMap.get(record.teacherId);
+            return {
+              id: record.id,
+              surah: surah || { number: record.surahNumber, name: 'Unknown', nameArabic: 'Unknown', totalAyat: 0, juz: 0, type: 'MAKKIYAH' },
+              startAyat: record.startAyat,
+              endAyat: record.endAyat,
+              status: record.status,
+              quality: record.quality,
+              fluency: record.fluency,
+              tajweed: record.tajweed,
+              makharijul: record.makharijul,
+              teacher: teacher?.name || 'Unknown',
+              date: record.date,
+              notes: record.notes,
+              voiceNoteUrl: record.voiceNoteUrl,
+              duration: record.duration
+            };
+          }),
           currentTarget: currentTarget ? {
             id: currentTarget.id,
-            surah: currentTarget.surah,
+            surah: surahMap.get(currentTarget.targetSurah) || { number: currentTarget.targetSurah, name: 'Unknown', nameArabic: 'Unknown', totalAyat: 0 },
             startAyat: currentTarget.startAyat,
             endAyat: currentTarget.endAyat,
             targetDate: currentTarget.targetDate,
             priority: currentTarget.priority,
             progress: currentTarget.progress.toNumber(),
-            creator: currentTarget.creator.name
+            creator: creatorMap.get(currentTarget.createdBy)?.name || 'Unknown'
           } : null,
-          recentSessions: recentSessions.map(session => ({
-            id: session.id,
-            type: session.type,
-            method: session.method,
-            duration: session.duration,
-            date: session.sessionDate,
-            teacher: session.teacher.name,
-            overallQuality: session.overallQuality,
-            overallFluency: session.overallFluency,
-            content: JSON.parse(session.content || '[]'),
-            totalAyat: session.totalAyat,
-            studentMood: session.studentMood,
-            engagement: session.engagement,
-            confidence: session.confidence,
-            notes: session.notes,
-            nextTarget: session.nextTarget
-          })),
+          recentSessions: recentSessions.map(session => {
+            const teacher = teacherMap.get(session.teacherId);
+            return {
+              id: session.id,
+              type: session.type,
+              method: session.method,
+              duration: session.duration,
+              date: session.sessionDate,
+              teacher: teacher?.name || 'Unknown',
+              overallQuality: session.overallQuality,
+              overallFluency: session.overallFluency,
+              content: JSON.parse(session.content || '[]'),
+              totalAyat: session.totalAyat,
+              studentMood: session.studentMood,
+              engagement: session.engagement,
+              confidence: session.confidence,
+              notes: session.notes,
+              nextTarget: session.nextTarget
+            };
+          }),
           achievements: achievements.map(achievement => ({
             id: achievement.id,
             type: achievement.type,

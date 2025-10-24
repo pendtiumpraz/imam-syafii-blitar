@@ -50,11 +50,21 @@ export async function GET(request: NextRequest) {
     const totalStudents = await prisma.students.count({ where: studentWhere });
     
     const studentsWithProgress = await prisma.students.findMany({
-      where: studentWhere,
-      include: {
-        hafalan_progress: true
+      where: studentWhere
+    });
+
+    // Get progress for all students
+    const progressRecords = await prisma.hafalan_progress.findMany({
+      where: {
+        studentId: { in: studentsWithProgress.map(s => s.id) }
       }
     });
+
+    // Map progress to students
+    const studentsWithProgressData = studentsWithProgress.map(student => ({
+      ...student,
+      hafalanProgress: progressRecords.find(p => p.studentId === student.id)
+    }));
 
     // Activity statistics
     const totalSessions = await prisma.hafalan_sessions.count({
@@ -110,7 +120,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Top performing students
-    const topStudents = studentsWithProgress
+    const topStudents = studentsWithProgressData
       .filter(s => s.hafalanProgress)
       .sort((a, b) => Number(b.hafalanProgress?.overallProgress || 0) - Number(a.hafalanProgress?.overallProgress || 0))
       .slice(0, 10)
@@ -194,14 +204,14 @@ export async function GET(request: NextRequest) {
 
     // Level distribution
     const levelDistribution = {
-      PEMULA: studentsWithProgress.filter(s => s.hafalanProgress?.level === 'PEMULA' || !s.hafalanProgress).length,
-      MENENGAH: studentsWithProgress.filter(s => s.hafalanProgress?.level === 'MENENGAH').length,
-      LANJUT: studentsWithProgress.filter(s => s.hafalanProgress?.level === 'LANJUT').length,
-      HAFIDZ: studentsWithProgress.filter(s => s.hafalanProgress?.level === 'HAFIDZ').length
+      PEMULA: studentsWithProgressData.filter(s => s.hafalanProgress?.level === 'PEMULA' || !s.hafalanProgress).length,
+      MENENGAH: studentsWithProgressData.filter(s => s.hafalanProgress?.level === 'MENENGAH').length,
+      LANJUT: studentsWithProgressData.filter(s => s.hafalanProgress?.level === 'LANJUT').length,
+      HAFIDZ: studentsWithProgressData.filter(s => s.hafalanProgress?.level === 'HAFIDZ').length
     };
 
     // Calculate averages
-    const studentsWithData = studentsWithProgress.filter(s => s.hafalanProgress);
+    const studentsWithData = studentsWithProgressData.filter(s => s.hafalanProgress);
     const averages = {
       overallProgress: studentsWithData.length > 0 
         ? studentsWithData.reduce((sum, s) => sum + Number(s.hafalanProgress?.overallProgress || 0), 0) / studentsWithData.length 
@@ -221,26 +231,38 @@ export async function GET(request: NextRequest) {
     };
 
     // Recent achievements
-    const recentAchievements = await prisma.hafalan_achievements.findMany({
+    const achievementsBase = await prisma.hafalan_achievements.findMany({
       where: {
-        earnedAt: { gte: startDate },
-        ...(classId || level ? {
-          student: studentWhere
-        } : {})
-      },
-      include: {
-        student: {
-          select: {
-            id: true,
-            fullName: true,
-            nickname: true,
-            photo: true
-          }
-        }
+        earnedAt: { gte: startDate }
       },
       orderBy: { earnedAt: 'desc' },
-      take: 10
+      take: 100 // Get more to filter
     });
+
+    // Filter achievements by student criteria and get student data
+    let recentAchievements = achievementsBase;
+    if (classId || level) {
+      const validStudentIds = studentsWithProgressData.map(s => s.id);
+      recentAchievements = achievementsBase.filter(a => validStudentIds.includes(a.studentId));
+    }
+    recentAchievements = recentAchievements.slice(0, 10);
+
+    // Get student data for achievements
+    const achievementStudentIds = recentAchievements.map(a => a.studentId);
+    const achievementStudents = await prisma.students.findMany({
+      where: { id: { in: achievementStudentIds } },
+      select: {
+        id: true,
+        fullName: true,
+        nickname: true,
+        photo: true
+      }
+    });
+
+    const achievementsWithStudents = recentAchievements.map(achievement => ({
+      ...achievement,
+      student: achievementStudents.find(s => s.id === achievement.studentId)
+    }));
 
     const response = {
       period,
@@ -275,7 +297,7 @@ export async function GET(request: NextRequest) {
       topPerformers: topStudents,
       mostMemorizedSurahs,
       dailyActivity,
-      recentAchievements,
+      recentAchievements: achievementsWithStudents,
       filters: {
         period,
         classId,
