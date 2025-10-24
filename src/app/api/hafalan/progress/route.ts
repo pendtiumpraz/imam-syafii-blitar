@@ -752,18 +752,26 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        result = await prisma.hafalan_progress.upsert({
-          where: { studentId },
-          create: {
-            studentId,
-            level: data.level,
-            lastUpdated: new Date()
-          },
-          update: {
-            level: data.level,
-            lastUpdated: new Date()
-          }
+        const existing = await prisma.hafalan_progress.findFirst({
+          where: { studentId }
         });
+        if (existing) {
+          result = await prisma.hafalan_progress.update({
+            where: { id: existing.id },
+            data: {
+              level: data.level,
+              lastUpdated: new Date()
+            }
+          });
+        } else {
+          result = await prisma.hafalan_progress.create({
+            data: {
+              studentId,
+              level: data.level,
+              lastUpdated: new Date()
+            }
+          });
+        }
         break;
 
       default:
@@ -993,30 +1001,38 @@ async function updateStudentProgressFromRecords(studentId: string) {
   });
 
   // Update progress
-  await prisma.hafalan_progress.upsert({
-    where: { studentId },
-    create: {
-      studentId,
-      totalSurah: completedSurahs.size,
-      totalAyat,
-      totalJuz: Object.keys(juzProgress).length,
-      juz30Progress,
-      overallProgress,
-      level,
-      avgQuality: records.length > 0 ? qualitySum / records.length : 0,
-      totalSessions: sessionCount,
-      lastUpdated: new Date()
-    },
-    update: {
-      totalSurah: completedSurahs.size,
-      totalAyat,
-      totalJuz: Object.keys(juzProgress).length,
-      juz30Progress,
-      overallProgress,
-      level,
-      avgQuality: records.length > 0 ? qualitySum / records.length : 0,
-      totalSessions: sessionCount,
-      lastUpdated: new Date()
-    }
+  const existingProgress = await prisma.hafalan_progress.findFirst({
+    where: { studentId }
   });
+  if (existingProgress) {
+    await prisma.hafalan_progress.update({
+      where: { id: existingProgress.id },
+      data: {
+        totalSurah: completedSurahs.size,
+        totalAyat,
+        totalJuz: Object.keys(juzProgress).length,
+        juz30Progress,
+        overallProgress,
+        level,
+        avgQuality: records.length > 0 ? qualitySum / records.length : 0,
+        totalSessions: sessionCount,
+        lastUpdated: new Date()
+      }
+    });
+  } else {
+    await prisma.hafalan_progress.create({
+      data: {
+        studentId,
+        totalSurah: completedSurahs.size,
+        totalAyat,
+        totalJuz: Object.keys(juzProgress).length,
+        juz30Progress,
+        overallProgress,
+        level,
+        avgQuality: records.length > 0 ? qualitySum / records.length : 0,
+        totalSessions: sessionCount,
+        lastUpdated: new Date()
+      }
+    });
+  }
 }

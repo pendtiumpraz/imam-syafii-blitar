@@ -40,45 +40,26 @@ export async function GET(
     }
 
     // Get progress summary
-    const progress = await prisma.hafalan_progress.findUnique({
+    const progress = await prisma.hafalan_progress.findFirst({
       where: { studentId }
     });
 
     // Get recent records
     let recentRecords: any[] = [];
     if (includeRecords) {
-      recentRecords = await prisma.hafalan_records.findMany({
+      const records = await prisma.hafalan_records.findMany({
         where: { studentId },
         orderBy: { date: 'desc' },
-        take: parseInt(recordLimit),
-        include: {
-          surah: {
-            select: {
-              number: true,
-              name: true,
-              nameArabic: true,
-              totalAyat: true,
-              juz: true
-            }
-          },
-          teacher: {
-            select: {
-              id: true,
-              name: true
-            }
-          }
-        }
+        take: parseInt(recordLimit)
       });
-    }
 
-    // Get current targets
-    const currentTargets = await prisma.hafalan_targets.findMany({
-      where: {
-        studentId,
-        status: 'ACTIVE'
-      },
-      include: {
-        surah: {
+      // Fetch surahs and teachers separately
+      const surahNumbers = [...new Set(records.map(r => r.surahNumber))];
+      const teacherIds = [...new Set(records.map(r => r.teacherId))];
+
+      const [surahs, teachers] = await Promise.all([
+        prisma.quran_surahs.findMany({
+          where: { number: { in: surahNumbers } },
           select: {
             number: true,
             name: true,
@@ -86,16 +67,69 @@ export async function GET(
             totalAyat: true,
             juz: true
           }
-        },
-        creator: {
+        }),
+        prisma.users.findMany({
+          where: { id: { in: teacherIds } },
           select: {
             id: true,
             name: true
           }
-        }
+        })
+      ]);
+
+      const surahMap = new Map(surahs.map(s => [s.number, s]));
+      const teacherMap = new Map(teachers.map(t => [t.id, t]));
+
+      // Attach related data to records
+      recentRecords = records.map(record => ({
+        ...record,
+        surah: surahMap.get(record.surahNumber),
+        teacher: teacherMap.get(record.teacherId)
+      }));
+    }
+
+    // Get current targets
+    const targets = await prisma.hafalan_targets.findMany({
+      where: {
+        studentId,
+        status: 'ACTIVE'
       },
       orderBy: { targetDate: 'asc' }
     });
+
+    // Fetch surahs and creators separately for targets
+    const targetSurahNumbers = [...new Set(targets.map(t => t.targetSurah))];
+    const creatorIds = [...new Set(targets.map(t => t.createdBy))];
+
+    const [targetSurahs, creators] = await Promise.all([
+      prisma.quran_surahs.findMany({
+        where: { number: { in: targetSurahNumbers } },
+        select: {
+          number: true,
+          name: true,
+          nameArabic: true,
+          totalAyat: true,
+          juz: true
+        }
+      }),
+      prisma.users.findMany({
+        where: { id: { in: creatorIds } },
+        select: {
+          id: true,
+          name: true
+        }
+      })
+    ]);
+
+    const targetSurahMap = new Map(targetSurahs.map(s => [s.number, s]));
+    const creatorMap = new Map(creators.map(c => [c.id, c]));
+
+    // Attach related data to targets
+    const currentTargets = targets.map(target => ({
+      ...target,
+      surah: targetSurahMap.get(target.targetSurah),
+      creator: creatorMap.get(target.createdBy)
+    }));
 
     // Get achievements
     const achievements = await prisma.hafalan_achievements.findMany({
@@ -105,25 +139,32 @@ export async function GET(
     });
 
     // Get next schedule
-    const nextSchedule = await prisma.setoran_schedules.findFirst({
+    const schedule = await prisma.setoran_schedules.findFirst({
       where: {
         studentId,
         isActive: true
-      },
-      include: {
-        teacher: {
-          select: {
-            id: true,
-            name: true
-          }
-        }
       }
     });
 
+    let nextSchedule = null;
+    if (schedule) {
+      const scheduleTeacher = await prisma.users.findUnique({
+        where: { id: schedule.teacherId },
+        select: {
+          id: true,
+          name: true
+        }
+      });
+
+      nextSchedule = {
+        ...schedule,
+        teacher: scheduleTeacher
+      };
+    }
+
     // Calculate surah completion status
     const allRecords = await prisma.hafalan_records.findMany({
-      where: { studentId },
-      include: { surah: true }
+      where: { studentId }
     });
 
     const surahStatus: { [key: number]: any } = {};

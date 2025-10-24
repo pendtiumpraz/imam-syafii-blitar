@@ -39,9 +39,7 @@ export async function GET(request: NextRequest) {
                 },
                 grades: {
                   include: {
-                    subjects: {
-                      select: { name: true, category: true }
-                    }
+                    subjects: true
                   }
                 },
                 attendances: true

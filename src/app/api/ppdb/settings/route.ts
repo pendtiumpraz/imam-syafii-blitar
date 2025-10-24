@@ -7,8 +7,8 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const academicYear = searchParams.get('academicYear') || '2024/2025';
-    
-    let settings = await prisma.ppdb_settings.findUnique({
+
+    let settings = await prisma.ppdb_settings.findFirst({
       where: { academicYear }
     });
     
@@ -110,16 +110,26 @@ export async function PUT(request: NextRequest) {
       updateData.requiredDocs = JSON.stringify(updateData.requiredDocs);
     }
     
-    const settings = await prisma.ppdb_settings.upsert({
-      where: { academicYear },
-      update: updateData,
-      create: {
-        academicYear,
-        openDate: updateData.openDate || new Date('2024-01-01'),
-        closeDate: updateData.closeDate || new Date('2024-03-31'),
-        ...updateData
-      }
+    const existingSettings = await prisma.ppdb_settings.findFirst({
+      where: { academicYear }
     });
+
+    let settings;
+    if (existingSettings) {
+      settings = await prisma.ppdb_settings.update({
+        where: { id: existingSettings.id },
+        data: updateData
+      });
+    } else {
+      settings = await prisma.ppdb_settings.create({
+        data: {
+          academicYear,
+          openDate: updateData.openDate || new Date('2024-01-01'),
+          closeDate: updateData.closeDate || new Date('2024-03-31'),
+          ...updateData
+        }
+      });
+    }
     
     return NextResponse.json(settings);
   } catch (error) {

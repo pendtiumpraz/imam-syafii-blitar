@@ -67,9 +67,7 @@ async function getGradeStats(studentId: string, currentSemesterId: string) {
       total: { not: null }
     },
     include: {
-      subjects: {
-        select: { name: true, category: true }
-      }
+      subjects: true
     }
   });
 

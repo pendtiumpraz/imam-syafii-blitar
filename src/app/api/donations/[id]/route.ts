@@ -13,38 +13,7 @@ export async function GET(
     const { id } = params
 
     const campaign = await prisma.donation_campaigns.findUnique({
-      where: { id },
-      include: {
-        category: true,
-        creator: {
-          select: { id: true, name: true, email: true }
-        },
-        _count: {
-          select: {
-            donations: {
-              where: { paymentStatus: 'VERIFIED' }
-            },
-            updates: true
-          }
-        },
-        donations: {
-          where: {
-            paymentStatus: 'VERIFIED',
-            isAnonymous: false
-          },
-          select: {
-            id: true,
-            donorName: true,
-            amount: true,
-            message: true,
-            paidAt: true
-          },
-          orderBy: {
-            paidAt: 'desc'
-          },
-          take: 10
-        }
-      }
+      where: { id }
     })
 
     if (!campaign) {
@@ -67,13 +36,57 @@ export async function GET(
       )
     }
 
+    // Fetch related data separately
+    const [category, creator, donationsCount, updatesCount, recentDonations] = await Promise.all([
+      prisma.donation_categories.findUnique({
+        where: { id: campaign.categoryId }
+      }),
+      prisma.users.findUnique({
+        where: { id: campaign.createdBy },
+        select: { id: true, name: true, email: true }
+      }),
+      prisma.donations.count({
+        where: {
+          campaignId: id,
+          paymentStatus: 'VERIFIED'
+        }
+      }),
+      prisma.campaign_updates.count({
+        where: { campaignId: id }
+      }),
+      prisma.donations.findMany({
+        where: {
+          campaignId: id,
+          paymentStatus: 'VERIFIED',
+          isAnonymous: false
+        },
+        select: {
+          id: true,
+          donorName: true,
+          amount: true,
+          message: true,
+          paidAt: true
+        },
+        orderBy: {
+          paidAt: 'desc'
+        },
+        take: 10
+      })
+    ]);
+
     // Format the response
     const response = {
       ...campaign,
       images: JSON.parse(campaign.images),
       currentAmount: parseFloat(campaign.currentAmount.toString()),
       targetAmount: parseFloat(campaign.targetAmount.toString()),
-      donations: campaign.donations.map(d => ({
+      category,
+      creator,
+      _count: {
+        donations: donationsCount,
+        updates: updatesCount
+      },
+      donations: recentDonations.map(d => ({
         ...d,
         amount: parseFloat(d.amount.toString())
       }))
@@ -211,20 +224,27 @@ export async function PUT(
     // Update campaign
     const updatedCampaign = await prisma.donation_campaigns.update({
       where: { id },
-      data: updateData,
-      include: {
-        category: true,
-        creator: {
-          select: { id: true, name: true, email: true }
-        }
-      }
+      data: updateData
     })
+
+    // Fetch related data separately
+    const [category, creator] = await Promise.all([
+      prisma.donation_categories.findUnique({
+        where: { id: updatedCampaign.categoryId }
+      }),
+      prisma.users.findUnique({
+        where: { id: updatedCampaign.createdBy },
+        select: { id: true, name: true, email: true }
+      })
+    ]);
 
     return NextResponse.json({
       ...updatedCampaign,
       images: JSON.parse(updatedCampaign.images),
       currentAmount: parseFloat(updatedCampaign.currentAmount.toString()),
-      targetAmount: parseFloat(updatedCampaign.targetAmount.toString())
+      targetAmount: parseFloat(updatedCampaign.targetAmount.toString()),
+      category,
+      creator
     })
   } catch (error) {
     console.error('Error updating campaign:', error)
@@ -262,14 +282,7 @@ export async function DELETE(
 
     // Find existing campaign
     const existingCampaign = await prisma.donation_campaigns.findUnique({
-      where: { id },
-      include: {
-        _count: {
-          select: {
-            donations: true
-          }
-        }
-      }
+      where: { id }
     })
 
     if (!existingCampaign) {
@@ -280,7 +293,11 @@ export async function DELETE(
     }
 
     // Check if campaign has donations
-    if (existingCampaign._count.donations > 0) {
+    const donationsCount = await prisma.donations.count({
+      where: { campaignId: id }
+    });
+
+    if (donationsCount > 0) {
       return NextResponse.json(
         { error: 'Campaign tidak dapat dihapus karena sudah ada donasi. Gunakan status CANCELLED sebagai gantinya.' },
         { status: 400 }

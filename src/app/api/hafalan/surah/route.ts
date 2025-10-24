@@ -45,7 +45,7 @@ async function getSurahRecommendations(studentId: string) {
   }
 
   // Get student's current progress
-  const progress = await prisma.hafalan_progress.findUnique({
+  const progress = await prisma.hafalan_progress.findFirst({
     where: { studentId }
   });
 
@@ -53,9 +53,21 @@ async function getSurahRecommendations(studentId: string) {
   const recentRecords = await prisma.hafalan_records.findMany({
     where: { studentId },
     orderBy: { date: 'desc' },
-    take: 10,
-    include: { surah: true }
+    take: 10
   });
+
+  // Fetch surahs separately for recent records
+  const surahNumbers = [...new Set(recentRecords.map(r => r.surahNumber))];
+  const recentSurahs = await prisma.quran_surahs.findMany({
+    where: { number: { in: surahNumbers } }
+  });
+  const surahMap = new Map(recentSurahs.map(s => [s.number, s]));
+
+  // Attach surah data to records
+  const recentRecordsWithSurah = recentRecords.map(record => ({
+    ...record,
+    surah: surahMap.get(record.surahNumber)!
+  }));
 
   // Get all surahs with completion status
   const allSurahs = await prisma.quran_surahs.findMany({
@@ -124,7 +136,7 @@ async function getSurahRecommendations(studentId: string) {
       }
 
       // Pattern-based recommendations (similar to recently studied)
-      const recentJuzzes = recentRecords.map(r => r.surah.juz);
+      const recentJuzzes = recentRecordsWithSurah.map(r => r.surah.juz);
       if (recentJuzzes.includes(surah.juz)) {
         score += 15;
         reasons.push('Same juz as recent studies');
@@ -133,7 +145,7 @@ async function getSurahRecommendations(studentId: string) {
       // Avoid already completed surahs unless for review
       if (completionPercentage === 100) {
         score -= 30;
-        if (recentRecords.some(r => r.surahNumber === surah.number && 
+        if (recentRecordsWithSurah.some(r => r.surahNumber === surah.number &&
             (new Date().getTime() - r.date.getTime()) > 30 * 24 * 60 * 60 * 1000)) {
           score += 20;
           reasons.push('Good for review (completed over a month ago)');
@@ -141,7 +153,7 @@ async function getSurahRecommendations(studentId: string) {
       }
 
       // Type preference (if student has a pattern)
-      const recentTypes = recentRecords.map(r => r.surah.type);
+      const recentTypes = recentRecordsWithSurah.map(r => r.surah.type);
       const makkiyahCount = recentTypes.filter(t => t === 'MAKKIYAH').length;
       const madaniyahCount = recentTypes.filter(t => t === 'MADANIYAH').length;
       
@@ -441,7 +453,7 @@ export async function GET(request: NextRequest) {
           }
 
           // Check if surah is recommended for student level
-          const progress = await prisma.hafalan_progress.findUnique({
+          const progress = await prisma.hafalan_progress.findFirst({
             where: { studentId }
           });
 
@@ -584,8 +596,17 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Surah number is required' }, { status: 400 });
     }
 
+    // Find the surah first since number is not unique in Prisma
+    const existingSurah = await prisma.quran_surahs.findFirst({
+      where: { number }
+    });
+
+    if (!existingSurah) {
+      return NextResponse.json({ error: 'Surah not found' }, { status: 404 });
+    }
+
     const updatedSurah = await prisma.quran_surahs.update({
-      where: { number },
+      where: { id: existingSurah.id },
       data: {
         ...(meaningId && { meaningId }),
         ...(meaningAr && { meaningAr }),
@@ -622,9 +643,18 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Surah number is required' }, { status: 400 });
     }
 
+    // Find the surah first since number is not unique in Prisma
+    const existingSurah = await prisma.quran_surahs.findFirst({
+      where: { number: parseInt(number) }
+    });
+
+    if (!existingSurah) {
+      return NextResponse.json({ error: 'Surah not found' }, { status: 404 });
+    }
+
     // Deactivate rather than delete to preserve data integrity
     const updatedSurah = await prisma.quran_surahs.update({
-      where: { number: parseInt(number) },
+      where: { id: existingSurah.id },
       data: { isActive: false }
     });
 

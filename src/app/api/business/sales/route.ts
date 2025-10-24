@@ -109,20 +109,6 @@ export async function GET(request: NextRequest) {
     const [sales, total, summary] = await Promise.all([
       prisma.sales.findMany({
         where,
-        include: {
-          items: {
-            include: {
-              product: {
-                select: {
-                  id: true,
-                  name: true,
-                  code: true,
-                  unit: true,
-                },
-              },
-            },
-          },
-        },
         orderBy: {
           [query.sortBy]: query.sortOrder,
         },
@@ -180,10 +166,43 @@ export async function GET(request: NextRequest) {
           return acc
         }, {} as any),
       })),
-    ])
+    ]);
+
+    // Fetch related sale items and products separately
+    const salesWithItems = await Promise.all(
+      sales.map(async (sale) => {
+        const items = await prisma.sale_items.findMany({
+          where: { saleId: sale.id }
+        });
+
+        const itemsWithProducts = await Promise.all(
+          items.map(async (item) => {
+            const product = await prisma.products.findUnique({
+              where: { id: item.productId },
+              select: {
+                id: true,
+                name: true,
+                code: true,
+                unit: true,
+              }
+            });
+
+            return {
+              ...item,
+              product
+            };
+          })
+        );
+
+        return {
+          ...sale,
+          items: itemsWithProducts
+        };
+      })
+    );
 
     return NextResponse.json({
-      sales,
+      sales: salesWithItems,
       pagination: {
         page: query.page,
         limit: query.limit,
@@ -233,13 +252,8 @@ export async function POST(request: NextRequest) {
     // Validate items and check stock availability
     for (const item of data.items) {
       const product = await prisma.products.findUnique({
-        where: { id: item.productId },
-        include: {
-          inventoryRecords: {
-            where: { location: data.location },
-          },
-        },
-      })
+        where: { id: item.productId }
+      });
 
       if (!product || !product.isActive) {
         return NextResponse.json(
@@ -248,8 +262,16 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      const availableStock = product.inventoryRecords.reduce(
-        (sum, inv) => sum + inv.quantity, 0
+      // Get inventory records separately
+      const inventoryRecords = await prisma.inventory.findMany({
+        where: {
+          productId: item.productId,
+          location: data.location
+        }
+      });
+
+      const availableStock = inventoryRecords.reduce(
+        (sum: number, inv: { quantity: number }) => sum + inv.quantity, 0
       )
 
       if (availableStock < item.quantity) {
@@ -369,26 +391,39 @@ export async function POST(request: NextRequest) {
 
     // Fetch complete sale data with items
     const completeSale = await prisma.sales.findUnique({
-      where: { id: result.id },
-      include: {
-        items: {
-          include: {
-            product: {
-              select: {
-                id: true,
-                name: true,
-                code: true,
-                unit: true,
-              },
-            },
-          },
-        },
-      },
-    })
+      where: { id: result.id }
+    });
+
+    // Fetch sale items and products separately
+    const items = await prisma.sale_items.findMany({
+      where: { saleId: result.id }
+    });
+
+    const itemsWithProducts = await Promise.all(
+      items.map(async (item) => {
+        const product = await prisma.products.findUnique({
+          where: { id: item.productId },
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            unit: true,
+          }
+        });
+
+        return {
+          ...item,
+          product
+        };
+      })
+    );
 
     return NextResponse.json(
       {
-        sale: completeSale,
+        sale: {
+          ...completeSale,
+          items: itemsWithProducts
+        },
         message: 'Sale completed successfully',
       },
       { status: 201 }

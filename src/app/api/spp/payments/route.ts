@@ -71,31 +71,52 @@ export async function GET(request: NextRequest) {
         where: whereConditions,
         skip,
         take: limit,
-        include: {
-          billing: {
-            include: {
-              student: {
-                select: {
-                  id: true,
-                  nis: true,
-                  fullName: true,
-                  grade: true
-                }
-              },
-              class: {
-                select: {
-                  id: true,
-                  name: true,
-                  level: true
-                }
-              }
-            }
-          }
-        },
         orderBy: { paymentDate: 'desc' }
       }),
       prisma.spp_payments.count({ where: whereConditions })
     ]);
+
+    // Fetch related billing, student, and class data separately
+    const paymentsWithRelations = await Promise.all(
+      payments.map(async (payment) => {
+        const billing = await prisma.spp_billings.findUnique({
+          where: { id: payment.billingId }
+        });
+
+        let student = null;
+        let classData = null;
+
+        if (billing) {
+          student = await prisma.students.findUnique({
+            where: { id: billing.studentId },
+            select: {
+              id: true,
+              nis: true,
+              fullName: true,
+              grade: true
+            }
+          });
+
+          classData = await prisma.classes.findUnique({
+            where: { id: billing.classId },
+            select: {
+              id: true,
+              name: true,
+              level: true
+            }
+          });
+        }
+
+        return {
+          ...payment,
+          billing: billing ? {
+            ...billing,
+            student,
+            class: classData
+          } : null
+        };
+      })
+    );
     
     // Calculate summary
     const summary = await prisma.spp_payments.aggregate({
@@ -110,7 +131,7 @@ export async function GET(request: NextRequest) {
     });
     
     return NextResponse.json({
-      payments,
+      payments: paymentsWithRelations,
       pagination: {
         currentPage: page,
         totalPages: Math.ceil(totalCount / limit),
@@ -248,23 +269,34 @@ export async function PUT(request: NextRequest) {
     
     const body = await request.json();
     const { id, action, ...updateData } = body;
-    
+
     if (!id) {
       return NextResponse.json(
         { error: 'Payment ID is required' },
         { status: 400 }
       );
     }
-    
+
     // Get payment details
     const payment = await prisma.spp_payments.findUnique({
-      where: { id },
-      include: { billing: true }
+      where: { id }
     });
-    
+
     if (!payment) {
       return NextResponse.json(
         { error: 'Payment not found' },
+        { status: 404 }
+      );
+    }
+
+    // Get billing separately
+    const billing = await prisma.spp_billings.findUnique({
+      where: { id: payment.billingId }
+    });
+
+    if (!billing) {
+      return NextResponse.json(
+        { error: 'Billing not found' },
         { status: 404 }
       );
     }
@@ -277,7 +309,7 @@ export async function PUT(request: NextRequest) {
           { status: 400 }
         );
       }
-      
+
       // Verify payment
       const updatedPayment = await prisma.spp_payments.update({
         where: { id },
@@ -289,10 +321,10 @@ export async function PUT(request: NextRequest) {
           notes: updateData.notes || payment.notes
         }
       });
-      
+
       // Update billing
-      const newPaidAmount = payment.billing.paidAmount.plus(payment.amount);
-      const newStatus = newPaidAmount.equals(payment.billing.totalAmount) ? 'PAID' : 'PARTIAL';
+      const newPaidAmount = billing.paidAmount.plus(payment.amount);
+      const newStatus = newPaidAmount.equals(billing.totalAmount) ? 'PAID' : 'PARTIAL';
       
       await prisma.spp_billings.update({
         where: { id: payment.billingId },
@@ -359,33 +391,44 @@ export async function DELETE(request: NextRequest) {
     if (!session?.user?.role || !['SUPER_ADMIN', 'ADMIN'].includes(session.user.role)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
-    
+
     if (!id) {
       return NextResponse.json(
         { error: 'Payment ID is required' },
         { status: 400 }
       );
     }
-    
+
     // Get payment details
     const payment = await prisma.spp_payments.findUnique({
-      where: { id },
-      include: { billing: true }
+      where: { id }
     });
-    
+
     if (!payment) {
       return NextResponse.json(
         { error: 'Payment not found' },
         { status: 404 }
       );
     }
-    
+
+    // Get billing separately
+    const billing = await prisma.spp_billings.findUnique({
+      where: { id: payment.billingId }
+    });
+
+    if (!billing) {
+      return NextResponse.json(
+        { error: 'Billing not found' },
+        { status: 404 }
+      );
+    }
+
     // If payment was verified, update billing
     if (payment.status === 'VERIFIED') {
-      const newPaidAmount = payment.billing.paidAmount.minus(payment.amount);
+      const newPaidAmount = billing.paidAmount.minus(payment.amount);
       const newStatus = newPaidAmount.equals(0) ? 'UNPAID' : 'PARTIAL';
       
       await prisma.spp_billings.update({

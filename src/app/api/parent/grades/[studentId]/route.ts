@@ -5,12 +5,16 @@ import { prisma } from '@/lib/prisma';
 
 // Helper function to verify parent access to student
 async function verifyParentAccess(userId: string, studentId: string) {
+  const parent = await prisma.parent_accounts.findUnique({
+    where: { userId }
+  });
+
+  if (!parent) return null;
+
   const parentStudent = await prisma.parent_students.findFirst({
     where: {
       studentId,
-      parent: {
-        userId
-      },
+      parentId: parent.id,
       canViewGrades: true
     },
     include: {
@@ -89,17 +93,7 @@ export async function GET(
     const grades = await prisma.grades.findMany({
       where: whereConditions,
       include: {
-        subjects: {
-          select: {
-            id: true,
-            code: true,
-            name: true,
-            nameArabic: true,
-            category: true,
-            credits: true,
-            type: true
-          }
-        }
+        subjects: true
       },
       orderBy: [
         { semesterId: 'desc' }

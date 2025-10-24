@@ -50,22 +50,34 @@ const createHafalanSessionSchema = z.object({
 async function updateStudentProgress(studentId: string) {
   // Get all MUTQIN and LANCAR records
   const records = await prisma.hafalan_records.findMany({
-    where: { 
+    where: {
       studentId,
       status: { in: ['LANCAR', 'MUTQIN'] }
-    },
-    include: { surah: true }
+    }
   });
+
+  // Fetch surahs separately
+  const surahNumbers = [...new Set(records.map(r => r.surahNumber))];
+  const surahs = await prisma.quran_surahs.findMany({
+    where: { number: { in: surahNumbers } }
+  });
+  const surahMap = new Map(surahs.map(s => [s.number, s]));
+
+  // Attach surah data to records
+  const recordsWithSurah = records.map(record => ({
+    ...record,
+    surah: surahMap.get(record.surahNumber)!
+  }));
 
   const completedSurahs = new Set();
   let totalAyat = 0;
   let qualitySum = 0;
   const juzProgress: { [key: number]: number } = {};
 
-  records.forEach(record => {
+  recordsWithSurah.forEach(record => {
     // Count ayats
     totalAyat += (record.endAyat - record.startAyat + 1);
-    
+
     // Calculate quality score
     const qualityScore = record.quality === 'A' ? 4 : record.quality === 'B' ? 3 : 2;
     qualitySum += qualityScore;
@@ -77,17 +89,17 @@ async function updateStudentProgress(studentId: string) {
 
     // Check if entire surah is completed with MUTQIN status
     if (record.status === 'MUTQIN') {
-      const surahRecords = records.filter(r => 
+      const surahRecords = recordsWithSurah.filter(r =>
         r.surahNumber === record.surahNumber && r.status === 'MUTQIN'
       );
-      
+
       const completedAyats = new Set();
       surahRecords.forEach(r => {
         for (let i = r.startAyat; i <= r.endAyat; i++) {
           completedAyats.add(i);
         }
       });
-      
+
       if (completedAyats.size === record.surah.totalAyat) {
         completedSurahs.add(record.surahNumber);
       }
@@ -118,34 +130,43 @@ async function updateStudentProgress(studentId: string) {
   });
 
   // Update or create progress
-  await prisma.hafalan_progress.upsert({
-    where: { studentId },
-    create: {
-      studentId,
-      totalSurah: completedSurahs.size,
-      totalAyat,
-      totalJuz: Object.keys(juzProgress).length,
-      juz30Progress,
-      overallProgress,
-      level,
-      avgQuality: records.length > 0 ? qualitySum / records.length : 0,
-      totalSessions: sessionCount + 1,
-      lastSetoranDate: new Date(),
-      lastUpdated: new Date()
-    },
-    update: {
-      totalSurah: completedSurahs.size,
-      totalAyat,
-      totalJuz: Object.keys(juzProgress).length,
-      juz30Progress,
-      overallProgress,
-      level,
-      avgQuality: records.length > 0 ? qualitySum / records.length : 0,
-      totalSessions: sessionCount + 1,
-      lastSetoranDate: new Date(),
-      lastUpdated: new Date()
-    }
+  const existingProgress = await prisma.hafalan_progress.findFirst({
+    where: { studentId }
   });
+
+  if (existingProgress) {
+    await prisma.hafalan_progress.update({
+      where: { id: existingProgress.id },
+      data: {
+        totalSurah: completedSurahs.size,
+        totalAyat,
+        totalJuz: Object.keys(juzProgress).length,
+        juz30Progress,
+        overallProgress,
+        level,
+        avgQuality: recordsWithSurah.length > 0 ? qualitySum / recordsWithSurah.length : 0,
+        totalSessions: sessionCount + 1,
+        lastSetoranDate: new Date(),
+        lastUpdated: new Date()
+      }
+    });
+  } else {
+    await prisma.hafalan_progress.create({
+      data: {
+        studentId,
+        totalSurah: completedSurahs.size,
+        totalAyat,
+        totalJuz: Object.keys(juzProgress).length,
+        juz30Progress,
+        overallProgress,
+        level,
+        avgQuality: recordsWithSurah.length > 0 ? qualitySum / recordsWithSurah.length : 0,
+        totalSessions: sessionCount + 1,
+        lastSetoranDate: new Date(),
+        lastUpdated: new Date()
+      }
+    });
+  }
 }
 
 // Helper function to check and create achievements
@@ -260,24 +281,6 @@ export async function GET(request: NextRequest) {
     const [sessions, total] = await Promise.all([
       prisma.hafalan_sessions.findMany({
         where,
-        include: {
-          student: {
-            select: {
-              id: true,
-              fullName: true,
-              nickname: true,
-              photo: true,
-              institutionType: true,
-              grade: true
-            }
-          },
-          teacher: {
-            select: {
-              id: true,
-              name: true
-            }
-          }
-        },
         orderBy: { sessionDate: 'desc' },
         skip,
         take: limit
@@ -285,8 +288,43 @@ export async function GET(request: NextRequest) {
       prisma.hafalan_sessions.count({ where })
     ]);
 
+    // Fetch students and teachers separately
+    const studentIds = [...new Set(sessions.map(s => s.studentId))];
+    const teacherIds = [...new Set(sessions.map(s => s.teacherId))];
+
+    const [students, teachers] = await Promise.all([
+      prisma.students.findMany({
+        where: { id: { in: studentIds } },
+        select: {
+          id: true,
+          fullName: true,
+          nickname: true,
+          photo: true,
+          institutionType: true,
+          grade: true
+        }
+      }),
+      prisma.users.findMany({
+        where: { id: { in: teacherIds } },
+        select: {
+          id: true,
+          name: true
+        }
+      })
+    ]);
+
+    const studentMap = new Map(students.map(s => [s.id, s]));
+    const teacherMap = new Map(teachers.map(t => [t.id, t]));
+
+    // Attach related data to sessions
+    const sessionsWithRelations = sessions.map(session => ({
+      ...session,
+      student: studentMap.get(session.studentId),
+      teacher: teacherMap.get(session.teacherId)
+    }));
+
     // Parse content JSON for each session
-    const sessionsWithParsedContent = sessions.map(session => ({
+    const sessionsWithParsedContent = sessionsWithRelations.map(session => ({
       ...session,
       content: JSON.parse(session.content)
     }));
@@ -398,26 +436,37 @@ export async function POST(request: NextRequest) {
         reportSent: validated.reportSent,
         parentFeedback: validated.parentFeedback,
         notes: validated.notes
-      },
-      include: {
-        student: {
-          select: {
-            id: true,
-            fullName: true,
-            nickname: true,
-            photo: true,
-            institutionType: true,
-            grade: true
-          }
-        },
-        teacher: {
-          select: {
-            id: true,
-            name: true
-          }
-        }
       }
     });
+
+    // Fetch student and teacher separately
+    const [studentData, teacherData] = await Promise.all([
+      prisma.students.findUnique({
+        where: { id: validated.studentId },
+        select: {
+          id: true,
+          fullName: true,
+          nickname: true,
+          photo: true,
+          institutionType: true,
+          grade: true
+        }
+      }),
+      prisma.users.findUnique({
+        where: { id: session.user?.id || '' },
+        select: {
+          id: true,
+          name: true
+        }
+      })
+    ]);
+
+    // Attach related data
+    const sessionWithRelations = {
+      ...hafalanSession,
+      student: studentData,
+      teacher: teacherData
+    };
 
     // Create individual hafalan records for each content item
     for (const content of validated.content) {
@@ -450,8 +499,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       session: {
-        ...hafalanSession,
-        content: JSON.parse(hafalanSession.content)
+        ...sessionWithRelations,
+        content: JSON.parse(sessionWithRelations.content)
       },
       message: 'Hafalan session created successfully'
     });
@@ -506,31 +555,42 @@ export async function PUT(request: NextRequest) {
       data: {
         ...updateData,
         content: updateData.content ? JSON.stringify(updateData.content) : undefined
-      },
-      include: {
-        student: {
-          select: {
-            id: true,
-            fullName: true,
-            nickname: true,
-            photo: true,
-            institutionType: true,
-            grade: true
-          }
-        },
-        teacher: {
-          select: {
-            id: true,
-            name: true
-          }
-        }
       }
     });
 
+    // Fetch student and teacher separately
+    const [studentData, teacherData] = await Promise.all([
+      prisma.students.findUnique({
+        where: { id: updatedSession.studentId },
+        select: {
+          id: true,
+          fullName: true,
+          nickname: true,
+          photo: true,
+          institutionType: true,
+          grade: true
+        }
+      }),
+      prisma.users.findUnique({
+        where: { id: updatedSession.teacherId },
+        select: {
+          id: true,
+          name: true
+        }
+      })
+    ]);
+
+    // Attach related data
+    const sessionWithRelations = {
+      ...updatedSession,
+      student: studentData,
+      teacher: teacherData
+    };
+
     return NextResponse.json({
       session: {
-        ...updatedSession,
-        content: JSON.parse(updatedSession.content)
+        ...sessionWithRelations,
+        content: JSON.parse(sessionWithRelations.content)
       },
       message: 'Session updated successfully'
     });

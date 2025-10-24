@@ -340,9 +340,9 @@ model bills {
   is_deleted       Boolean?  @default(false)
   deleted_by       String?   @db.VarChar(255)
 
-  students       students        @relation(fields: [studentId], references: [id])
-  bill_types     bill_types      @relation(fields: [billTypeId], references: [id])
-  bill_payments  bill_payments[]
+  students      students        @relation(fields: [studentId], references: [id])
+  bill_types    bill_types      @relation(fields: [billTypeId], references: [id])
+  bill_payments bill_payments[]
 
   @@index([is_deleted, deleted_at], map: "idx_bills_deleted")
 }
@@ -1345,34 +1345,37 @@ model ota_sponsors {
 }
 
 model parent_accounts {
-  id                   String    @id @default(cuid())
-  userId               String
+  id                   String            @id @default(cuid())
+  userId               String            @unique
   phoneNumber          String?
   whatsapp             String?
   emergencyContact     String?
-  notificationSettings String    @default("{\"grades\": true, \"attendance\": true, \"payments\": true, \"announcements\": true, \"messages\": true, \"pushNotifications\": true, \"emailNotifications\": true}")
-  preferredLanguage    String    @default("id")
-  timezone             String    @default("Asia/Jakarta")
-  isActive             Boolean   @default(true)
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
+  notificationSettings String            @default("{\"grades\": true, \"attendance\": true, \"payments\": true, \"announcements\": true, \"messages\": true, \"pushNotifications\": true, \"emailNotifications\": true}")
+  preferredLanguage    String            @default("id")
+  timezone             String            @default("Asia/Jakarta")
+  isActive             Boolean           @default(true)
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
   deletedAt            DateTime?
-  isDeleted            Boolean   @default(false)
+  isDeleted            Boolean           @default(false)
   deletedBy            String?
+  parentStudents       parent_students[]
 }
 
 model parent_students {
-  id                 String   @id @default(cuid())
+  id                 String           @id @default(cuid())
   parentId           String
   studentId          String
   relationship       String
-  isPrimary          Boolean  @default(false)
-  canViewGrades      Boolean  @default(true)
-  canViewAttendance  Boolean  @default(true)
-  canViewPayments    Boolean  @default(true)
-  canReceiveMessages Boolean  @default(true)
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  isPrimary          Boolean          @default(false)
+  canViewGrades      Boolean          @default(true)
+  canViewAttendance  Boolean          @default(true)
+  canViewPayments    Boolean          @default(true)
+  canReceiveMessages Boolean          @default(true)
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  parent             parent_accounts  @relation(fields: [parentId], references: [id])
+  student            students         @relation(fields: [studentId], references: [id])
 }
 
 model payment_history {
@@ -2219,7 +2222,8 @@ model students {
   is_deleted       Boolean?  @default(false)
   deleted_by       String?   @db.VarChar(255)
 
-  bills bills[]
+  bills           bills[]
+  parentStudents  parent_students[]
 
   @@index([is_deleted, deleted_at], map: "idx_students_deleted")
   @@index([enrollmentYear])

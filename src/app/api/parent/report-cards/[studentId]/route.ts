@@ -5,12 +5,16 @@ import { prisma } from '@/lib/prisma';
 
 // Helper function to verify parent access to student
 async function verifyParentAccess(userId: string, studentId: string) {
+  const parent = await prisma.parent_accounts.findUnique({
+    where: { userId }
+  });
+
+  if (!parent) return null;
+
   const parentStudent = await prisma.parent_students.findFirst({
     where: {
       studentId,
-      parent: {
-        userId
-      },
+      parentId: parent.id,
       canViewGrades: true // Report cards are grade-related
     },
     include: {
@@ -107,15 +111,7 @@ export async function GET(
             total: { not: null }
           },
           include: {
-            subjects: {
-              select: {
-                code: true,
-                name: true,
-                nameArabic: true,
-                category: true,
-                credits: true
-              }
-            }
+            subjects: true
           }
         })
       ]);

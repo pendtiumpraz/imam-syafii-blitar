@@ -6,7 +6,7 @@ import { softDelete } from '@/lib/soft-delete';
 
 // Helper function to generate registration number
 async function generateRegistrationNumber(level: string, year: string): Promise<string> {
-  const settings = await prisma.ppdb_settings.findUnique({
+  const settings = await prisma.ppdb_settings.findFirst({
     where: { academicYear: year }
   });
   
@@ -16,7 +16,7 @@ async function generateRegistrationNumber(level: string, year: string): Promise<
   // Update the last registration number
   if (settings) {
     await prisma.ppdb_settings.update({
-      where: { academicYear: year },
+      where: { id: settings.id },
       data: { lastRegistrationNo: newNo }
     });
   }
@@ -28,7 +28,7 @@ async function generateRegistrationNumber(level: string, year: string): Promise<
 
 // Helper function to check quotas
 async function checkQuota(level: string, year: string): Promise<boolean> {
-  const settings = await prisma.ppdb_settings.findUnique({
+  const settings = await prisma.ppdb_settings.findFirst({
     where: { academicYear: year }
   });
   
@@ -98,7 +98,7 @@ export async function GET(request: NextRequest) {
     // Get quota information if academic year is specified
     let quotaInfo: Record<string, { quota: number; accepted: number; available: number }> | null = null;
     if (academicYear) {
-      const settings = await prisma.ppdb_settings.findUnique({
+      const settings = await prisma.ppdb_settings.findFirst({
         where: { academicYear }
       });
       
@@ -235,7 +235,7 @@ export async function POST(request: NextRequest) {
     const registrationNo = await generateRegistrationNumber(level, academicYear);
     
     // Get registration fee from settings
-    const settings = await prisma.ppdb_settings.findUnique({
+    const settings = await prisma.ppdb_settings.findFirst({
       where: { academicYear }
     });
     

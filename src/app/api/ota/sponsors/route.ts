@@ -74,21 +74,6 @@ export async function GET(request: NextRequest) {
     const [sponsors, total] = await Promise.all([
       prisma.ota_sponsors.findMany({
         where: whereConditions,
-        include: {
-          program: {
-            include: {
-              student: {
-                select: {
-                  id: true,
-                  nis: true,
-                  fullName: true,
-                  institutionType: true,
-                  grade: true,
-                }
-              }
-            }
-          }
-        },
         orderBy: [
           { createdAt: 'desc' }
         ],
@@ -98,8 +83,38 @@ export async function GET(request: NextRequest) {
       prisma.ota_sponsors.count({ where: whereConditions })
     ]);
 
+    // Get unique program IDs
+    const programIds = [...new Set(sponsors.map(s => s.programId))];
+
+    // Fetch programs and students separately
+    const programs = await prisma.ota_programs.findMany({
+      where: { id: { in: programIds } }
+    });
+
+    const studentIds = [...new Set(programs.map(p => p.studentId))];
+    const students = await prisma.students.findMany({
+      where: { id: { in: studentIds } },
+      select: {
+        id: true,
+        nis: true,
+        fullName: true,
+        institutionType: true,
+        grade: true,
+      }
+    });
+
+    // Create lookup maps
+    const studentMap = new Map(students.map(s => [s.id, s]));
+    const programMap = new Map(programs.map(p => [p.id, { ...p, student: studentMap.get(p.studentId) }]));
+
+    // Combine data
+    const sponsorsWithRelations = sponsors.map(sponsor => ({
+      ...sponsor,
+      program: programMap.get(sponsor.programId)
+    }));
+
     return NextResponse.json({
-      sponsors,
+      sponsors: sponsorsWithRelations,
       pagination: {
         currentPage: page,
         totalPages: Math.ceil(total / limit),
@@ -153,8 +168,7 @@ export async function POST(request: NextRequest) {
 
     // Check if program exists
     const program = await prisma.ota_programs.findUnique({
-      where: { id: programId },
-      include: { student: true }
+      where: { id: programId }
     });
 
     if (!program) {
@@ -195,28 +209,38 @@ export async function POST(request: NextRequest) {
         verifiedBy: session.user.id,
         verifiedAt: new Date(),
         paymentDate: new Date(),
-      },
-      include: {
-        program: {
-          include: {
-            student: {
-              select: {
-                id: true,
-                nis: true,
-                fullName: true,
-                institutionType: true,
-                grade: true,
-              }
-            }
-          }
-        }
       }
     });
+
+    // Fetch program and student separately
+    const programData = await prisma.ota_programs.findUnique({
+      where: { id: programId }
+    });
+
+    const studentData = programData ? await prisma.students.findUnique({
+      where: { id: programData.studentId },
+      select: {
+        id: true,
+        nis: true,
+        fullName: true,
+        institutionType: true,
+        grade: true,
+      }
+    }) : null;
+
+    // Combine data
+    const sponsorWithRelations = {
+      ...sponsor,
+      program: programData ? {
+        ...programData,
+        student: studentData
+      } : null
+    };
 
     // Update program progress
     await updateProgramProgress(programId, donationMonth);
 
-    return NextResponse.json({ sponsor });
+    return NextResponse.json({ sponsor: sponsorWithRelations });
   } catch (error) {
     console.error('Error creating sponsor:', error);
     return NextResponse.json(
@@ -255,8 +279,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const sponsor = await prisma.ota_sponsors.findUnique({
-      where: { id },
-      include: { program: true }
+      where: { id }
     });
 
     if (!sponsor) {
@@ -297,30 +320,40 @@ export async function PUT(request: NextRequest) {
 
     const updatedSponsor = await prisma.ota_sponsors.update({
       where: { id },
-      data: updateData,
-      include: {
-        program: {
-          include: {
-            student: {
-              select: {
-                id: true,
-                nis: true,
-                fullName: true,
-                institutionType: true,
-                grade: true,
-              }
-            }
-          }
-        }
-      }
+      data: updateData
     });
+
+    // Fetch program and student separately
+    const programData = await prisma.ota_programs.findUnique({
+      where: { id: updatedSponsor.programId }
+    });
+
+    const studentData = programData ? await prisma.students.findUnique({
+      where: { id: programData.studentId },
+      select: {
+        id: true,
+        nis: true,
+        fullName: true,
+        institutionType: true,
+        grade: true,
+      }
+    }) : null;
+
+    // Combine data
+    const sponsorWithRelations = {
+      ...updatedSponsor,
+      program: programData ? {
+        ...programData,
+        student: studentData
+      } : null
+    };
 
     // Update program progress if payment status changed
     if (isPaid !== undefined || verifyPayment) {
       await updateProgramProgress(sponsor.programId, sponsor.month);
     }
 
-    return NextResponse.json({ sponsor: updatedSponsor });
+    return NextResponse.json({ sponsor: sponsorWithRelations });
   } catch (error) {
     console.error('Error updating sponsor:', error);
     return NextResponse.json(
@@ -352,8 +385,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     const sponsor = await prisma.ota_sponsors.findUnique({
-      where: { id },
-      include: { program: true }
+      where: { id }
     });
 
     if (!sponsor) {

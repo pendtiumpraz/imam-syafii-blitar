@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     const userId = session.user.id;
 
     // Get parent account with children
-    const parentAccount = await prisma.parent_accounts.findUnique({
+    const parentAccount = await prisma.parent_accounts.findFirst({
       where: { userId },
       include: {
         parentStudents: {

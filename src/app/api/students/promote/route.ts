@@ -25,10 +25,7 @@ export async function POST(request: NextRequest) {
     }
 
     const student = await prisma.students.findUnique({
-      where: { id: studentId },
-      include: {
-        ota_program: true,
-      }
+      where: { id: studentId }
     });
 
     if (!student) {
@@ -45,6 +42,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Get OTA program separately if it exists
+    const otaProgram = await prisma.ota_programs.findFirst({
+      where: { studentId: student.id }
+    });
+
     let updateData: any = {};
     let alumniData: any = null;
 
@@ -58,7 +60,7 @@ export async function POST(request: NextRequest) {
       }
 
       updateData.grade = newGrade;
-      
+
       // Update enrollment year if moving from one institution to another
       if (shouldUpdateEnrollmentYear(student.institutionType, student.grade, newGrade)) {
         const currentYear = new Date().getFullYear();
@@ -100,9 +102,9 @@ export async function POST(request: NextRequest) {
       };
 
       // If student has OTA program, deactivate it
-      if (student.otaProgram) {
+      if (otaProgram) {
         await prisma.ota_programs.update({
-          where: { id: student.otaProgram.id },
+          where: { id: otaProgram.id },
           data: {
             isActive: false,
             adminNotes: `Student graduated on ${updateData.graduationDate.toISOString().split('T')[0]}`,
@@ -120,11 +122,7 @@ export async function POST(request: NextRequest) {
     const [updatedStudent, alumni] = await Promise.all([
       prisma.students.update({
         where: { id: studentId },
-        data: updateData,
-        include: {
-          ota_program: true,
-          hafalan_progress: true,
-        }
+        data: updateData
       }),
       alumniData ? prisma.alumni.create({ data: alumniData }) : null
     ]);

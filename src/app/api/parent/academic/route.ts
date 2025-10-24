@@ -45,13 +45,7 @@ export async function GET(request: NextRequest) {
                 },
                 grades: {
                   include: {
-                    subjects: {
-                      select: {
-                        name: true,
-                        code: true,
-                        category: true
-                      }
-                    }
+                    subjects: true
                   }
                 },
                 attendances: true
@@ -164,12 +158,7 @@ export async function GET(request: NextRequest) {
         }
       },
       include: {
-        subjects: {
-          select: {
-            name: true,
-            code: true
-          }
-        }
+        subjects: true
       },
       orderBy: {
         date: 'asc'
@@ -192,12 +181,7 @@ export async function GET(request: NextRequest) {
         }
       },
       include: {
-        subjects: {
-          select: {
-            name: true,
-            code: true
-          }
-        }
+        subjects: true
       },
       orderBy: {
         updatedAt: 'desc'

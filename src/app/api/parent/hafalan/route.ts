@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
     const hafalanData = await Promise.all(
       targetStudents.map(async (student) => {
         // Get hafalan progress summary
-        const progressSummary = await prisma.hafalan_progress.findUnique({
+        const progressSummary = await prisma.hafalan_progress.findFirst({
           where: { studentId: student.id }
         });
 

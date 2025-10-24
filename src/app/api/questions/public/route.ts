@@ -65,51 +65,76 @@ export async function GET(request: NextRequest) {
     
     // Get total count for pagination
     const totalCount = await prisma.questions.count({ where })
-    
-    // Fetch questions with answers
+
+    // Fetch questions
     const questions = await prisma.questions.findMany({
       where,
-      include: {
-        answer: {
-          include: {
-            ustadz: {
-              select: {
-                id: true,
-                name: true
-              }
-            }
-          }
-        }
-      },
       orderBy: {
         [query.sortBy]: query.sortOrder
       },
       skip,
       take: query.limit
     })
-    
+
+    // Get question IDs to fetch answers
+    const questionIds = questions.map(q => q.id);
+
+    // Fetch answers separately
+    const answers = await prisma.answers.findMany({
+      where: {
+        questionId: { in: questionIds }
+      }
+    });
+
+    // Get unique ustadz IDs
+    const ustadzIds = [...new Set(answers.map(a => a.ustadzId))];
+
+    // Fetch ustadz data
+    const ustadzs = await prisma.users.findMany({
+      where: { id: { in: ustadzIds } },
+      select: {
+        id: true,
+        name: true
+      }
+    });
+
+    // Create lookup maps
+    const ustadzMap = new Map(ustadzs.map(u => [u.id, u]));
+    const answerMap = new Map(
+      answers.map(a => [
+        a.questionId,
+        {
+          ...a,
+          ustadz: ustadzMap.get(a.ustadzId)
+        }
+      ])
+    );
+
     // Calculate pagination info
     const totalPages = Math.ceil(totalCount / query.limit)
     const hasNext = query.page < totalPages
     const hasPrev = query.page > 1
-    
+
     // Format response
-    const formattedQuestions = questions.map(question => ({
-      id: question.id,
-      question: question.question,
-      category: question.category,
-      categoryLabel: QUESTION_CATEGORIES.find(cat => cat.value === question.category)?.label || question.category,
-      askerName: question.isAnonymous ? 'Anonim' : (question.askerName || 'Anonim'),
-      isAnonymous: question.isAnonymous,
-      createdAt: question.createdAt,
-      answer: question.answer ? {
-        id: question.answer.id,
-        answer: question.answer.answer,
-        ustadzName: question.answer.ustadz.name,
-        answeredAt: question.answer.createdAt,
-        updatedAt: question.answer.updatedAt
-      } : null
-    }))
+    const formattedQuestions = questions.map(question => {
+      const answer = answerMap.get(question.id);
+      return {
+        id: question.id,
+        question: question.question,
+        category: question.category,
+        categoryLabel: QUESTION_CATEGORIES.find(cat => cat.value === question.category)?.label || question.category,
+        askerName: question.isAnonymous ? 'Anonim' : (question.askerName || 'Anonim'),
+        isAnonymous: question.isAnonymous,
+        createdAt: question.createdAt,
+        answer: answer ? {
+          id: answer.id,
+          answer: answer.answer,
+          ustadzName: answer.ustadz?.name || 'Unknown',
+          answeredAt: answer.createdAt,
+          updatedAt: answer.updatedAt
+        } : null
+      };
+    })
     
     return NextResponse.json({
       success: true,
