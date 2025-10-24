@@ -8,300 +8,29 @@ datasource db {
   directUrl = env("POSTGRES_URL")
 }
 
-model User {
-  id                        String                 @id @default(cuid())
-  username                  String                 @unique
-  email                     String                 @unique
-  password                  String
-  name                      String
-  role                      String                 @default("STAFF")
-  isUstadz                  Boolean                @default(false)
-  isActive                  Boolean                @default(true)
-  createdAt                 DateTime               @default(now())
-  updatedAt                 DateTime               @updatedAt
-  twoFactorEnabled          Boolean                @default(false)
-  twoFactorSecret           String?
-  backupCodes               String[]               @default([])
-  phoneVerified             Boolean                @default(false)
-  createdActivities         Activity[]
-  createdAlumni             Alumni[]
-  answeredQuestions         Answer[]               @relation("UstadzAnswers")
-  attendancesMarked         Attendance[]           @relation("AttendanceMarker")
-  auditTrails               AuditTrail[]
-  createdBudgets            Budget[]
-  homeroom_classes          Class[]                @relation("ClassTeacher")
-  createdCourses            Course[]
-  createdCampaigns          DonationCampaign[]
-  createdEbooks             Ebook[]
-  exams                     Exam[]                 @relation("ExamTeacher")
-  createdReports            FinancialReport[]
-  hafalanRecordsAsTeacher   HafalanRecord[]        @relation("HafalanTeacher")
-  hafalanSessionsAsTeacher  HafalanSession[]       @relation("HafalanSessionTeacher")
-  hafalanTargetsCreated     HafalanTarget[]        @relation("HafalanTargetCreator")
-  createdJournalEntries     JournalEntry[]
-  lineAdmin                 LineAdmin?
-  receivedMessages          Message[]              @relation("MessageReceiver")
-  sentMessages              Message[]              @relation("MessageSender")
-  notifications             Notification[]
-  parentAccount             ParentAccount?
-  createdPurchaseOrders     PurchaseOrder[]
-  pushSubscriptions         PushSubscription[]
-  schedules                 Schedule[]             @relation("ScheduleTeacher")
-  securityAuditLogs         SecurityAuditLog[]
-  setoranSchedulesAsTeacher SetoranSchedule[]      @relation("SetoranTeacher")
-  createdStudents           Student[]
-  teacherSubjects           TeacherSubject[]       @relation("TeacherSubject")
-  createdTeachers           Teacher[]
-  createdTransactions       Transaction[]
-  twoFactorVerification     TwoFactorVerification?
-  createdVideos             Video[]
-  deletedAt                 DateTime?
-  isDeleted                 Boolean                @default(false)
-  deletedBy                 String?
-
-  @@index([isDeleted, deletedAt])
-  @@map("users")
-}
-
-model PushSubscription {
-  id        String   @id @default(cuid())
-  userId    String
-  endpoint  String
-  p256dh    String
-  auth      String
-  userAgent String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, endpoint])
-  @@map("push_subscriptions")
-}
-
-model FinancialAccount {
-  id          String              @id @default(cuid())
-  code        String              @unique
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model academic_years {
+  id          String    @id
   name        String
-  type        String
-  subtype     String?
-  parentId    String?
-  isActive    Boolean             @default(true)
-  balance     Float               @default(0)
-  description String?
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @updatedAt
-  parent      FinancialAccount?   @relation("AccountHierarchy", fields: [parentId], references: [id])
-  children    FinancialAccount[]  @relation("AccountHierarchy")
-  categories  FinancialCategory[]
-  entryLines  JournalEntryLine[]  @relation("AccountEntries")
-  deletedAt   DateTime?
-  isDeleted   Boolean             @default(false)
-  deletedBy   String?
-
-  @@index([type, isActive])
-  @@index([isDeleted, deletedAt])
-  @@map("financial_accounts")
-}
-
-model FinancialCategory {
-  id           String              @id @default(cuid())
-  name         String
-  type         String
-  code         String?
-  accountId    String
-  color        String?
-  icon         String?
-  isActive     Boolean             @default(true)
-  description  String?
-  parentId     String?
-  createdAt    DateTime            @default(now())
-  updatedAt    DateTime            @updatedAt
-  budgetItems  BudgetItem[]
-  account      FinancialAccount    @relation(fields: [accountId], references: [id])
-  parent       FinancialCategory?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
-  children     FinancialCategory[] @relation("CategoryHierarchy")
-  transactions Transaction[]
-  deletedAt    DateTime?
-  isDeleted    Boolean             @default(false)
-  deletedBy    String?
-
-  @@unique([name, type])
-  @@index([type, isActive])
-  @@index([isDeleted, deletedAt])
-  @@map("financial_categories")
-}
-
-model Transaction {
-  id            String            @id @default(cuid())
-  transactionNo String            @unique
-  type          String
-  categoryId    String
-  amount        Float
-  description   String
-  reference     String?
-  date          DateTime
-  dueDate       DateTime?
-  status        String            @default("POSTED")
-  tags          String            @default("[]")
-  attachments   String            @default("[]")
-  notes         String?
-  createdBy     String
-  approvedBy    String?
-  approvedAt    DateTime?
-  createdAt     DateTime          @default(now())
-  updatedAt     DateTime          @updatedAt
-  journalEntry  JournalEntry?
-  category      FinancialCategory @relation(fields: [categoryId], references: [id])
-  creator       User              @relation(fields: [createdBy], references: [id])
-  deletedAt     DateTime?
-  isDeleted     Boolean           @default(false)
-  deletedBy     String?
-
-  @@index([type, status, date])
-  @@index([categoryId])
-  @@index([isDeleted, deletedAt])
-  @@map("transactions")
-}
-
-model JournalEntry {
-  id            String             @id @default(cuid())
-  entryNo       String             @unique
-  transactionId String?            @unique
-  description   String
-  date          DateTime
-  reference     String?
-  status        String             @default("POSTED")
-  totalDebit    Float              @default(0)
-  totalCredit   Float              @default(0)
-  isBalanced    Boolean            @default(false)
-  createdBy     String
-  approvedBy    String?
-  approvedAt    DateTime?
-  reversedBy    String?
-  reversedAt    DateTime?
-  createdAt     DateTime           @default(now())
-  updatedAt     DateTime           @updatedAt
-  creator       User               @relation(fields: [createdBy], references: [id])
-  transaction   Transaction?       @relation(fields: [transactionId], references: [id])
-  entries       JournalEntryLine[]
-  deletedAt     DateTime?
-  isDeleted     Boolean            @default(false)
-  deletedBy     String?
-
-  @@index([status, date])
-  @@index([isDeleted, deletedAt])
-  @@map("journal_entries")
-}
-
-model JournalEntryLine {
-  id           String           @id @default(cuid())
-  journalId    String
-  accountId    String
-  debitAmount  Float            @default(0)
-  creditAmount Float            @default(0)
-  description  String?
-  lineOrder    Int              @default(0)
-  createdAt    DateTime         @default(now())
-  account      FinancialAccount @relation("AccountEntries", fields: [accountId], references: [id])
-  journal      JournalEntry     @relation(fields: [journalId], references: [id], onDelete: Cascade)
-
-  @@index([journalId, lineOrder])
-  @@map("journal_entry_lines")
-}
-
-model Budget {
-  id          String            @id @default(cuid())
-  name        String
-  type        String            @default("ANNUAL")
   startDate   DateTime
   endDate     DateTime
-  totalBudget Float             @default(0)
-  status      String            @default("DRAFT")
+  isActive    Boolean   @default(false)
   description String?
-  createdBy   String
-  approvedBy  String?
-  approvedAt  DateTime?
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
-  items       BudgetItem[]
-  creator     User              @relation(fields: [createdBy], references: [id])
-  reports     FinancialReport[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime
   deletedAt   DateTime?
-  isDeleted   Boolean           @default(false)
+  isDeleted   Boolean   @default(false)
   deletedBy   String?
+  deleted_at  DateTime? @db.Timestamp(6)
+  is_deleted  Boolean?  @default(false)
+  deleted_by  String?   @db.VarChar(255)
 
-  @@index([status, startDate])
-  @@index([isDeleted, deletedAt])
-  @@map("budgets")
+  @@index([is_deleted, deleted_at], map: "idx_academic_years_deleted")
 }
 
-model BudgetItem {
-  id           String            @id @default(cuid())
-  budgetId     String
-  categoryId   String
-  budgetAmount Float
-  actualAmount Float             @default(0)
-  variance     Float             @default(0)
-  percentage   Float             @default(0)
-  notes        String?
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
-  budget       Budget            @relation(fields: [budgetId], references: [id], onDelete: Cascade)
-  category     FinancialCategory @relation(fields: [categoryId], references: [id])
-
-  @@unique([budgetId, categoryId])
-  @@map("budget_items")
-}
-
-model FinancialReport {
-  id        String    @id @default(cuid())
-  name      String
-  type      String
-  period    String
-  startDate DateTime
-  endDate   DateTime
-  budgetId  String?
-  data      String
-  fileUrl   String?
-  status    String    @default("GENERATED")
-  createdBy String
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  budget    Budget?   @relation(fields: [budgetId], references: [id])
-  creator   User      @relation(fields: [createdBy], references: [id])
-  deletedAt DateTime?
-  isDeleted Boolean   @default(false)
-  deletedBy String?
-
-  @@index([type, period, startDate])
-  @@index([isDeleted, deletedAt])
-  @@map("financial_reports")
-}
-
-model AuditTrail {
-  id        String    @id @default(cuid())
-  tableName String
-  recordId  String
-  action    String
-  oldValues String?
-  newValues String?
-  userId    String
-  ipAddress String?
-  userAgent String?
-  timestamp DateTime  @default(now())
-  user      User      @relation(fields: [userId], references: [id])
-  deletedAt DateTime?
-  isDeleted Boolean   @default(false)
-  deletedBy String?
-
-  @@index([tableName, recordId])
-  @@index([userId, timestamp])
-  @@index([isDeleted, deletedAt])
-  @@map("audit_trails")
-}
-
-model Activity {
-  id          String    @id @default(cuid())
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model activities {
+  id          String    @id
   title       String
   description String
   type        String
@@ -311,311 +40,21 @@ model Activity {
   status      String    @default("planned")
   createdBy   String
   createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  creator     User      @relation(fields: [createdBy], references: [id])
+  updatedAt   DateTime
   deletedAt   DateTime?
-  isDeleted   Boolean   @default(false)
   deletedBy   String?
-
-  @@index([isDeleted, deletedAt])
-  @@map("activities")
-}
-
-model LineSettings {
-  id                  String   @id @default(cuid())
-  enabled             Boolean  @default(false)
-  channelId           String?
-  channelSecret       String?
-  channelAccessToken  String?
-  webhookUrl          String?
-  liffId              String?
-  richMenuId          String?
-  richMenuEnabled     Boolean  @default(true)
-  flexMessagesEnabled Boolean  @default(true)
-  quickReplyEnabled   Boolean  @default(true)
-  broadcastEnabled    Boolean  @default(true)
-  liffEnabled         Boolean  @default(false)
-  multicastEnabled    Boolean  @default(true)
-  pushMessagesEnabled Boolean  @default(true)
-  messagesPerMinute   Int      @default(60)
-  broadcastDelay      Int      @default(500)
-  welcomeMessage      String   @default("Selamat datang di LINE Official Account Pondok Imam Syafii!")
-  unknownMessage      String   @default("Maaf, pesan tidak dikenali. Ketik 'menu' untuk bantuan.")
-  errorMessage        String   @default("Maaf, terjadi kesalahan. Silakan coba lagi.")
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
-
-  @@map("line_settings")
-}
-
-model LineUser {
-  id            String   @id @default(cuid())
-  userId        String   @unique
-  displayName   String?
-  pictureUrl    String?
-  statusMessage String?
-  language      String?
-  isAdmin       Boolean  @default(false)
-  canCRUD       Boolean  @default(false)
-  lastActive    DateTime @default(now())
-  messageCount  Int      @default(0)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  @@map("line_users")
-}
-
-model LineUserSession {
-  id           String    @id @default(cuid())
-  userId       String    @unique
-  mode         String    @default("PUBLIC")
-  isAdmin      Boolean   @default(false)
-  permissions  String[]  @default([])
-  activeFlowId String?
-  flowType     String?
-  flowData     Json      @default("{}")
-  currentStep  Int       @default(0)
-  totalSteps   Int       @default(0)
-  stepHistory  String[]  @default([])
-  state        Json      @default("{}")
-  breadcrumb   String[]  @default([])
-  waitingFor   String?
-  canAbort     Boolean   @default(true)
-  retryCount   Int       @default(0)
-  lockedUntil  DateTime?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  expiresAt    DateTime?
-
-  @@map("line_user_sessions")
-}
-
-model LineAdmin {
-  id          String   @id @default(cuid())
-  lineUserId  String   @unique
-  userId      String?  @unique
-  permissions String[] @default(["BASIC"])
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  user        User?    @relation(fields: [userId], references: [id])
-
-  @@map("line_admins")
-}
-
-model Teacher {
-  id             String    @id @default(cuid())
-  nip            String?   @unique
-  name           String
-  title          String?
-  gender         String
-  birthPlace     String?
-  birthDate      DateTime?
-  phone          String?
-  email          String?
-  address        String?
-  position       String
-  subjects       String    @default("[]")
-  education      String?
-  university     String?
-  major          String?
-  certifications String    @default("[]")
-  employmentType String    @default("TETAP")
-  joinDate       DateTime?
-  status         String    @default("ACTIVE")
-  institution    String
-  specialization String?
-  experience     Int?
-  photo          String?
-  bio            String?
-  achievements   String    @default("[]")
-  isUstadz       Boolean   @default(true)
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  createdBy      String?
-  creator        User?     @relation(fields: [createdBy], references: [id])
-  deletedAt      DateTime?
-  isDeleted      Boolean   @default(false)
-  deletedBy      String?
-
-  @@index([institution, status])
-  @@index([isUstadz, status])
-  @@index([isDeleted, deletedAt])
-  @@map("teachers")
-}
-
-model Course {
-  id          String    @id @default(cuid())
-  name        String
-  description String
-  level       String
-  schedule    String
-  teacher     String
-  duration    String
-  capacity    Int
-  enrolled    Int       @default(0)
-  status      String    @default("active")
-  createdBy   String
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  creator     User      @relation(fields: [createdBy], references: [id])
-  deletedAt   DateTime?
   isDeleted   Boolean   @default(false)
-  deletedBy   String?
+  deleted_at  DateTime? @db.Timestamp(6)
+  is_deleted  Boolean?  @default(false)
+  deleted_by  String?   @db.VarChar(255)
+  users       users     @relation(fields: [createdBy], references: [id])
 
-  @@index([isDeleted, deletedAt])
-  @@map("courses")
+  @@index([is_deleted, deleted_at], map: "idx_activities_deleted")
 }
 
-model Video {
-  id          String    @id @default(cuid())
-  title       String
-  description String
-  url         String
-  thumbnail   String?
-  duration    String?
-  category    String
-  teacher     String
-  uploadDate  DateTime
-  views       Int       @default(0)
-  isPublic    Boolean   @default(true)
-  createdBy   String
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  creator     User      @relation(fields: [createdBy], references: [id])
-  deletedAt   DateTime?
-  isDeleted   Boolean   @default(false)
-  deletedBy   String?
-
-  @@index([isDeleted, deletedAt])
-  @@map("videos")
-}
-
-model Ebook {
-  id            String    @id @default(cuid())
-  title         String
-  author        String
-  description   String
-  category      String
-  subcategory   String?
-  fileUrl       String
-  coverImage    String?
-  fileSize      Int?
-  pageCount     Int?
-  language      String    @default("id")
-  publisher     String?
-  publishYear   String?
-  isbn          String?
-  tags          String    @default("[]")
-  downloadCount Int       @default(0)
-  viewCount     Int       @default(0)
-  isFeatured    Boolean   @default(false)
-  isPublic      Boolean   @default(true)
-  createdBy     String
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  creator       User      @relation(fields: [createdBy], references: [id])
-  deletedAt     DateTime?
-  isDeleted     Boolean   @default(false)
-  deletedBy     String?
-
-  @@index([isDeleted, deletedAt])
-  @@map("ebooks")
-}
-
-model Setting {
-  id    String @id @default(cuid())
-  key   String @unique
-  value String
-
-  @@map("settings")
-}
-
-model Student {
-  id                  String               @id @default(cuid())
-  nisn                String?              @unique
-  nis                 String               @unique
-  fullName            String
-  nickname            String?
-  birthPlace          String
-  birthDate           DateTime
-  gender              String
-  bloodType           String?
-  religion            String               @default("Islam")
-  nationality         String               @default("Indonesia")
-  address             String
-  village             String?
-  district            String?
-  city                String
-  province            String               @default("Jawa Timur")
-  postalCode          String?
-  phone               String?
-  email               String?
-  fatherName          String
-  fatherJob           String?
-  fatherPhone         String?
-  fatherEducation     String?
-  motherName          String
-  motherJob           String?
-  motherPhone         String?
-  motherEducation     String?
-  guardianName        String?
-  guardianJob         String?
-  guardianPhone       String?
-  guardianRelation    String?
-  institutionType     String
-  grade               String?
-  enrollmentDate      DateTime
-  enrollmentYear      String
-  previousSchool      String?
-  specialNeeds        String?
-  achievements        String               @default("[]")
-  notes               String?
-  photo               String?
-  documents           String               @default("[]")
-  status              String               @default("ACTIVE")
-  isActive            Boolean              @default(true)
-  graduationDate      DateTime?
-  createdBy           String
-  createdAt           DateTime             @default(now())
-  updatedAt           DateTime             @updatedAt
-  registrationId      String?              @unique
-  isOrphan            Boolean              @default(false)
-  monthlyNeeds        Decimal?
-  otaProfile          String?
-  attendances         Attendance[]
-  bills               Bill[]
-  examResults         ExamResult[]
-  grades              Grade[]
-  hafalanAchievements HafalanAchievement[]
-  hafalanProgress     HafalanProgress?
-  hafalanRecords      HafalanRecord[]
-  hafalanSessions     HafalanSession[]
-  hafalanTargets      HafalanTarget[]
-  otaProgram          OTAProgram?
-  parentStudents      ParentStudent[]
-  paymentHistory      PaymentHistory[]
-  paymentReminders    PaymentReminder[]
-  payments            Payment[]
-  ppdbRegistrations   PPDBRegistration[]
-  reportCards         ReportCard[]
-  setoranSchedules    SetoranSchedule[]
-  sppBillings         SPPBilling[]
-  studentClasses      StudentClass[]
-  creator             User                 @relation(fields: [createdBy], references: [id])
-  registration        Registration?        @relation(fields: [registrationId], references: [id])
-  deletedAt           DateTime?
-  isDeleted           Boolean              @default(false)
-  deletedBy           String?
-
-  @@index([institutionType, status])
-  @@index([enrollmentYear])
-  @@index([isOrphan])
-  @@index([isDeleted, deletedAt])
-  @@map("students")
-}
-
-model Alumni {
-  id                 String    @id @default(cuid())
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model alumni {
+  id                 String    @id
   nisn               String?
   nis                String?
   fullName           String
@@ -659,21 +98,1628 @@ model Alumni {
   lastContactDate    DateTime?
   createdBy          String
   createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
-  creator            User      @relation(fields: [createdBy], references: [id])
+  updatedAt          DateTime
   deletedAt          DateTime?
   isDeleted          Boolean   @default(false)
   deletedBy          String?
+  deleted_at         DateTime? @db.Timestamp(6)
+  is_deleted         Boolean?  @default(false)
+  deleted_by         String?   @db.VarChar(255)
 
-  @@index([institutionType, graduationYear])
-  @@index([generation])
   @@index([availableForEvents])
+  @@index([generation])
+  @@index([institutionType, graduationYear])
   @@index([isDeleted, deletedAt])
-  @@map("alumni")
+  @@index([is_deleted, deleted_at], map: "idx_alumni_deleted")
 }
 
-model Registration {
-  id               String    @id @default(cuid())
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model announcements {
+  id             String    @id
+  title          String
+  content        String
+  summary        String?
+  targetAudience String    @default("ALL")
+  targetClasses  String    @default("[]")
+  targetGrades   String    @default("[]")
+  priority       String    @default("NORMAL")
+  category       String    @default("GENERAL")
+  tags           String    @default("[]")
+  attachments    String    @default("[]")
+  featuredImage  String?
+  status         String    @default("DRAFT")
+  publishDate    DateTime  @default(now())
+  expiryDate     DateTime?
+  isPinned       Boolean   @default(false)
+  viewCount      Int       @default(0)
+  createdBy      String
+  approvedBy     String?
+  approvedAt     DateTime?
+  publishedAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime
+  deletedAt      DateTime?
+  isDeleted      Boolean   @default(false)
+  deletedBy      String?
+  deleted_at     DateTime? @db.Timestamp(6)
+  is_deleted     Boolean?  @default(false)
+  deleted_by     String?   @db.VarChar(255)
+
+  @@index([is_deleted, deleted_at], map: "idx_announcements_deleted")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model answers {
+  id         String    @id
+  questionId String
+  ustadzId   String
+  answer     String
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime
+  deletedAt  DateTime?
+  isDeleted  Boolean   @default(false)
+  deletedBy  String?
+  deleted_at DateTime? @db.Timestamp(6)
+  is_deleted Boolean?  @default(false)
+  deleted_by String?   @db.VarChar(255)
+
+  @@index([is_deleted, deleted_at], map: "idx_answers_deleted")
+}
+
+model attendances {
+  id         String    @id
+  studentId  String
+  classId    String
+  semesterId String
+  date       DateTime  @db.Date
+  status     String
+  timeIn     DateTime?
+  notes      String?
+  markedBy   String
+  markedAt   DateTime  @default(now())
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime
+  deletedAt  DateTime?
+  isDeleted  Boolean   @default(false)
+  deletedBy  String?
+}
+
+model audit_trails {
+  id        String    @id
+  tableName String
+  recordId  String
+  action    String
+  oldValues String?
+  newValues String?
+  userId    String
+  ipAddress String?
+  userAgent String?
+  timestamp DateTime  @default(now())
+  deletedAt DateTime?
+  isDeleted Boolean   @default(false)
+  deletedBy String?
+
+  @@index([isDeleted, deletedAt])
+  @@index([tableName, recordId])
+  @@index([userId, timestamp])
+}
+
+model bill_payments {
+  id                 String    @id
+  paymentNo          String
+  billId             String
+  amount             Decimal
+  paymentDate        DateTime  @default(now())
+  method             String
+  channel            String?
+  reference          String?
+  proofUrl           String?
+  verificationStatus String    @default("PENDING")
+  verifiedBy         String?
+  verifiedAt         DateTime?
+  rejectionReason    String?
+  externalId         String?
+  gatewayResponse    String    @default("{}")
+  reconciledAt       DateTime?
+  reconciledBy       String?
+  notes              String?
+  ipAddress          String?
+  userAgent          String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime
+  deletedAt          DateTime?
+  isDeleted          Boolean   @default(false)
+  deletedBy          String?
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model bill_types {
+  id                       String    @id
+  name                     String
+  category                 String
+  description              String?
+  defaultAmount            Decimal?
+  isRecurring              Boolean   @default(false)
+  frequency                String?
+  priceByGrade             String    @default("{}")
+  dueDayOfMonth            Int?
+  gracePeriodDays          Int       @default(7)
+  latePenaltyType          String    @default("NONE")
+  latePenaltyAmount        Decimal   @default(0)
+  maxPenalty               Decimal?
+  allowSiblingDiscount     Boolean   @default(false)
+  siblingDiscountPercent   Decimal   @default(0)
+  allowScholarshipDiscount Boolean   @default(false)
+  isActive                 Boolean   @default(true)
+  sortOrder                Int       @default(0)
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime
+  deleted_at               DateTime? @db.Timestamp(6)
+  is_deleted               Boolean?  @default(false)
+  deleted_by               String?   @db.VarChar(255)
+
+  @@index([is_deleted, deleted_at], map: "idx_bill_types_deleted")
+}
+
+model billing_reports {
+  id           String    @id
+  name         String
+  type         String
+  parameters   String    @default("{}")
+  startDate    DateTime
+  endDate      DateTime
+  data         String?
+  summary      String    @default("{}")
+  pdfUrl       String?
+  excelUrl     String?
+  status       String    @default("GENERATING")
+  progress     Int       @default(0)
+  generatedBy  String
+  generatedAt  DateTime  @default(now())
+  completedAt  DateTime?
+  errorMessage String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime
+}
+
+model billing_settings {
+  id          String   @id
+  key         String
+  value       String
+  category    String   @default("GENERAL")
+  description String?
+  dataType    String   @default("STRING")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model bills {
+  id               String    @id
+  billNo           String
+  studentId        String
+  billTypeId       String
+  amount           Decimal
+  originalAmount   Decimal
+  period           String
+  dueDate          DateTime
+  status           String    @default("OUTSTANDING")
+  paidAmount       Decimal   @default(0)
+  remainingAmount  Decimal
+  discounts        String    @default("[]")
+  totalDiscount    Decimal   @default(0)
+  penalties        String    @default("[]")
+  totalPenalty     Decimal   @default(0)
+  isOverdue        Boolean   @default(false)
+  daysPastDue      Int       @default(0)
+  firstOverdueDate DateTime?
+  lastReminderSent DateTime?
+  reminderCount    Int       @default(0)
+  notes            String?
+  metadata         String    @default("{}")
+  generatedAt      DateTime  @default(now())
+  generatedBy      String?
+  cancelledAt      DateTime?
+  cancelledBy      String?
+  cancelReason     String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime
+  deletedAt        DateTime?
+  isDeleted        Boolean   @default(false)
+  deletedBy        String?
+  deleted_at       DateTime? @db.Timestamp(6)
+  is_deleted       Boolean?  @default(false)
+  deleted_by       String?   @db.VarChar(255)
+
+  @@index([is_deleted, deleted_at], map: "idx_bills_deleted")
+}
+
+model budget_items {
+  id           String   @id
+  budgetId     String
+  categoryId   String
+  budgetAmount Float
+  actualAmount Float    @default(0)
+  variance     Float    @default(0)
+  percentage   Float    @default(0)
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime
+
+  @@unique([budgetId, categoryId])
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model budgets {
+  id          String    @id
+  name        String
+  type        String    @default("ANNUAL")
+  startDate   DateTime
+  endDate     DateTime
+  totalBudget Float     @default(0)
+  status      String    @default("DRAFT")
+  description String?
+  createdBy   String
+  approvedBy  String?
+  approvedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime
+  deletedAt   DateTime?
+  isDeleted   Boolean   @default(false)
+  deletedBy   String?
+  deleted_at  DateTime? @db.Timestamp(6)
+  is_deleted  Boolean?  @default(false)
+  deleted_by  String?   @db.VarChar(255)
+
+  @@index([isDeleted, deletedAt])
+  @@index([status, startDate])
+  @@index([is_deleted, deleted_at], map: "idx_budgets_deleted")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model business_transactions {
+  id            String    @id
+  transactionNo String
+  unitId        String
+  date          DateTime
+  type          String
+  category      String
+  amount        Decimal
+  paymentMethod String
+  customerName  String?
+  supplierName  String?
+  items         String    @default("[]")
+  description   String?
+  receiptNo     String?
+  recordedBy    String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime
+  deleted_at    DateTime? @db.Timestamp(6)
+  is_deleted    Boolean?  @default(false)
+  deleted_by    String?   @db.VarChar(255)
+
+  @@index([is_deleted, deleted_at], map: "idx_business_transactions_deleted")
+}
+
+model business_unit_reports {
+  id                String    @id
+  unitId            String
+  year              Int
+  month             Int
+  period            String
+  initialCapital    Decimal
+  revenue           Decimal
+  expenses          Decimal
+  purchaseCost      Decimal
+  operationalCost   Decimal
+  salaryCost        Decimal
+  maintenanceCost   Decimal
+  otherCost         Decimal
+  salesRevenue      Decimal
+  serviceRevenue    Decimal
+  otherRevenue      Decimal
+  grossProfit       Decimal
+  netProfit         Decimal
+  profitMargin      Decimal
+  inventoryValue    Decimal?
+  totalTransactions Int       @default(0)
+  totalCustomers    Int       @default(0)
+  totalItems        Int       @default(0)
+  revenueTarget     Decimal?
+  targetAchievement Decimal?
+  status            String    @default("DRAFT")
+  submittedAt       DateTime?
+  submittedBy       String?
+  approvedAt        DateTime?
+  approvedBy        String?
+  notes             String?
+  highlights        String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model business_units {
+  id          String    @id
+  code        String
+  name        String
+  description String?
+  managerId   String?
+  managerName String?
+  bankName    String?
+  bankAccount String?
+  isActive    Boolean   @default(true)
+  startDate   DateTime  @default(now())
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime
+  deleted_at  DateTime? @db.Timestamp(6)
+  is_deleted  Boolean?  @default(false)
+  deleted_by  String?   @db.VarChar(255)
+
+  @@index([is_deleted, deleted_at], map: "idx_business_units_deleted")
+}
+
+model campaign_updates {
+  id         String   @id
+  campaignId String
+  title      String
+  content    String
+  images     String   @default("[]")
+  isPublic   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime
+
+  @@index([campaignId, createdAt])
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model classes {
+  id             String    @id
+  name           String
+  grade          String
+  section        String?
+  academicYearId String
+  teacherId      String?
+  capacity       Int       @default(30)
+  room           String?
+  level          String
+  program        String?
+  description    String?
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime
+  deletedAt      DateTime?
+  isDeleted      Boolean   @default(false)
+  deletedBy      String?
+  deleted_at     DateTime? @db.Timestamp(6)
+  is_deleted     Boolean?  @default(false)
+  deleted_by     String?   @db.VarChar(255)
+
+  @@index([is_deleted, deleted_at], map: "idx_classes_deleted")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model courses {
+  id          String    @id
+  name        String
+  description String
+  level       String
+  schedule    String
+  teacher     String
+  duration    String
+  capacity    Int
+  enrolled    Int       @default(0)
+  status      String    @default("active")
+  createdBy   String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime
+  deletedAt   DateTime?
+  deletedBy   String?
+  isDeleted   Boolean   @default(false)
+  deleted_at  DateTime? @db.Timestamp(6)
+  is_deleted  Boolean?  @default(false)
+  deleted_by  String?   @db.VarChar(255)
+  users       users     @relation(fields: [createdBy], references: [id])
+
+  @@index([is_deleted, deleted_at], map: "idx_courses_deleted")
+}
+
+model curriculum_subjects {
+  id           String   @id
+  curriculumId String
+  subjectId    String
+  grade        String
+  semester     Int?
+  credits      Int      @default(2)
+  isRequired   Boolean  @default(true)
+  minScore     Int      @default(60)
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model curriculums {
+  id          String    @id
+  name        String
+  code        String
+  level       String
+  description String?
+  isActive    Boolean   @default(true)
+  validFrom   DateTime
+  validUntil  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime
+  deletedAt   DateTime?
+  isDeleted   Boolean   @default(false)
+  deletedBy   String?
+  deleted_at  DateTime? @db.Timestamp(6)
+  is_deleted  Boolean?  @default(false)
+  deleted_by  String?   @db.VarChar(255)
+
+  @@index([is_deleted, deleted_at], map: "idx_curriculums_deleted")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model donation_campaigns {
+  id             String    @id
+  title          String
+  slug           String    @unique
+  description    String
+  story          String?
+  categoryId     String
+  targetAmount   Decimal
+  currentAmount  Decimal   @default(0)
+  startDate      DateTime  @default(now())
+  endDate        DateTime?
+  mainImage      String?
+  images         String    @default("[]")
+  video          String?
+  status         String    @default("DRAFT")
+  isFeatured     Boolean   @default(false)
+  isUrgent       Boolean   @default(false)
+  allowAnonymous Boolean   @default(true)
+  shareCount     Int       @default(0)
+  createdBy      String
+  approvedBy     String?
+  approvedAt     DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime
+  deletedAt      DateTime?
+  isDeleted      Boolean   @default(false)
+  deletedBy      String?
+  deleted_at     DateTime? @db.Timestamp(6)
+  is_deleted     Boolean?  @default(false)
+  deleted_by     String?   @db.VarChar(255)
+
+  @@index([categoryId])
+  @@index([endDate])
+  @@index([isDeleted, deletedAt])
+  @@index([status, isFeatured])
+  @@index([is_deleted, deleted_at], map: "idx_donation_campaigns_deleted")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model donation_categories {
+  id          String    @id
+  name        String    @unique
+  description String?
+  icon        String?
+  color       String?
+  isActive    Boolean   @default(true)
+  sortOrder   Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime
+  deleted_at  DateTime? @db.Timestamp(6)
+  is_deleted  Boolean?  @default(false)
+  deleted_by  String?   @db.VarChar(255)
+
+  @@index([is_deleted, deleted_at], map: "idx_donation_categories_deleted")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model donations {
+  id             String    @id
+  donationNo     String    @unique
+  campaignId     String?
+  categoryId     String
+  amount         Decimal
+  message        String?
+  donorName      String?
+  donorEmail     String?
+  donorPhone     String?
+  isAnonymous    Boolean   @default(false)
+  paymentMethod  String?
+  paymentChannel String?
+  paymentStatus  String    @default("PENDING")
+  externalId     String?
+  vaNumber       String?
+  qrisCode       String?
+  paymentUrl     String?
+  expiredAt      DateTime?
+  paidAt         DateTime?
+  proofUrl       String?
+  verifiedBy     String?
+  verifiedAt     DateTime?
+  certificateNo  String?
+  certificateUrl String?
+  source         String    @default("WEB")
+  ipAddress      String?
+  userAgent      String?
+  referrer       String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime
+  deletedAt      DateTime?
+  isDeleted      Boolean   @default(false)
+  deletedBy      String?
+  deleted_at     DateTime? @db.Timestamp(6)
+  is_deleted     Boolean?  @default(false)
+  deleted_by     String?   @db.VarChar(255)
+
+  @@index([campaignId])
+  @@index([categoryId])
+  @@index([donorEmail])
+  @@index([isDeleted, deletedAt])
+  @@index([paymentStatus, createdAt])
+  @@index([is_deleted, deleted_at], map: "idx_donations_deleted")
+}
+
+model donor_profiles {
+  id                  String    @id
+  email               String    @unique
+  name                String
+  phone               String?
+  preferredCategories String    @default("[]")
+  allowMarketing      Boolean   @default(true)
+  allowNewsletter     Boolean   @default(true)
+  totalDonated        Decimal   @default(0)
+  donationCount       Int       @default(0)
+  lastDonationAt      DateTime?
+  isVerified          Boolean   @default(false)
+  verificationToken   String?
+  verifiedAt          DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime
+
+  @@index([email])
+  @@index([isVerified])
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model ebooks {
+  id            String    @id
+  title         String
+  author        String
+  description   String
+  category      String
+  subcategory   String?
+  fileUrl       String
+  coverImage    String?
+  fileSize      Int?
+  pageCount     Int?
+  language      String    @default("id")
+  publisher     String?
+  publishYear   String?
+  isbn          String?
+  tags          String    @default("[]")
+  downloadCount Int       @default(0)
+  viewCount     Int       @default(0)
+  isFeatured    Boolean   @default(false)
+  isPublic      Boolean   @default(true)
+  createdBy     String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime
+  deletedAt     DateTime?
+  deletedBy     String?
+  isDeleted     Boolean   @default(false)
+  deleted_at    DateTime? @db.Timestamp(6)
+  is_deleted    Boolean?  @default(false)
+  deleted_by    String?   @db.VarChar(255)
+  users         users     @relation(fields: [createdBy], references: [id])
+
+  @@index([is_deleted, deleted_at], map: "idx_ebooks_deleted")
+}
+
+model exam_results {
+  id        String    @id
+  examId    String
+  studentId String
+  score     Decimal
+  grade     String?
+  point     Decimal?
+  status    String    @default("COMPLETED")
+  notes     String?
+  enteredBy String?
+  enteredAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime
+  deletedAt DateTime?
+  isDeleted Boolean   @default(false)
+  deletedBy String?
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model exams {
+  id           String    @id
+  name         String
+  code         String?
+  type         String
+  subjectId    String
+  classId      String
+  semesterId   String
+  teacherId    String
+  date         DateTime
+  startTime    String
+  endTime      String
+  duration     Int
+  room         String?
+  maxScore     Decimal   @default(100)
+  minScore     Decimal   @default(0)
+  passingScore Decimal   @default(60)
+  instructions String?
+  materials    String    @default("[]")
+  status       String    @default("SCHEDULED")
+  isPublished  Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime
+  deletedAt    DateTime?
+  isDeleted    Boolean   @default(false)
+  deletedBy    String?
+  deleted_at   DateTime? @db.Timestamp(6)
+  is_deleted   Boolean?  @default(false)
+  deleted_by   String?   @db.VarChar(255)
+
+  @@index([is_deleted, deleted_at], map: "idx_exams_deleted")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model financial_accounts {
+  id          String    @id
+  code        String    @unique
+  name        String
+  type        String
+  subtype     String?
+  parentId    String?
+  isActive    Boolean   @default(true)
+  balance     Float     @default(0)
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime
+  deletedAt   DateTime?
+  isDeleted   Boolean   @default(false)
+  deletedBy   String?
+  deleted_at  DateTime? @db.Timestamp(6)
+  is_deleted  Boolean?  @default(false)
+  deleted_by  String?   @db.VarChar(255)
+
+  @@index([isDeleted, deletedAt])
+  @@index([type, isActive])
+  @@index([is_deleted, deleted_at], map: "idx_financial_accounts_deleted")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model financial_categories {
+  id          String    @id
+  name        String
+  type        String
+  code        String?
+  accountId   String
+  color       String?
+  icon        String?
+  isActive    Boolean   @default(true)
+  description String?
+  parentId    String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime
+  deletedAt   DateTime?
+  isDeleted   Boolean   @default(false)
+  deletedBy   String?
+  deleted_at  DateTime? @db.Timestamp(6)
+  is_deleted  Boolean?  @default(false)
+  deleted_by  String?   @db.VarChar(255)
+
+  @@unique([name, type])
+  @@index([isDeleted, deletedAt])
+  @@index([type, isActive])
+  @@index([is_deleted, deleted_at], map: "idx_financial_categories_deleted")
+}
+
+model financial_reports {
+  id        String    @id
+  name      String
+  type      String
+  period    String
+  startDate DateTime
+  endDate   DateTime
+  budgetId  String?
+  data      String
+  fileUrl   String?
+  status    String    @default("GENERATED")
+  createdBy String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime
+  deletedAt DateTime?
+  isDeleted Boolean   @default(false)
+  deletedBy String?
+
+  @@index([isDeleted, deletedAt])
+  @@index([type, period, startDate])
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model grades {
+  id            String    @id
+  studentId     String
+  subjectId     String
+  semesterId    String
+  classId       String?
+  midterm       Decimal?
+  final         Decimal?
+  assignment    Decimal?
+  quiz          Decimal?
+  participation Decimal?
+  project       Decimal?
+  daily         Decimal?
+  total         Decimal?
+  grade         String?
+  point         Decimal?
+  akhlak        String?
+  quranMemory   String?
+  notes         String?
+  isLocked      Boolean   @default(false)
+  enteredBy     String?
+  enteredAt     DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime
+  deletedAt     DateTime?
+  isDeleted     Boolean   @default(false)
+  deletedBy     String?
+  deleted_at    DateTime? @db.Timestamp(6)
+  is_deleted    Boolean?  @default(false)
+  deleted_by    String?   @db.VarChar(255)
+
+  @@index([is_deleted, deleted_at], map: "idx_grades_deleted")
+}
+
+model hafalan_achievements {
+  id          String    @id
+  studentId   String
+  type        String
+  title       String
+  description String
+  data        String    @default("{}")
+  level       String    @default("BRONZE")
+  points      Int       @default(0)
+  icon        String?
+  color       String    @default("#10B981")
+  badge       String?
+  verifiedBy  String?
+  verifiedAt  DateTime?
+  isPublic    Boolean   @default(true)
+  celebrated  Boolean   @default(false)
+  shareCount  Int       @default(0)
+  earnedAt    DateTime  @default(now())
+  createdAt   DateTime  @default(now())
+}
+
+model hafalan_progress {
+  id               String    @id
+  studentId        String
+  totalSurah       Int       @default(0)
+  totalAyat        Int       @default(0)
+  totalJuz         Decimal   @default(0)
+  currentSurah     Int?
+  currentAyat      Int       @default(1)
+  currentTarget    String?
+  level            String    @default("PEMULA")
+  badge            String    @default("[]")
+  juz30Progress    Decimal   @default(0)
+  overallProgress  Decimal   @default(0)
+  lastSetoranDate  DateTime?
+  lastMurajaahDate DateTime?
+  lastUpdated      DateTime  @default(now())
+  currentStreak    Int       @default(0)
+  longestStreak    Int       @default(0)
+  totalSessions    Int       @default(0)
+  avgQuality       Decimal   @default(0)
+  avgFluency       Decimal   @default(0)
+  avgTajweed       Decimal   @default(0)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime
+  deletedAt        DateTime?
+  isDeleted        Boolean   @default(false)
+  deletedBy        String?
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model hafalan_records {
+  id             String    @id
+  studentId      String
+  surahNumber    Int
+  startAyat      Int       @default(1)
+  endAyat        Int
+  status         String
+  quality        String    @default("B")
+  teacherId      String
+  date           DateTime  @default(now())
+  fluency        String?
+  tajweed        String?
+  makharijul     String?
+  voiceNoteUrl   String?
+  notes          String?
+  corrections    String?
+  duration       Int?
+  method         String    @default("INDIVIDUAL")
+  previousRecord String?
+  nextTarget     String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime
+  deletedAt      DateTime?
+  isDeleted      Boolean   @default(false)
+  deletedBy      String?
+  deleted_at     DateTime? @db.Timestamp(6)
+  is_deleted     Boolean?  @default(false)
+  deleted_by     String?   @db.VarChar(255)
+
+  @@index([is_deleted, deleted_at], map: "idx_hafalan_records_deleted")
+}
+
+model hafalan_sessions {
+  id             String    @id
+  studentId      String
+  teacherId      String
+  sessionDate    DateTime  @default(now())
+  type           String
+  method         String    @default("INDIVIDUAL")
+  duration       Int
+  location       String    @default("KELAS")
+  atmosphere     String    @default("FORMAL")
+  content        String
+  totalAyat      Int       @default(0)
+  overallQuality String
+  overallFluency String
+  improvements   String?
+  challenges     String?
+  homework       String?
+  nextTarget     String?
+  reminderNote   String?
+  studentMood    String    @default("NORMAL")
+  engagement     String    @default("GOOD")
+  confidence     String    @default("MEDIUM")
+  reportSent     Boolean   @default(false)
+  parentFeedback String?
+  notes          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime
+  deletedAt      DateTime?
+  isDeleted      Boolean   @default(false)
+  deletedBy      String?
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model hafalan_targets {
+  id             String    @id
+  studentId      String
+  targetSurah    Int
+  startAyat      Int       @default(1)
+  endAyat        Int?
+  targetDate     DateTime
+  priority       String    @default("MEDIUM")
+  difficulty     String    @default("MEDIUM")
+  estimatedDays  Int?
+  status         String    @default("ACTIVE")
+  progress       Decimal   @default(0)
+  startedAt      DateTime?
+  completedAt    DateTime?
+  reward         String?
+  motivation     String?
+  parentInformed Boolean   @default(false)
+  createdBy      String
+  approvedBy     String?
+  notes          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime
+  deleted_at     DateTime? @db.Timestamp(6)
+  is_deleted     Boolean?  @default(false)
+  deleted_by     String?   @db.VarChar(255)
+
+  @@index([is_deleted, deleted_at], map: "idx_hafalan_targets_deleted")
+}
+
+model inventory {
+  id          String    @id
+  productId   String
+  quantity    Int
+  location    String
+  unitCost    Decimal   @default(0)
+  batchNo     String?
+  expiryDate  DateTime?
+  lastUpdated DateTime  @default(now())
+  updatedBy   String?
+  notes       String?
+}
+
+model inventory_transactions {
+  id          String   @id
+  productId   String
+  type        String
+  quantity    Int
+  location    String
+  unitCost    Decimal  @default(0)
+  totalCost   Decimal  @default(0)
+  reference   String?
+  referenceId String?
+  batchNo     String?
+  reason      String?
+  notes       String?
+  createdAt   DateTime @default(now())
+  createdBy   String?
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model journal_entries {
+  id            String    @id
+  entryNo       String    @unique
+  transactionId String?   @unique
+  description   String
+  date          DateTime
+  reference     String?
+  status        String    @default("POSTED")
+  totalDebit    Float     @default(0)
+  totalCredit   Float     @default(0)
+  isBalanced    Boolean   @default(false)
+  createdBy     String
+  approvedBy    String?
+  approvedAt    DateTime?
+  reversedBy    String?
+  reversedAt    DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime
+  deletedAt     DateTime?
+  isDeleted     Boolean   @default(false)
+  deletedBy     String?
+  deleted_at    DateTime? @db.Timestamp(6)
+  is_deleted    Boolean?  @default(false)
+  deleted_by    String?   @db.VarChar(255)
+
+  @@index([is_deleted, deleted_at], map: "idx_journal_entries_deleted")
+  @@index([isDeleted, deletedAt])
+  @@index([status, date])
+}
+
+model journal_entry_lines {
+  id           String   @id
+  journalId    String
+  accountId    String
+  debitAmount  Float    @default(0)
+  creditAmount Float    @default(0)
+  description  String?
+  lineOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  @@index([journalId, lineOrder])
+}
+
+model line_admins {
+  id          String   @id
+  lineUserId  String   @unique
+  userId      String?  @unique
+  permissions String[] @default(["BASIC"])
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+}
+
+model line_settings {
+  id                  String   @id
+  enabled             Boolean  @default(false)
+  channelId           String?
+  channelSecret       String?
+  channelAccessToken  String?
+  webhookUrl          String?
+  liffId              String?
+  richMenuId          String?
+  richMenuEnabled     Boolean  @default(true)
+  flexMessagesEnabled Boolean  @default(true)
+  quickReplyEnabled   Boolean  @default(true)
+  broadcastEnabled    Boolean  @default(true)
+  liffEnabled         Boolean  @default(false)
+  multicastEnabled    Boolean  @default(true)
+  pushMessagesEnabled Boolean  @default(true)
+  messagesPerMinute   Int      @default(60)
+  broadcastDelay      Int      @default(500)
+  welcomeMessage      String   @default("Selamat datang di LINE Official Account Pondok Imam Syafii!")
+  unknownMessage      String   @default("Maaf, pesan tidak dikenali. Ketik 'menu' untuk bantuan.")
+  errorMessage        String   @default("Maaf, terjadi kesalahan. Silakan coba lagi.")
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime
+}
+
+model line_user_sessions {
+  id           String    @id
+  userId       String    @unique
+  mode         String    @default("PUBLIC")
+  isAdmin      Boolean   @default(false)
+  permissions  String[]  @default([])
+  activeFlowId String?
+  flowType     String?
+  flowData     Json      @default("{}")
+  currentStep  Int       @default(0)
+  totalSteps   Int       @default(0)
+  stepHistory  String[]  @default([])
+  state        Json      @default("{}")
+  breadcrumb   String[]  @default([])
+  waitingFor   String?
+  canAbort     Boolean   @default(true)
+  retryCount   Int       @default(0)
+  lockedUntil  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime
+  expiresAt    DateTime?
+}
+
+model line_users {
+  id            String   @id
+  userId        String   @unique
+  displayName   String?
+  pictureUrl    String?
+  statusMessage String?
+  language      String?
+  isAdmin       Boolean  @default(false)
+  canCRUD       Boolean  @default(false)
+  lastActive    DateTime @default(now())
+  messageCount  Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model messages {
+  id              String    @id
+  senderId        String
+  receiverId      String
+  subject         String
+  content         String
+  parentMessageId String?
+  threadId        String?
+  type            String    @default("NORMAL")
+  priority        String    @default("NORMAL")
+  attachments     String    @default("[]")
+  status          String    @default("SENT")
+  isRead          Boolean   @default(false)
+  readAt          DateTime?
+  repliedAt       DateTime?
+  isAutoReply     Boolean   @default(false)
+  scheduledFor    DateTime?
+  sentAt          DateTime  @default(now())
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime
+  deletedAt       DateTime?
+  isDeleted       Boolean   @default(false)
+  deletedBy       String?
+  deleted_at      DateTime? @db.Timestamp(6)
+  is_deleted      Boolean?  @default(false)
+  deleted_by      String?   @db.VarChar(255)
+
+  @@index([is_deleted, deleted_at], map: "idx_messages_deleted")
+}
+
+model notifications {
+  id           String    @id
+  userId       String
+  type         String
+  title        String
+  message      String
+  data         String    @default("{}")
+  actionUrl    String?
+  actionText   String?
+  isRead       Boolean   @default(false)
+  readAt       DateTime?
+  channels     String    @default("[\"in_app\"]")
+  emailSent    Boolean   @default(false)
+  emailSentAt  DateTime?
+  pushSent     Boolean   @default(false)
+  pushSentAt   DateTime?
+  smsSent      Boolean   @default(false)
+  smsSentAt    DateTime?
+  scheduledFor DateTime?
+  expiresAt    DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model ota_programs {
+  id              String    @id
+  studentId       String
+  monthlyTarget   Decimal
+  currentMonth    String
+  totalCollected  Decimal   @default(0)
+  isActive        Boolean   @default(true)
+  programStart    DateTime  @default(now())
+  lastUpdate      DateTime  @default(now())
+  monthlyProgress Decimal   @default(0)
+  monthsCompleted Int       @default(0)
+  displayOrder    Int       @default(0)
+  showProgress    Boolean   @default(true)
+  adminNotes      String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime
+  deleted_at      DateTime? @db.Timestamp(6)
+  is_deleted      Boolean?  @default(false)
+  deleted_by      String?   @db.VarChar(255)
+
+  @@index([is_deleted, deleted_at], map: "idx_ota_programs_deleted")
+}
+
+model ota_reports {
+  id                 String    @id
+  month              String
+  year               String
+  reportType         String
+  totalTarget        Decimal
+  totalCollected     Decimal
+  totalDistributed   Decimal
+  totalPending       Decimal   @default(0)
+  totalOrphans       Int
+  fullyFundedCount   Int       @default(0)
+  partialFundedCount Int       @default(0)
+  unfundedCount      Int       @default(0)
+  totalDonors        Int       @default(0)
+  newDonors          Int       @default(0)
+  recurringDonors    Int       @default(0)
+  details            String    @default("{}")
+  carryOverAmount    Decimal   @default(0)
+  surplusAmount      Decimal   @default(0)
+  status             String    @default("DRAFT")
+  generatedBy        String
+  approvedBy         String?
+  approvedAt         DateTime?
+  distributedAt      DateTime?
+  distributedBy      String?
+  distributionNotes  String?
+  reportFileUrl      String?
+  proofFileUrl       String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model ota_sponsors {
+  id                 String    @id
+  programId          String
+  donorName          String
+  donorEmail         String?
+  donorPhone         String?
+  publicName         String    @default("Hamba Allah")
+  amount             Decimal
+  month              String
+  isPaid             Boolean   @default(false)
+  paymentMethod      String?
+  paymentProof       String?
+  paymentDate        DateTime?
+  verifiedBy         String?
+  verifiedAt         DateTime?
+  externalId         String?
+  paymentStatus      String    @default("PENDING")
+  donationType       String    @default("REGULAR")
+  isRecurring        Boolean   @default(false)
+  allowPublicDisplay Boolean   @default(true)
+  allowContact       Boolean   @default(false)
+  donorMessage       String?
+  adminNotes         String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime
+  deleted_at         DateTime? @db.Timestamp(6)
+  is_deleted         Boolean?  @default(false)
+  deleted_by         String?   @db.VarChar(255)
+
+  @@index([is_deleted, deleted_at], map: "idx_ota_sponsors_deleted")
+}
+
+model parent_accounts {
+  id                   String    @id
+  userId               String
+  phoneNumber          String?
+  whatsapp             String?
+  emergencyContact     String?
+  notificationSettings String    @default("{\"grades\": true, \"attendance\": true, \"payments\": true, \"announcements\": true, \"messages\": true, \"pushNotifications\": true, \"emailNotifications\": true}")
+  preferredLanguage    String    @default("id")
+  timezone             String    @default("Asia/Jakarta")
+  isActive             Boolean   @default(true)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime
+  deletedAt            DateTime?
+  isDeleted            Boolean   @default(false)
+  deletedBy            String?
+}
+
+model parent_students {
+  id                 String   @id
+  parentId           String
+  studentId          String
+  relationship       String
+  isPrimary          Boolean  @default(false)
+  canViewGrades      Boolean  @default(true)
+  canViewAttendance  Boolean  @default(true)
+  canViewPayments    Boolean  @default(true)
+  canReceiveMessages Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime
+}
+
+model payment_history {
+  id             String   @id
+  billId         String
+  paymentId      String?
+  studentId      String
+  action         String
+  description    String
+  previousAmount Decimal?
+  newAmount      Decimal?
+  changeAmount   Decimal?
+  performedBy    String?
+  metadata       String   @default("{}")
+  createdAt      DateTime @default(now())
+}
+
+model payment_reminders {
+  id               String    @id
+  billId           String
+  studentId        String
+  type             String
+  status           String    @default("PENDING")
+  subject          String?
+  message          String
+  scheduledAt      DateTime
+  sentAt           DateTime?
+  deliveredAt      DateTime?
+  readAt           DateTime?
+  respondedAt      DateTime?
+  response         String?
+  recipientEmail   String?
+  recipientPhone   String?
+  deliveryAttempts Int       @default(0)
+  maxAttempts      Int       @default(3)
+  lastAttemptAt    DateTime?
+  failureReason    String?
+  templateUsed     String?
+  metadata         String    @default("{}")
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model payments {
+  id                 String    @id
+  paymentNo          String    @unique
+  billId             String?
+  registrationId     String?
+  studentId          String?
+  amount             Decimal
+  paymentType        String
+  description        String?
+  method             String
+  channel            String?
+  status             String    @default("PENDING")
+  proofUrl           String?
+  verifiedBy         String?
+  verifiedAt         DateTime?
+  externalId         String?
+  transactionId      String?
+  paymentUrl         String?
+  vaNumber           String?
+  qrString           String?
+  deeplink           String?
+  expiredAt          DateTime?
+  paymentGatewayData String    @default("{}")
+  merchantId         String?
+  fraudStatus        String?
+  cardType           String?
+  maskedCard         String?
+  approvalCode       String?
+  paidAt             DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime
+  deletedAt          DateTime?
+  isDeleted          Boolean   @default(false)
+  deletedBy          String?
+  deleted_at         DateTime? @db.Timestamp(6)
+  is_deleted         Boolean?  @default(false)
+  deleted_by         String?   @db.VarChar(255)
+
+  @@index([is_deleted, deleted_at], map: "idx_payments_deleted")
+  @@index([externalId])
+  @@index([isDeleted, deletedAt])
+  @@index([paymentType])
+  @@index([status])
+  @@index([transactionId])
+}
+
+model ppdb_activities {
+  id             String   @id
+  registrationId String
+  activity       String
+  description    String
+  metadata       String?
+  performedBy    String?
+  performedAt    DateTime @default(now())
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model ppdb_registrations {
+  id                String    @id
+  registrationNo    String
+  level             String
+  academicYear      String
+  fullName          String
+  nickname          String?
+  birthPlace        String
+  birthDate         DateTime
+  gender            String
+  bloodType         String?
+  religion          String    @default("ISLAM")
+  nationality       String    @default("INDONESIA")
+  nik               String?
+  nisn              String?
+  birthCertNo       String?
+  familyCardNo      String?
+  phone             String?
+  email             String?
+  address           String
+  rt                String?
+  rw                String?
+  village           String
+  district          String
+  city              String
+  province          String
+  postalCode        String?
+  previousSchool    String?
+  previousGrade     String?
+  previousNISN      String?
+  graduationYear    Int?
+  fatherName        String
+  fatherNIK         String?
+  fatherBirth       DateTime?
+  fatherEducation   String?
+  fatherOccupation  String?
+  fatherPhone       String?
+  fatherIncome      Decimal?
+  motherName        String
+  motherNIK         String?
+  motherBirth       DateTime?
+  motherEducation   String?
+  motherOccupation  String?
+  motherPhone       String?
+  motherIncome      Decimal?
+  guardianName      String?
+  guardianNIK       String?
+  guardianRelation  String?
+  guardianPhone     String?
+  guardianAddress   String?
+  hasSpecialNeeds   Boolean   @default(false)
+  specialNeeds      String?
+  healthConditions  String?
+  allergies         String?
+  documents         String    @default("[]")
+  photoUrl          String?
+  birthCertUrl      String?
+  familyCardUrl     String?
+  transcriptUrl     String?
+  status            String    @default("DRAFT")
+  testSchedule      DateTime?
+  testScore         Decimal?
+  testNotes         String?
+  interviewSchedule DateTime?
+  interviewScore    Decimal?
+  interviewNotes    String?
+  acceptedAt        DateTime?
+  acceptedBy        String?
+  acceptanceNo      String?
+  enrolledAt        DateTime?
+  studentId         String?
+  registrationFee   Decimal?
+  paymentStatus     String    @default("UNPAID")
+  paymentProof      String?
+  internalNotes     String?
+  publicNotes       String?
+  submittedAt       DateTime?
+  reviewedBy        String?
+  reviewedAt        DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime
+  deletedAt         DateTime?
+  isDeleted         Boolean   @default(false)
+  deletedBy         String?
+  deleted_at        DateTime? @db.Timestamp(6)
+  is_deleted        Boolean?  @default(false)
+  deleted_by        String?   @db.VarChar(255)
+
+  @@index([is_deleted, deleted_at], map: "idx_ppdb_registrations_deleted")
+}
+
+model ppdb_settings {
+  id                    String   @id
+  academicYear          String
+  openDate              DateTime
+  closeDate             DateTime
+  quotaTK               Int      @default(30)
+  quotaSD               Int      @default(60)
+  quotaSMP              Int      @default(40)
+  quotaPondok           Int      @default(50)
+  registrationFeeTK     Decimal  @default(100000)
+  registrationFeeSD     Decimal  @default(150000)
+  registrationFeeSMP    Decimal  @default(200000)
+  registrationFeePondok Decimal  @default(250000)
+  testEnabled           Boolean  @default(true)
+  testPassScore         Decimal  @default(60)
+  interviewEnabled      Boolean  @default(true)
+  interviewPassScore    Decimal  @default(70)
+  requiredDocs          String   @default("[]")
+  acceptanceTemplate    String?
+  rejectionTemplate     String?
+  lastRegistrationNo    Int      @default(0)
+  isActive              Boolean  @default(true)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model product_categories {
+  id          String    @id
+  name        String    @unique
+  description String?
+  icon        String?
+  color       String?
+  isActive    Boolean   @default(true)
+  parentId    String?
+  sortOrder   Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime
+  deleted_at  DateTime? @db.Timestamp(6)
+  is_deleted  Boolean?  @default(false)
+  deleted_by  String?   @db.VarChar(255)
+
+  @@index([is_deleted, deleted_at], map: "idx_product_categories_deleted")
+  @@index([isActive, sortOrder])
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model products {
+  id          String    @id
+  name        String
+  code        String    @unique
+  description String?
+  categoryId  String
+  price       Decimal
+  cost        Decimal   @default(0)
+  stock       Int       @default(0)
+  minStock    Int       @default(5)
+  unit        String    @default("pcs")
+  image       String?
+  isActive    Boolean   @default(true)
+  brand       String?
+  supplier    String?
+  location    String    @default("UMUM")
+  tags        String    @default("[]")
+  notes       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime
+  deletedAt   DateTime?
+  isDeleted   Boolean   @default(false)
+  deletedBy   String?
+  deleted_at  DateTime? @db.Timestamp(6)
+  is_deleted  Boolean?  @default(false)
+  deleted_by  String?   @db.VarChar(255)
+
+  @@index([is_deleted, deleted_at], map: "idx_products_deleted")
+  @@index([categoryId, isActive])
+  @@index([code])
+  @@index([isDeleted, deletedAt])
+  @@index([location, isActive])
+  @@index([stock])
+}
+
+model purchase_order_items {
+  id              String   @id
+  purchaseOrderId String
+  productId       String
+  quantity        Int
+  unitCost        Decimal
+  totalCost       Decimal
+  receivedQty     Int      @default(0)
+  remainingQty    Int
+  notes           String?
+  createdAt       DateTime @default(now())
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model purchase_orders {
+  id             String    @id
+  orderNo        String
+  supplierId     String
+  status         String    @default("DRAFT")
+  orderDate      DateTime  @default(now())
+  expectedDate   DateTime?
+  receivedDate   DateTime?
+  subtotal       Decimal   @default(0)
+  taxAmount      Decimal   @default(0)
+  discountAmount Decimal   @default(0)
+  shippingCost   Decimal   @default(0)
+  totalAmount    Decimal   @default(0)
+  paymentStatus  String    @default("UNPAID")
+  paidAmount     Decimal   @default(0)
+  notes          String?
+  terms          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime
+  createdBy      String
+  deleted_at     DateTime? @db.Timestamp(6)
+  is_deleted     Boolean?  @default(false)
+  deleted_by     String?   @db.VarChar(255)
+
+  @@index([is_deleted, deleted_at], map: "idx_purchase_orders_deleted")
+}
+
+model push_subscriptions {
+  id        String   @id
+  userId    String
+  endpoint  String
+  p256dh    String
+  auth      String
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+
+  @@unique([userId, endpoint])
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model questions {
+  id          String    @id
+  question    String
+  category    String
+  askerName   String?
+  isAnonymous Boolean   @default(false)
+  status      String    @default("pending")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime
+  deletedAt   DateTime?
+  isDeleted   Boolean   @default(false)
+  deletedBy   String?
+  deleted_at  DateTime? @db.Timestamp(6)
+  is_deleted  Boolean?  @default(false)
+  deleted_by  String?   @db.VarChar(255)
+
+  @@index([is_deleted, deleted_at], map: "idx_questions_deleted")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model quran_surahs {
+  id                  String    @id
+  number              Int
+  name                String
+  nameArabic          String
+  nameTransliteration String?
+  totalAyat           Int
+  juz                 Int
+  page                Int?
+  type                String
+  revelation          Int?
+  meaningId           String?
+  meaningAr           String?
+  isActive            Boolean   @default(true)
+  sortOrder           Int       @default(0)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime
+  deleted_at          DateTime? @db.Timestamp(6)
+  is_deleted          Boolean?  @default(false)
+  deleted_by          String?   @db.VarChar(255)
+
+  @@index([is_deleted, deleted_at], map: "idx_quran_surahs_deleted")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model registrations {
+  id               String    @id
   registrationNo   String    @unique
   fullName         String
   nickname         String?
@@ -739,706 +1785,25 @@ model Registration {
   verifiedAt       DateTime?
   rejectionReason  String?
   createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  updatedAt        DateTime
   submittedAt      DateTime?
-  payments         Payment[]
-  student          Student?
   deletedAt        DateTime?
   isDeleted        Boolean   @default(false)
   deletedBy        String?
+  deleted_at       DateTime? @db.Timestamp(6)
+  is_deleted       Boolean?  @default(false)
+  deleted_by       String?   @db.VarChar(255)
 
-  @@index([status])
+  @@index([is_deleted, deleted_at], map: "idx_registrations_deleted")
+  @@index([isDeleted, deletedAt])
   @@index([level])
   @@index([paymentStatus])
+  @@index([status])
   @@index([testResult])
-  @@index([isDeleted, deletedAt])
-  @@map("registrations")
 }
 
-model Payment {
-  id                 String        @id @default(cuid())
-  paymentNo          String        @unique
-  billId             String?
-  registrationId     String?
-  studentId          String?
-  amount             Decimal
-  paymentType        String
-  description        String?
-  method             String
-  channel            String?
-  status             String        @default("PENDING")
-  proofUrl           String?
-  verifiedBy         String?
-  verifiedAt         DateTime?
-  externalId         String?
-  transactionId      String?
-  paymentUrl         String?
-  vaNumber           String?
-  qrString           String?
-  deeplink           String?
-  expiredAt          DateTime?
-  paymentGatewayData String        @default("{}")
-  merchantId         String?
-  fraudStatus        String?
-  cardType           String?
-  maskedCard         String?
-  approvalCode       String?
-  paidAt             DateTime?
-  createdAt          DateTime      @default(now())
-  updatedAt          DateTime      @updatedAt
-  registration       Registration? @relation(fields: [registrationId], references: [id])
-  student            Student?      @relation(fields: [studentId], references: [id])
-  deletedAt          DateTime?
-  isDeleted          Boolean       @default(false)
-  deletedBy          String?
-
-  @@index([status])
-  @@index([paymentType])
-  @@index([externalId])
-  @@index([transactionId])
-  @@index([isDeleted, deletedAt])
-  @@map("payments")
-}
-
-model DonationCategory {
-  id          String             @id @default(cuid())
-  name        String             @unique
-  description String?
-  icon        String?
-  color       String?
-  isActive    Boolean            @default(true)
-  sortOrder   Int                @default(0)
-  createdAt   DateTime           @default(now())
-  updatedAt   DateTime           @updatedAt
-  campaigns   DonationCampaign[]
-  donations   Donation[]
-
-  @@map("donation_categories")
-}
-
-model DonationCampaign {
-  id             String           @id @default(cuid())
-  title          String
-  slug           String           @unique
-  description    String
-  story          String?
-  categoryId     String
-  targetAmount   Decimal
-  currentAmount  Decimal          @default(0)
-  startDate      DateTime         @default(now())
-  endDate        DateTime?
-  mainImage      String?
-  images         String           @default("[]")
-  video          String?
-  status         String           @default("DRAFT")
-  isFeatured     Boolean          @default(false)
-  isUrgent       Boolean          @default(false)
-  allowAnonymous Boolean          @default(true)
-  shareCount     Int              @default(0)
-  createdBy      String
-  approvedBy     String?
-  approvedAt     DateTime?
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
-  updates        CampaignUpdate[]
-  category       DonationCategory @relation(fields: [categoryId], references: [id])
-  creator        User             @relation(fields: [createdBy], references: [id])
-  donations      Donation[]
-  deletedAt      DateTime?
-  isDeleted      Boolean          @default(false)
-  deletedBy      String?
-
-  @@index([status, isFeatured])
-  @@index([categoryId])
-  @@index([endDate])
-  @@index([isDeleted, deletedAt])
-  @@map("donation_campaigns")
-}
-
-model CampaignUpdate {
-  id         String           @id @default(cuid())
-  campaignId String
-  title      String
-  content    String
-  images     String           @default("[]")
-  isPublic   Boolean          @default(true)
-  createdAt  DateTime         @default(now())
-  updatedAt  DateTime         @updatedAt
-  campaign   DonationCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-
-  @@index([campaignId, createdAt])
-  @@map("campaign_updates")
-}
-
-model Donation {
-  id             String            @id @default(cuid())
-  donationNo     String            @unique
-  campaignId     String?
-  categoryId     String
-  amount         Decimal
-  message        String?
-  donorName      String?
-  donorEmail     String?
-  donorPhone     String?
-  isAnonymous    Boolean           @default(false)
-  paymentMethod  String?
-  paymentChannel String?
-  paymentStatus  String            @default("PENDING")
-  externalId     String?
-  vaNumber       String?
-  qrisCode       String?
-  paymentUrl     String?
-  expiredAt      DateTime?
-  paidAt         DateTime?
-  proofUrl       String?
-  verifiedBy     String?
-  verifiedAt     DateTime?
-  certificateNo  String?
-  certificateUrl String?
-  source         String            @default("WEB")
-  ipAddress      String?
-  userAgent      String?
-  referrer       String?
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
-  campaign       DonationCampaign? @relation(fields: [campaignId], references: [id])
-  category       DonationCategory  @relation(fields: [categoryId], references: [id])
-  deletedAt      DateTime?
-  isDeleted      Boolean           @default(false)
-  deletedBy      String?
-
-  @@index([paymentStatus, createdAt])
-  @@index([campaignId])
-  @@index([categoryId])
-  @@index([donorEmail])
-  @@index([isDeleted, deletedAt])
-  @@map("donations")
-}
-
-model ZakatCalculation {
-  id              String   @id @default(cuid())
-  calculationType String
-  inputs          String
-  zakatAmount     Decimal
-  nisabAmount     Decimal?
-  donorName       String?
-  donorEmail      String?
-  donorPhone      String?
-  donationId      String?
-  createdAt       DateTime @default(now())
-
-  @@index([calculationType, createdAt])
-  @@map("zakat_calculations")
-}
-
-model DonorProfile {
-  id                  String    @id @default(cuid())
-  email               String    @unique
-  name                String
-  phone               String?
-  preferredCategories String    @default("[]")
-  allowMarketing      Boolean   @default(true)
-  allowNewsletter     Boolean   @default(true)
-  totalDonated        Decimal   @default(0)
-  donationCount       Int       @default(0)
-  lastDonationAt      DateTime?
-  isVerified          Boolean   @default(false)
-  verificationToken   String?
-  verifiedAt          DateTime?
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
-
-  @@index([email])
-  @@index([isVerified])
-  @@map("donor_profiles")
-}
-
-model ProductCategory {
-  id          String            @id @default(cuid())
-  name        String            @unique
-  description String?
-  icon        String?
-  color       String?
-  isActive    Boolean           @default(true)
-  parentId    String?
-  sortOrder   Int               @default(0)
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
-  parent      ProductCategory?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
-  children    ProductCategory[] @relation("CategoryHierarchy")
-  products    Product[]
-
-  @@index([isActive, sortOrder])
-  @@map("product_categories")
-}
-
-model Product {
-  id                    String                 @id @default(cuid())
-  name                  String
-  code                  String                 @unique
-  description           String?
-  categoryId            String
-  price                 Decimal
-  cost                  Decimal                @default(0)
-  stock                 Int                    @default(0)
-  minStock              Int                    @default(5)
-  unit                  String                 @default("pcs")
-  image                 String?
-  isActive              Boolean                @default(true)
-  brand                 String?
-  supplier              String?
-  location              String                 @default("UMUM")
-  tags                  String                 @default("[]")
-  notes                 String?
-  createdAt             DateTime               @default(now())
-  updatedAt             DateTime               @updatedAt
-  inventoryRecords      Inventory[]
-  inventoryTransactions InventoryTransaction[]
-  category              ProductCategory        @relation(fields: [categoryId], references: [id])
-  purchaseItems         PurchaseOrderItem[]
-  saleItems             SaleItem[]
-  deletedAt             DateTime?
-  isDeleted             Boolean                @default(false)
-  deletedBy             String?
-
-  @@index([code])
-  @@index([categoryId, isActive])
-  @@index([location, isActive])
-  @@index([stock])
-  @@index([isDeleted, deletedAt])
-  @@map("products")
-}
-
-model Supplier {
-  id             String          @id @default(cuid())
-  name           String
-  code           String?         @unique
-  contact        String?
-  address        String?
-  phone          String?
-  email          String?
-  whatsapp       String?
-  taxId          String?
-  bankAccount    String?
-  paymentTerms   String?
-  isActive       Boolean         @default(true)
-  rating         Int             @default(5)
-  notes          String?
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-  purchaseOrders PurchaseOrder[]
-  deletedAt      DateTime?
-  isDeleted      Boolean         @default(false)
-  deletedBy      String?
-
-  @@index([isActive])
-  @@index([isDeleted, deletedAt])
-  @@map("suppliers")
-}
-
-model Inventory {
-  id          String    @id @default(cuid())
-  productId   String
-  quantity    Int
-  location    String
-  unitCost    Decimal   @default(0)
-  batchNo     String?
-  expiryDate  DateTime?
-  lastUpdated DateTime  @default(now())
-  updatedBy   String?
-  notes       String?
-  product     Product   @relation(fields: [productId], references: [id])
-
-  @@unique([productId, location, batchNo])
-  @@index([productId, location])
-  @@index([expiryDate])
-  @@map("inventory")
-}
-
-model InventoryTransaction {
-  id          String   @id @default(cuid())
-  productId   String
-  type        String
-  quantity    Int
-  location    String
-  unitCost    Decimal  @default(0)
-  totalCost   Decimal  @default(0)
-  reference   String?
-  referenceId String?
-  batchNo     String?
-  reason      String?
-  notes       String?
-  createdAt   DateTime @default(now())
-  createdBy   String?
-  product     Product  @relation(fields: [productId], references: [id])
-
-  @@index([productId, type, createdAt])
-  @@index([type, createdAt])
-  @@index([referenceId])
-  @@map("inventory_transactions")
-}
-
-model PurchaseOrder {
-  id             String              @id @default(cuid())
-  orderNo        String              @unique
-  supplierId     String
-  status         String              @default("DRAFT")
-  orderDate      DateTime            @default(now())
-  expectedDate   DateTime?
-  receivedDate   DateTime?
-  subtotal       Decimal             @default(0)
-  taxAmount      Decimal             @default(0)
-  discountAmount Decimal             @default(0)
-  shippingCost   Decimal             @default(0)
-  totalAmount    Decimal             @default(0)
-  paymentStatus  String              @default("UNPAID")
-  paidAmount     Decimal             @default(0)
-  notes          String?
-  terms          String?
-  createdAt      DateTime            @default(now())
-  updatedAt      DateTime            @updatedAt
-  createdBy      String
-  items          PurchaseOrderItem[]
-  creator        User                @relation(fields: [createdBy], references: [id])
-  supplier       Supplier            @relation(fields: [supplierId], references: [id])
-
-  @@index([status, orderDate])
-  @@index([supplierId])
-  @@map("purchase_orders")
-}
-
-model PurchaseOrderItem {
-  id              String        @id @default(cuid())
-  purchaseOrderId String
-  productId       String
-  quantity        Int
-  unitCost        Decimal
-  totalCost       Decimal
-  receivedQty     Int           @default(0)
-  remainingQty    Int
-  notes           String?
-  createdAt       DateTime      @default(now())
-  product         Product       @relation(fields: [productId], references: [id])
-  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
-
-  @@unique([purchaseOrderId, productId])
-  @@map("purchase_order_items")
-}
-
-model Sale {
-  id               String     @id @default(cuid())
-  saleNo           String     @unique
-  customerName     String?
-  customerPhone    String?
-  customerEmail    String?
-  location         String     @default("KOPERASI")
-  saleDate         DateTime   @default(now())
-  subtotal         Decimal
-  taxAmount        Decimal    @default(0)
-  discountAmount   Decimal    @default(0)
-  totalAmount      Decimal
-  paymentMethod    String     @default("CASH")
-  paidAmount       Decimal
-  changeAmount     Decimal    @default(0)
-  paymentReference String?
-  cashier          String
-  status           String     @default("COMPLETED")
-  notes            String?
-  createdAt        DateTime   @default(now())
-  updatedAt        DateTime   @updatedAt
-  items            SaleItem[]
-
-  @@index([saleDate, location])
-  @@index([status])
-  @@index([cashier])
-  @@map("sales")
-}
-
-model SaleItem {
-  id             String   @id @default(cuid())
-  saleId         String
-  productId      String
-  quantity       Int
-  unitPrice      Decimal
-  unitCost       Decimal
-  subtotal       Decimal
-  discountAmount Decimal  @default(0)
-  finalAmount    Decimal
-  createdAt      DateTime @default(now())
-  product        Product  @relation(fields: [productId], references: [id])
-  sale           Sale     @relation(fields: [saleId], references: [id], onDelete: Cascade)
-
-  @@unique([saleId, productId])
-  @@map("sale_items")
-}
-
-model AcademicYear {
-  id             String         @id @default(cuid())
-  name           String         @unique
-  startDate      DateTime
-  endDate        DateTime
-  isActive       Boolean        @default(false)
-  description    String?
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-  classes        Class[]
-  semesters      Semester[]
-  studentClasses StudentClass[]
-  deletedAt      DateTime?
-  isDeleted      Boolean        @default(false)
-  deletedBy      String?
-
-  @@index([isActive])
-  @@index([startDate, endDate])
-  @@index([isDeleted, deletedAt])
-  @@map("academic_years")
-}
-
-model Semester {
-  id              String           @id @default(cuid())
-  academicYearId  String
-  name            String
-  shortName       String?
-  startDate       DateTime
-  endDate         DateTime
-  isActive        Boolean          @default(false)
-  gradingDeadline DateTime?
-  reportDeadline  DateTime?
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  attendances     Attendance[]
-  exams           Exam[]
-  grades          Grade[]
-  reportCards     ReportCard[]
-  academicYear    AcademicYear     @relation(fields: [academicYearId], references: [id])
-  sppBillings     SPPBilling[]
-  teacherSubjects TeacherSubject[]
-  deletedAt       DateTime?
-  isDeleted       Boolean          @default(false)
-  deletedBy       String?
-
-  @@unique([academicYearId, name])
-  @@index([isActive])
-  @@index([startDate, endDate])
-  @@index([isDeleted, deletedAt])
-  @@map("semesters")
-}
-
-model Class {
-  id              String           @id @default(cuid())
-  name            String
-  grade           String
-  section         String?
-  academicYearId  String
-  teacherId       String?
-  capacity        Int              @default(30)
-  room            String?
-  level           String
-  program         String?
-  description     String?
-  isActive        Boolean          @default(true)
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  attendances     Attendance[]
-  academicYear    AcademicYear     @relation(fields: [academicYearId], references: [id])
-  teacher         User?            @relation("ClassTeacher", fields: [teacherId], references: [id])
-  exams           Exam[]
-  reportCards     ReportCard[]     @relation("ReportCardClass")
-  schedules       Schedule[]
-  sppBillings     SPPBilling[]
-  studentClasses  StudentClass[]
-  teacherSubjects TeacherSubject[]
-  deletedAt       DateTime?
-  isDeleted       Boolean          @default(false)
-  deletedBy       String?
-
-  @@unique([academicYearId, name])
-  @@index([grade, level])
-  @@index([isActive])
-  @@index([isDeleted, deletedAt])
-  @@map("classes")
-}
-
-model Subject {
-  id                 String              @id @default(cuid())
-  code               String              @unique
-  name               String
-  nameArabic         String?
-  description        String?
-  credits            Int                 @default(2)
-  type               String              @default("WAJIB")
-  category           String              @default("UMUM")
-  level              String
-  minGrade           String?
-  maxGrade           String?
-  isActive           Boolean             @default(true)
-  sortOrder          Int                 @default(0)
-  createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @updatedAt
-  curriculumSubjects CurriculumSubject[]
-  exams              Exam[]
-  grades             Grade[]
-  schedules          Schedule[]
-  teacherSubjects    TeacherSubject[]
-  deletedAt          DateTime?
-  isDeleted          Boolean             @default(false)
-  deletedBy          String?
-
-  @@index([level, category])
-  @@index([isActive])
-  @@index([isDeleted, deletedAt])
-  @@map("subjects")
-}
-
-model TeacherSubject {
-  id         String   @id @default(cuid())
-  teacherId  String
-  subjectId  String
-  classId    String
-  semesterId String
-  isActive   Boolean  @default(true)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  class      Class    @relation(fields: [classId], references: [id])
-  semester   Semester @relation(fields: [semesterId], references: [id])
-  subject    Subject  @relation(fields: [subjectId], references: [id])
-  teacher    User     @relation("TeacherSubject", fields: [teacherId], references: [id])
-
-  @@unique([teacherId, subjectId, classId, semesterId])
-  @@index([teacherId, semesterId])
-  @@index([subjectId, classId])
-  @@map("teacher_subjects")
-}
-
-model StudentClass {
-  id             String       @id @default(cuid())
-  studentId      String
-  classId        String
-  academicYearId String
-  rollNumber     String?
-  status         String       @default("ACTIVE")
-  joinDate       DateTime     @default(now())
-  leaveDate      DateTime?
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  academicYear   AcademicYear @relation(fields: [academicYearId], references: [id])
-  class          Class        @relation(fields: [classId], references: [id])
-  student        Student      @relation(fields: [studentId], references: [id])
-
-  @@unique([studentId, classId, academicYearId])
-  @@index([classId, status])
-  @@index([academicYearId])
-  @@map("student_classes")
-}
-
-model Curriculum {
-  id          String              @id @default(cuid())
-  name        String
-  code        String              @unique
-  level       String
-  description String?
-  isActive    Boolean             @default(true)
-  validFrom   DateTime
-  validUntil  DateTime?
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @updatedAt
-  subjects    CurriculumSubject[]
-  deletedAt   DateTime?
-  isDeleted   Boolean             @default(false)
-  deletedBy   String?
-
-  @@index([level, isActive])
-  @@index([isDeleted, deletedAt])
-  @@map("curriculums")
-}
-
-model CurriculumSubject {
-  id           String     @id @default(cuid())
-  curriculumId String
-  subjectId    String
-  grade        String
-  semester     Int?
-  credits      Int        @default(2)
-  isRequired   Boolean    @default(true)
-  minScore     Int        @default(60)
-  sortOrder    Int        @default(0)
-  createdAt    DateTime   @default(now())
-  curriculum   Curriculum @relation(fields: [curriculumId], references: [id])
-  subject      Subject    @relation(fields: [subjectId], references: [id])
-
-  @@unique([curriculumId, subjectId, grade])
-  @@index([curriculumId, grade])
-  @@map("curriculum_subjects")
-}
-
-model Grade {
-  id            String    @id @default(cuid())
-  studentId     String
-  subjectId     String
-  semesterId    String
-  classId       String?
-  midterm       Decimal?
-  final         Decimal?
-  assignment    Decimal?
-  quiz          Decimal?
-  participation Decimal?
-  project       Decimal?
-  daily         Decimal?
-  total         Decimal?
-  grade         String?
-  point         Decimal?
-  akhlak        String?
-  quranMemory   String?
-  notes         String?
-  isLocked      Boolean   @default(false)
-  enteredBy     String?
-  enteredAt     DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  semester      Semester  @relation(fields: [semesterId], references: [id])
-  student       Student   @relation(fields: [studentId], references: [id])
-  subject       Subject   @relation(fields: [subjectId], references: [id])
-  deletedAt     DateTime?
-  isDeleted     Boolean   @default(false)
-  deletedBy     String?
-
-  @@unique([studentId, subjectId, semesterId])
-  @@index([semesterId, subjectId])
-  @@index([studentId, semesterId])
-  @@index([isDeleted, deletedAt])
-  @@map("grades")
-}
-
-model Attendance {
-  id         String    @id @default(cuid())
-  studentId  String
-  classId    String
-  semesterId String
-  date       DateTime  @db.Date
-  status     String
-  timeIn     DateTime?
-  notes      String?
-  markedBy   String
-  markedAt   DateTime  @default(now())
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-  class      Class     @relation(fields: [classId], references: [id])
-  marker     User      @relation("AttendanceMarker", fields: [markedBy], references: [id])
-  semester   Semester  @relation(fields: [semesterId], references: [id])
-  student    Student   @relation(fields: [studentId], references: [id])
-  deletedAt  DateTime?
-  isDeleted  Boolean   @default(false)
-  deletedBy  String?
-
-  @@unique([studentId, classId, date])
-  @@index([date, classId])
-  @@index([studentId, semesterId])
-  @@index([isDeleted, deletedAt])
-  @@map("attendances")
-}
-
-model ReportCard {
-  id                   String    @id @default(cuid())
+model report_cards {
+  id                   String    @id
   studentId            String
   semesterId           String
   classId              String
@@ -1467,358 +1832,118 @@ model ReportCard {
   pdfUrl               String?
   status               String    @default("DRAFT")
   createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
-  class                Class     @relation("ReportCardClass", fields: [classId], references: [id])
-  semester             Semester  @relation(fields: [semesterId], references: [id])
-  student              Student   @relation(fields: [studentId], references: [id])
+  updatedAt            DateTime
   deletedAt            DateTime?
   isDeleted            Boolean   @default(false)
   deletedBy            String?
-
-  @@unique([studentId, semesterId])
-  @@index([semesterId, status])
-  @@index([isDeleted, deletedAt])
-  @@map("report_cards")
 }
 
-model Schedule {
-  id        String    @id @default(cuid())
-  classId   String
-  subjectId String
-  teacherId String
-  day       String
-  startTime String
-  endTime   String
-  room      String?
-  period    Int?
-  isActive  Boolean   @default(true)
-  notes     String?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  class     Class     @relation(fields: [classId], references: [id])
-  subject   Subject   @relation(fields: [subjectId], references: [id])
-  teacher   User      @relation("ScheduleTeacher", fields: [teacherId], references: [id])
+model sale_items {
+  id             String   @id
+  saleId         String
+  productId      String
+  quantity       Int
+  unitPrice      Decimal
+  unitCost       Decimal
+  subtotal       Decimal
+  discountAmount Decimal  @default(0)
+  finalAmount    Decimal
+  createdAt      DateTime @default(now())
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model sales {
+  id               String    @id
+  saleNo           String
+  customerName     String?
+  customerPhone    String?
+  customerEmail    String?
+  location         String    @default("KOPERASI")
+  saleDate         DateTime  @default(now())
+  subtotal         Decimal
+  taxAmount        Decimal   @default(0)
+  discountAmount   Decimal   @default(0)
+  totalAmount      Decimal
+  paymentMethod    String    @default("CASH")
+  paidAmount       Decimal
+  changeAmount     Decimal   @default(0)
+  paymentReference String?
+  cashier          String
+  status           String    @default("COMPLETED")
+  notes            String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime
+  deleted_at       DateTime? @db.Timestamp(6)
+  is_deleted       Boolean?  @default(false)
+  deleted_by       String?   @db.VarChar(255)
+
+  @@index([is_deleted, deleted_at], map: "idx_sales_deleted")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model schedules {
+  id         String    @id
+  classId    String
+  subjectId  String
+  teacherId  String
+  day        String
+  startTime  String
+  endTime    String
+  room       String?
+  period     Int?
+  isActive   Boolean   @default(true)
+  notes      String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime
+  deletedAt  DateTime?
+  isDeleted  Boolean   @default(false)
+  deletedBy  String?
+  deleted_at DateTime? @db.Timestamp(6)
+  is_deleted Boolean?  @default(false)
+  deleted_by String?   @db.VarChar(255)
+
+  @@index([is_deleted, deleted_at], map: "idx_schedules_deleted")
+}
+
+model security_audit_logs {
+  id        String    @id
+  userId    String
+  event     String
+  metadata  Json?
+  ipAddress String    @default("unknown")
+  userAgent String    @default("unknown")
+  timestamp DateTime  @default(now())
   deletedAt DateTime?
   isDeleted Boolean   @default(false)
   deletedBy String?
-
-  @@unique([classId, day, startTime])
-  @@index([teacherId, day])
-  @@index([classId, day])
-  @@index([isDeleted, deletedAt])
-  @@map("schedules")
 }
 
-model Exam {
-  id           String       @id @default(cuid())
-  name         String
-  code         String?
-  type         String
-  subjectId    String
-  classId      String
-  semesterId   String
-  teacherId    String
-  date         DateTime
-  startTime    String
-  endTime      String
-  duration     Int
-  room         String?
-  maxScore     Decimal      @default(100)
-  minScore     Decimal      @default(0)
-  passingScore Decimal      @default(60)
-  instructions String?
-  materials    String       @default("[]")
-  status       String       @default("SCHEDULED")
-  isPublished  Boolean      @default(false)
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
-  results      ExamResult[]
-  class        Class        @relation(fields: [classId], references: [id])
-  semester     Semester     @relation(fields: [semesterId], references: [id])
-  subject      Subject      @relation(fields: [subjectId], references: [id])
-  teacher      User         @relation("ExamTeacher", fields: [teacherId], references: [id])
-  deletedAt    DateTime?
-  isDeleted    Boolean      @default(false)
-  deletedBy    String?
-
-  @@index([date, classId])
-  @@index([subjectId, semesterId])
-  @@index([isDeleted, deletedAt])
-  @@map("exams")
-}
-
-model ExamResult {
-  id        String    @id @default(cuid())
-  examId    String
-  studentId String
-  score     Decimal
-  grade     String?
-  point     Decimal?
-  status    String    @default("COMPLETED")
-  notes     String?
-  enteredBy String?
-  enteredAt DateTime?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  exam      Exam      @relation(fields: [examId], references: [id])
-  student   Student   @relation(fields: [studentId], references: [id])
-  deletedAt DateTime?
-  isDeleted Boolean   @default(false)
-  deletedBy String?
-
-  @@unique([examId, studentId])
-  @@index([examId])
-  @@index([studentId])
-  @@index([isDeleted, deletedAt])
-  @@map("exam_results")
-}
-
-model ParentAccount {
-  id                   String          @id @default(cuid())
-  userId               String          @unique
-  phoneNumber          String?
-  whatsapp             String?
-  emergencyContact     String?
-  notificationSettings String          @default("{\"grades\": true, \"attendance\": true, \"payments\": true, \"announcements\": true, \"messages\": true, \"pushNotifications\": true, \"emailNotifications\": true}")
-  preferredLanguage    String          @default("id")
-  timezone             String          @default("Asia/Jakarta")
-  isActive             Boolean         @default(true)
-  createdAt            DateTime        @default(now())
-  updatedAt            DateTime        @updatedAt
-  user                 User            @relation(fields: [userId], references: [id])
-  parentStudents       ParentStudent[]
-  deletedAt            DateTime?
-  isDeleted            Boolean         @default(false)
-  deletedBy            String?
-
-  @@index([userId])
-  @@index([isDeleted, deletedAt])
-  @@map("parent_accounts")
-}
-
-model ParentStudent {
-  id                 String        @id @default(cuid())
-  parentId           String
-  studentId          String
-  relationship       String
-  isPrimary          Boolean       @default(false)
-  canViewGrades      Boolean       @default(true)
-  canViewAttendance  Boolean       @default(true)
-  canViewPayments    Boolean       @default(true)
-  canReceiveMessages Boolean       @default(true)
-  createdAt          DateTime      @default(now())
-  updatedAt          DateTime      @updatedAt
-  parent             ParentAccount @relation(fields: [parentId], references: [id], onDelete: Cascade)
-  student            Student       @relation(fields: [studentId], references: [id])
-
-  @@unique([parentId, studentId])
-  @@index([studentId])
-  @@map("parent_students")
-}
-
-model Announcement {
-  id             String    @id @default(cuid())
-  title          String
-  content        String
-  summary        String?
-  targetAudience String    @default("ALL")
-  targetClasses  String    @default("[]")
-  targetGrades   String    @default("[]")
-  priority       String    @default("NORMAL")
-  category       String    @default("GENERAL")
-  tags           String    @default("[]")
-  attachments    String    @default("[]")
-  featuredImage  String?
-  status         String    @default("DRAFT")
-  publishDate    DateTime  @default(now())
-  expiryDate     DateTime?
-  isPinned       Boolean   @default(false)
-  viewCount      Int       @default(0)
-  createdBy      String
-  approvedBy     String?
-  approvedAt     DateTime?
-  publishedAt    DateTime?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  deletedAt      DateTime?
-  isDeleted      Boolean   @default(false)
-  deletedBy      String?
-
-  @@index([status, publishDate])
-  @@index([targetAudience, priority])
-  @@index([category, createdAt])
-  @@index([expiryDate])
-  @@index([isDeleted, deletedAt])
-  @@map("announcements")
-}
-
-model Message {
-  id              String    @id @default(cuid())
-  senderId        String
-  receiverId      String
-  subject         String
-  content         String
-  parentMessageId String?
-  threadId        String?
-  type            String    @default("NORMAL")
-  priority        String    @default("NORMAL")
-  attachments     String    @default("[]")
-  status          String    @default("SENT")
-  isRead          Boolean   @default(false)
-  readAt          DateTime?
-  repliedAt       DateTime?
-  isAutoReply     Boolean   @default(false)
-  scheduledFor    DateTime?
-  sentAt          DateTime  @default(now())
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model semesters {
+  id              String    @id
+  academicYearId  String
+  name            String
+  shortName       String?
+  startDate       DateTime
+  endDate         DateTime
+  isActive        Boolean   @default(false)
+  gradingDeadline DateTime?
+  reportDeadline  DateTime?
   createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  parentMessage   Message?  @relation("MessageThread", fields: [parentMessageId], references: [id])
-  replies         Message[] @relation("MessageThread")
-  receiver        User      @relation("MessageReceiver", fields: [receiverId], references: [id])
-  sender          User      @relation("MessageSender", fields: [senderId], references: [id])
+  updatedAt       DateTime
   deletedAt       DateTime?
   isDeleted       Boolean   @default(false)
   deletedBy       String?
+  deleted_at      DateTime? @db.Timestamp(6)
+  is_deleted      Boolean?  @default(false)
+  deleted_by      String?   @db.VarChar(255)
 
-  @@index([senderId, sentAt])
-  @@index([receiverId, isRead])
-  @@index([threadId])
-  @@index([parentMessageId])
-  @@index([status, priority])
-  @@index([isDeleted, deletedAt])
-  @@map("messages")
+  @@index([is_deleted, deleted_at], map: "idx_semesters_deleted")
 }
 
-model Notification {
-  id           String    @id @default(cuid())
-  userId       String
-  type         String
-  title        String
-  message      String
-  data         String    @default("{}")
-  actionUrl    String?
-  actionText   String?
-  isRead       Boolean   @default(false)
-  readAt       DateTime?
-  channels     String    @default("[\"in_app\"]")
-  emailSent    Boolean   @default(false)
-  emailSentAt  DateTime?
-  pushSent     Boolean   @default(false)
-  pushSentAt   DateTime?
-  smsSent      Boolean   @default(false)
-  smsSentAt    DateTime?
-  scheduledFor DateTime?
-  expiresAt    DateTime?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  user         User      @relation(fields: [userId], references: [id])
-
-  @@index([userId, isRead])
-  @@index([type, createdAt])
-  @@index([scheduledFor])
-  @@index([expiresAt])
-  @@map("notifications")
-}
-
-model QuranSurah {
-  id                  String          @id @default(cuid())
-  number              Int             @unique
-  name                String
-  nameArabic          String
-  nameTransliteration String?
-  totalAyat           Int
-  juz                 Int
-  page                Int?
-  type                String
-  revelation          Int?
-  meaningId           String?
-  meaningAr           String?
-  isActive            Boolean         @default(true)
-  sortOrder           Int             @default(0)
-  createdAt           DateTime        @default(now())
-  updatedAt           DateTime        @updatedAt
-  hafalanRecords      HafalanRecord[]
-  hafalanTargets      HafalanTarget[]
-
-  @@index([juz, number])
-  @@index([type])
-  @@map("quran_surahs")
-}
-
-model HafalanRecord {
-  id             String     @id @default(cuid())
-  studentId      String
-  surahNumber    Int
-  startAyat      Int        @default(1)
-  endAyat        Int
-  status         String
-  quality        String     @default("B")
-  teacherId      String
-  date           DateTime   @default(now())
-  fluency        String?
-  tajweed        String?
-  makharijul     String?
-  voiceNoteUrl   String?
-  notes          String?
-  corrections    String?
-  duration       Int?
-  method         String     @default("INDIVIDUAL")
-  previousRecord String?
-  nextTarget     String?
-  createdAt      DateTime   @default(now())
-  updatedAt      DateTime   @updatedAt
-  student        Student    @relation(fields: [studentId], references: [id])
-  surah          QuranSurah @relation(fields: [surahNumber], references: [number])
-  teacher        User       @relation("HafalanTeacher", fields: [teacherId], references: [id])
-  deletedAt      DateTime?
-  isDeleted      Boolean    @default(false)
-  deletedBy      String?
-
-  @@index([studentId, date])
-  @@index([surahNumber, status])
-  @@index([teacherId, date])
-  @@index([status, quality])
-  @@index([isDeleted, deletedAt])
-  @@map("hafalan_records")
-}
-
-model HafalanProgress {
-  id               String    @id @default(cuid())
-  studentId        String    @unique
-  totalSurah       Int       @default(0)
-  totalAyat        Int       @default(0)
-  totalJuz         Decimal   @default(0)
-  currentSurah     Int?
-  currentAyat      Int       @default(1)
-  currentTarget    String?
-  level            String    @default("PEMULA")
-  badge            String    @default("[]")
-  juz30Progress    Decimal   @default(0)
-  overallProgress  Decimal   @default(0)
-  lastSetoranDate  DateTime?
-  lastMurajaahDate DateTime?
-  lastUpdated      DateTime  @default(now())
-  currentStreak    Int       @default(0)
-  longestStreak    Int       @default(0)
-  totalSessions    Int       @default(0)
-  avgQuality       Decimal   @default(0)
-  avgFluency       Decimal   @default(0)
-  avgTajweed       Decimal   @default(0)
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
-  student          Student   @relation(fields: [studentId], references: [id])
-  deletedAt        DateTime?
-  isDeleted        Boolean   @default(false)
-  deletedBy        String?
-
-  @@index([level])
-  @@index([totalSurah, totalAyat])
-  @@index([isDeleted, deletedAt])
-  @@map("hafalan_progress")
-}
-
-model SetoranSchedule {
-  id              String    @id @default(cuid())
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model setoran_schedules {
+  id              String    @id
   studentId       String
   teacherId       String
   dayOfWeek       String
@@ -1836,562 +1961,24 @@ model SetoranSchedule {
   notifyParent    Boolean   @default(true)
   notes           String?
   createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  student         Student   @relation(fields: [studentId], references: [id])
-  teacher         User      @relation("SetoranTeacher", fields: [teacherId], references: [id])
+  updatedAt       DateTime
+  deleted_at      DateTime? @db.Timestamp(6)
+  is_deleted      Boolean?  @default(false)
+  deleted_by      String?   @db.VarChar(255)
 
-  @@unique([studentId, teacherId, dayOfWeek, time])
-  @@index([teacherId, dayOfWeek])
-  @@index([dayOfWeek, time])
-  @@map("setoran_schedules")
+  @@index([is_deleted, deleted_at], map: "idx_setoran_schedules_deleted")
 }
 
-model HafalanTarget {
-  id             String     @id @default(cuid())
-  studentId      String
-  targetSurah    Int
-  startAyat      Int        @default(1)
-  endAyat        Int?
-  targetDate     DateTime
-  priority       String     @default("MEDIUM")
-  difficulty     String     @default("MEDIUM")
-  estimatedDays  Int?
-  status         String     @default("ACTIVE")
-  progress       Decimal    @default(0)
-  startedAt      DateTime?
-  completedAt    DateTime?
-  reward         String?
-  motivation     String?
-  parentInformed Boolean    @default(false)
-  createdBy      String
-  approvedBy     String?
-  notes          String?
-  createdAt      DateTime   @default(now())
-  updatedAt      DateTime   @updatedAt
-  creator        User       @relation("HafalanTargetCreator", fields: [createdBy], references: [id])
-  student        Student    @relation(fields: [studentId], references: [id])
-  surah          QuranSurah @relation(fields: [targetSurah], references: [number])
-
-  @@index([studentId, status])
-  @@index([targetDate, status])
-  @@index([createdBy])
-  @@map("hafalan_targets")
+model settings {
+  id    String @id
+  key   String @unique
+  value String
 }
 
-model HafalanAchievement {
-  id          String    @id @default(cuid())
-  studentId   String
-  type        String
-  title       String
-  description String
-  data        String    @default("{}")
-  level       String    @default("BRONZE")
-  points      Int       @default(0)
-  icon        String?
-  color       String    @default("#10B981")
-  badge       String?
-  verifiedBy  String?
-  verifiedAt  DateTime?
-  isPublic    Boolean   @default(true)
-  celebrated  Boolean   @default(false)
-  shareCount  Int       @default(0)
-  earnedAt    DateTime  @default(now())
-  createdAt   DateTime  @default(now())
-  student     Student   @relation(fields: [studentId], references: [id])
-
-  @@index([studentId, type])
-  @@index([earnedAt])
-  @@index([level, points])
-  @@map("hafalan_achievements")
-}
-
-model HafalanSession {
-  id             String    @id @default(cuid())
-  studentId      String
-  teacherId      String
-  sessionDate    DateTime  @default(now())
-  type           String
-  method         String    @default("INDIVIDUAL")
-  duration       Int
-  location       String    @default("KELAS")
-  atmosphere     String    @default("FORMAL")
-  content        String
-  totalAyat      Int       @default(0)
-  overallQuality String
-  overallFluency String
-  improvements   String?
-  challenges     String?
-  homework       String?
-  nextTarget     String?
-  reminderNote   String?
-  studentMood    String    @default("NORMAL")
-  engagement     String    @default("GOOD")
-  confidence     String    @default("MEDIUM")
-  reportSent     Boolean   @default(false)
-  parentFeedback String?
-  notes          String?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  student        Student   @relation(fields: [studentId], references: [id])
-  teacher        User      @relation("HafalanSessionTeacher", fields: [teacherId], references: [id])
-  deletedAt      DateTime?
-  isDeleted      Boolean   @default(false)
-  deletedBy      String?
-
-  @@index([studentId, sessionDate])
-  @@index([teacherId, sessionDate])
-  @@index([type, sessionDate])
-  @@index([isDeleted, deletedAt])
-  @@map("hafalan_sessions")
-}
-
-model BillType {
-  id                       String   @id @default(cuid())
-  name                     String   @unique
-  category                 String
-  description              String?
-  defaultAmount            Decimal?
-  isRecurring              Boolean  @default(false)
-  frequency                String?
-  priceByGrade             String   @default("{}")
-  dueDayOfMonth            Int?
-  gracePeriodDays          Int      @default(7)
-  latePenaltyType          String   @default("NONE")
-  latePenaltyAmount        Decimal  @default(0)
-  maxPenalty               Decimal?
-  allowSiblingDiscount     Boolean  @default(false)
-  siblingDiscountPercent   Decimal  @default(0)
-  allowScholarshipDiscount Boolean  @default(false)
-  isActive                 Boolean  @default(true)
-  sortOrder                Int      @default(0)
-  createdAt                DateTime @default(now())
-  updatedAt                DateTime @updatedAt
-  bills                    Bill[]
-
-  @@index([category, isActive])
-  @@index([isRecurring])
-  @@map("bill_types")
-}
-
-model Bill {
-  id               String            @id @default(cuid())
-  billNo           String            @unique
-  studentId        String
-  billTypeId       String
-  amount           Decimal
-  originalAmount   Decimal
-  period           String
-  dueDate          DateTime
-  status           String            @default("OUTSTANDING")
-  paidAmount       Decimal           @default(0)
-  remainingAmount  Decimal
-  discounts        String            @default("[]")
-  totalDiscount    Decimal           @default(0)
-  penalties        String            @default("[]")
-  totalPenalty     Decimal           @default(0)
-  isOverdue        Boolean           @default(false)
-  daysPastDue      Int               @default(0)
-  firstOverdueDate DateTime?
-  lastReminderSent DateTime?
-  reminderCount    Int               @default(0)
-  notes            String?
-  metadata         String            @default("{}")
-  generatedAt      DateTime          @default(now())
-  generatedBy      String?
-  cancelledAt      DateTime?
-  cancelledBy      String?
-  cancelReason     String?
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
-  payments         BillPayment[]
-  billType         BillType          @relation(fields: [billTypeId], references: [id])
-  student          Student           @relation(fields: [studentId], references: [id])
-  paymentHistory   PaymentHistory[]
-  paymentReminders PaymentReminder[]
-  deletedAt        DateTime?
-  isDeleted        Boolean           @default(false)
-  deletedBy        String?
-
-  @@index([studentId, status])
-  @@index([billTypeId, period])
-  @@index([status, dueDate])
-  @@index([isOverdue, dueDate])
-  @@index([period, billTypeId])
-  @@index([isDeleted, deletedAt])
-  @@map("bills")
-}
-
-model BillPayment {
-  id                 String           @id @default(cuid())
-  paymentNo          String           @unique
-  billId             String
-  amount             Decimal
-  paymentDate        DateTime         @default(now())
-  method             String
-  channel            String?
-  reference          String?
-  proofUrl           String?
-  verificationStatus String           @default("PENDING")
-  verifiedBy         String?
-  verifiedAt         DateTime?
-  rejectionReason    String?
-  externalId         String?
-  gatewayResponse    String           @default("{}")
-  reconciledAt       DateTime?
-  reconciledBy       String?
-  notes              String?
-  ipAddress          String?
-  userAgent          String?
-  createdAt          DateTime         @default(now())
-  updatedAt          DateTime         @updatedAt
-  bill               Bill             @relation(fields: [billId], references: [id])
-  history            PaymentHistory[]
-  deletedAt          DateTime?
-  isDeleted          Boolean          @default(false)
-  deletedBy          String?
-
-  @@index([billId, paymentDate])
-  @@index([method, verificationStatus])
-  @@index([paymentDate])
-  @@index([verificationStatus])
-  @@index([isDeleted, deletedAt])
-  @@map("bill_payments")
-}
-
-model PaymentHistory {
-  id             String       @id @default(cuid())
-  billId         String
-  paymentId      String?
-  studentId      String
-  action         String
-  description    String
-  previousAmount Decimal?
-  newAmount      Decimal?
-  changeAmount   Decimal?
-  performedBy    String?
-  metadata       String       @default("{}")
-  createdAt      DateTime     @default(now())
-  bill           Bill         @relation(fields: [billId], references: [id])
-  payment        BillPayment? @relation(fields: [paymentId], references: [id])
-  student        Student      @relation(fields: [studentId], references: [id])
-
-  @@index([billId, createdAt])
-  @@index([studentId, createdAt])
-  @@index([action, createdAt])
-  @@map("payment_history")
-}
-
-model BillingSetting {
-  id          String   @id @default(cuid())
-  key         String   @unique
-  value       String
-  category    String   @default("GENERAL")
-  description String?
-  dataType    String   @default("STRING")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@index([category])
-  @@map("billing_settings")
-}
-
-model PaymentReminder {
-  id               String    @id @default(cuid())
-  billId           String
-  studentId        String
-  type             String
-  status           String    @default("PENDING")
-  subject          String?
-  message          String
-  scheduledAt      DateTime
-  sentAt           DateTime?
-  deliveredAt      DateTime?
-  readAt           DateTime?
-  respondedAt      DateTime?
-  response         String?
-  recipientEmail   String?
-  recipientPhone   String?
-  deliveryAttempts Int       @default(0)
-  maxAttempts      Int       @default(3)
-  lastAttemptAt    DateTime?
-  failureReason    String?
-  templateUsed     String?
-  metadata         String    @default("{}")
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
-  bill             Bill      @relation(fields: [billId], references: [id])
-  student          Student   @relation(fields: [studentId], references: [id])
-
-  @@index([billId, scheduledAt])
-  @@index([studentId, type])
-  @@index([status, scheduledAt])
-  @@index([type, status])
-  @@map("payment_reminders")
-}
-
-model BillingReport {
-  id           String    @id @default(cuid())
-  name         String
-  type         String
-  parameters   String    @default("{}")
-  startDate    DateTime
-  endDate      DateTime
-  data         String?
-  summary      String    @default("{}")
-  pdfUrl       String?
-  excelUrl     String?
-  status       String    @default("GENERATING")
-  progress     Int       @default(0)
-  generatedBy  String
-  generatedAt  DateTime  @default(now())
-  completedAt  DateTime?
-  errorMessage String?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-
-  @@index([type, startDate])
-  @@index([generatedBy, createdAt])
-  @@index([status])
-  @@map("billing_reports")
-}
-
-model OTAProgram {
-  id              String       @id @default(cuid())
-  studentId       String       @unique
-  monthlyTarget   Decimal
-  currentMonth    String
-  totalCollected  Decimal      @default(0)
-  isActive        Boolean      @default(true)
-  programStart    DateTime     @default(now())
-  lastUpdate      DateTime     @default(now())
-  monthlyProgress Decimal      @default(0)
-  monthsCompleted Int          @default(0)
-  displayOrder    Int          @default(0)
-  showProgress    Boolean      @default(true)
-  adminNotes      String?
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
-  student         Student      @relation(fields: [studentId], references: [id])
-  sponsors        OTASponsor[]
-
-  @@index([isActive, displayOrder])
-  @@index([currentMonth])
-  @@index([monthlyProgress])
-  @@map("ota_programs")
-}
-
-model OTASponsor {
-  id                 String     @id @default(cuid())
-  programId          String
-  donorName          String
-  donorEmail         String?
-  donorPhone         String?
-  publicName         String     @default("Hamba Allah")
-  amount             Decimal
-  month              String
-  isPaid             Boolean    @default(false)
-  paymentMethod      String?
-  paymentProof       String?
-  paymentDate        DateTime?
-  verifiedBy         String?
-  verifiedAt         DateTime?
-  externalId         String?
-  paymentStatus      String     @default("PENDING")
-  donationType       String     @default("REGULAR")
-  isRecurring        Boolean    @default(false)
-  allowPublicDisplay Boolean    @default(true)
-  allowContact       Boolean    @default(false)
-  donorMessage       String?
-  adminNotes         String?
-  createdAt          DateTime   @default(now())
-  updatedAt          DateTime   @updatedAt
-  program            OTAProgram @relation(fields: [programId], references: [id], onDelete: Cascade)
-
-  @@index([programId, month])
-  @@index([donorEmail])
-  @@index([isPaid, verifiedAt])
-  @@index([paymentStatus])
-  @@index([month, isPaid])
-  @@map("ota_sponsors")
-}
-
-model OTAReport {
-  id                 String    @id @default(cuid())
-  month              String
-  year               String
-  reportType         String
-  totalTarget        Decimal
-  totalCollected     Decimal
-  totalDistributed   Decimal
-  totalPending       Decimal   @default(0)
-  totalOrphans       Int
-  fullyFundedCount   Int       @default(0)
-  partialFundedCount Int       @default(0)
-  unfundedCount      Int       @default(0)
-  totalDonors        Int       @default(0)
-  newDonors          Int       @default(0)
-  recurringDonors    Int       @default(0)
-  details            String    @default("{}")
-  carryOverAmount    Decimal   @default(0)
-  surplusAmount      Decimal   @default(0)
-  status             String    @default("DRAFT")
-  generatedBy        String
-  approvedBy         String?
-  approvedAt         DateTime?
-  distributedAt      DateTime?
-  distributedBy      String?
-  distributionNotes  String?
-  reportFileUrl      String?
-  proofFileUrl       String?
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
-
-  @@unique([month, reportType])
-  @@index([year, month])
-  @@index([status, createdAt])
-  @@index([reportType])
-  @@map("ota_reports")
-}
-
-model PPDBRegistration {
-  id                String         @id @default(cuid())
-  registrationNo    String         @unique
-  level             String
-  academicYear      String
-  fullName          String
-  nickname          String?
-  birthPlace        String
-  birthDate         DateTime
-  gender            String
-  bloodType         String?
-  religion          String         @default("ISLAM")
-  nationality       String         @default("INDONESIA")
-  nik               String?
-  nisn              String?
-  birthCertNo       String?
-  familyCardNo      String?
-  phone             String?
-  email             String?
-  address           String
-  rt                String?
-  rw                String?
-  village           String
-  district          String
-  city              String
-  province          String
-  postalCode        String?
-  previousSchool    String?
-  previousGrade     String?
-  previousNISN      String?
-  graduationYear    Int?
-  fatherName        String
-  fatherNIK         String?
-  fatherBirth       DateTime?
-  fatherEducation   String?
-  fatherOccupation  String?
-  fatherPhone       String?
-  fatherIncome      Decimal?
-  motherName        String
-  motherNIK         String?
-  motherBirth       DateTime?
-  motherEducation   String?
-  motherOccupation  String?
-  motherPhone       String?
-  motherIncome      Decimal?
-  guardianName      String?
-  guardianNIK       String?
-  guardianRelation  String?
-  guardianPhone     String?
-  guardianAddress   String?
-  hasSpecialNeeds   Boolean        @default(false)
-  specialNeeds      String?
-  healthConditions  String?
-  allergies         String?
-  documents         String         @default("[]")
-  photoUrl          String?
-  birthCertUrl      String?
-  familyCardUrl     String?
-  transcriptUrl     String?
-  status            String         @default("DRAFT")
-  testSchedule      DateTime?
-  testScore         Decimal?
-  testNotes         String?
-  interviewSchedule DateTime?
-  interviewScore    Decimal?
-  interviewNotes    String?
-  acceptedAt        DateTime?
-  acceptedBy        String?
-  acceptanceNo      String?
-  enrolledAt        DateTime?
-  studentId         String?
-  registrationFee   Decimal?
-  paymentStatus     String         @default("UNPAID")
-  paymentProof      String?
-  internalNotes     String?
-  publicNotes       String?
-  submittedAt       DateTime?
-  reviewedBy        String?
-  reviewedAt        DateTime?
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @updatedAt
-  activities        PPDBActivity[]
-  student           Student?       @relation(fields: [studentId], references: [id])
-  deletedAt         DateTime?
-  isDeleted         Boolean        @default(false)
-  deletedBy         String?
-
-  @@index([level, academicYear, status])
-  @@index([registrationNo])
-  @@index([status, createdAt])
-  @@index([isDeleted, deletedAt])
-  @@map("ppdb_registrations")
-}
-
-model PPDBActivity {
-  id             String           @id @default(cuid())
-  registrationId String
-  activity       String
-  description    String
-  metadata       String?
-  performedBy    String?
-  performedAt    DateTime         @default(now())
-  registration   PPDBRegistration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
-
-  @@index([registrationId, performedAt])
-  @@map("ppdb_activities")
-}
-
-model PPDBSettings {
-  id                    String   @id @default(cuid())
-  academicYear          String   @unique
-  openDate              DateTime
-  closeDate             DateTime
-  quotaTK               Int      @default(30)
-  quotaSD               Int      @default(60)
-  quotaSMP              Int      @default(40)
-  quotaPondok           Int      @default(50)
-  registrationFeeTK     Decimal  @default(100000)
-  registrationFeeSD     Decimal  @default(150000)
-  registrationFeeSMP    Decimal  @default(200000)
-  registrationFeePondok Decimal  @default(250000)
-  testEnabled           Boolean  @default(true)
-  testPassScore         Decimal  @default(60)
-  interviewEnabled      Boolean  @default(true)
-  interviewPassScore    Decimal  @default(70)
-  requiredDocs          String   @default("[]")
-  acceptanceTemplate    String?
-  rejectionTemplate     String?
-  lastRegistrationNo    Int      @default(0)
-  isActive              Boolean  @default(true)
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
-
-  @@map("ppdb_settings")
-}
-
-model SPPBilling {
-  id             String        @id @default(cuid())
-  billNo         String        @unique
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model spp_billings {
+  id             String    @id
+  billNo         String
   studentId      String
   classId        String
   semesterId     String
@@ -2402,49 +1989,42 @@ model SPPBilling {
   uniformFee     Decimal?
   activityFee    Decimal?
   examFee        Decimal?
-  otherFees      String        @default("[]")
+  otherFees      String    @default("[]")
   subtotal       Decimal
-  discount       Decimal       @default(0)
+  discount       Decimal   @default(0)
   discountType   String?
   discountReason String?
   totalAmount    Decimal
-  status         String        @default("UNPAID")
-  paidAmount     Decimal       @default(0)
+  status         String    @default("UNPAID")
+  paidAmount     Decimal   @default(0)
   dueDate        DateTime
-  isOverdue      Boolean       @default(false)
-  overdueDays    Int           @default(0)
-  lateFee        Decimal       @default(0)
+  isOverdue      Boolean   @default(false)
+  overdueDays    Int       @default(0)
+  lateFee        Decimal   @default(0)
   paidAt         DateTime?
   paymentMethod  String?
   paymentRef     String?
   notes          String?
-  generatedAt    DateTime      @default(now())
+  generatedAt    DateTime  @default(now())
   generatedBy    String?
   cancelledAt    DateTime?
   cancelledBy    String?
   cancelReason   String?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-  class          Class         @relation(fields: [classId], references: [id])
-  semester       Semester      @relation(fields: [semesterId], references: [id])
-  student        Student       @relation(fields: [studentId], references: [id])
-  payments       SPPPayment[]
-  reminders      SPPReminder[]
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime
   deletedAt      DateTime?
-  isDeleted      Boolean       @default(false)
+  isDeleted      Boolean   @default(false)
   deletedBy      String?
+  deleted_at     DateTime? @db.Timestamp(6)
+  is_deleted     Boolean?  @default(false)
+  deleted_by     String?   @db.VarChar(255)
 
-  @@unique([studentId, month, year])
-  @@index([status, dueDate])
-  @@index([studentId, year, month])
-  @@index([classId, status])
-  @@index([isDeleted, deletedAt])
-  @@map("spp_billings")
+  @@index([is_deleted, deleted_at], map: "idx_spp_billings_deleted")
 }
 
-model SPPPayment {
-  id            String     @id @default(cuid())
-  paymentNo     String     @unique
+model spp_payments {
+  id            String    @id
+  paymentNo     String
   billingId     String
   amount        Decimal
   paymentDate   DateTime
@@ -2456,52 +2036,54 @@ model SPPPayment {
   externalId    String?
   vaNumber      String?
   paymentUrl    String?
-  status        String     @default("PENDING")
+  status        String    @default("PENDING")
   verifiedBy    String?
   verifiedAt    DateTime?
   receiptNo     String?
   receiptUrl    String?
   notes         String?
   recordedBy    String
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
-  billing       SPPBilling @relation(fields: [billingId], references: [id])
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime
   deletedAt     DateTime?
-  isDeleted     Boolean    @default(false)
+  isDeleted     Boolean   @default(false)
   deletedBy     String?
-
-  @@index([billingId])
-  @@index([paymentDate])
-  @@index([status])
-  @@index([isDeleted, deletedAt])
-  @@map("spp_payments")
 }
 
-model SPPReminder {
-  id           String     @id @default(cuid())
+model spp_reminders {
+  id           String    @id
   billingId    String
   type         String
   recipient    String
   subject      String?
   message      String
-  status       String     @default("PENDING")
+  status       String    @default("PENDING")
   sentAt       DateTime?
   failReason   String?
   scheduledFor DateTime
-  attempts     Int        @default(0)
-  maxAttempts  Int        @default(3)
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-  billing      SPPBilling @relation(fields: [billingId], references: [id])
-
-  @@index([billingId])
-  @@index([status, scheduledFor])
-  @@map("spp_reminders")
+  attempts     Int       @default(0)
+  maxAttempts  Int       @default(3)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime
 }
 
-model SPPSettings {
-  id               String   @id @default(cuid())
-  level            String   @unique
+model spp_reports {
+  id          String   @id
+  reportType  String
+  period      String
+  filters     String   @default("{}")
+  data        String
+  summary     String
+  pdfUrl      String?
+  excelUrl    String?
+  generatedBy String
+  generatedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+}
+
+model spp_settings {
+  id               String   @id
+  level            String
   monthlyFee       Decimal
   enrollmentFee    Decimal?
   reEnrollmentFee  Decimal?
@@ -2524,119 +2106,233 @@ model SPPSettings {
   reminderTemplate String?
   isActive         Boolean  @default(true)
   createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-
-  @@map("spp_settings")
+  updatedAt        DateTime
 }
 
-model SPPReport {
-  id          String   @id @default(cuid())
-  reportType  String
-  period      String
-  filters     String   @default("{}")
-  data        String
-  summary     String
-  pdfUrl      String?
-  excelUrl    String?
-  generatedBy String
-  generatedAt DateTime @default(now())
-  createdAt   DateTime @default(now())
-
-  @@index([reportType, period])
-  @@index([generatedBy, generatedAt])
-  @@map("spp_reports")
+model student_classes {
+  id             String    @id
+  studentId      String
+  classId        String
+  academicYearId String
+  rollNumber     String?
+  status         String    @default("ACTIVE")
+  joinDate       DateTime  @default(now())
+  leaveDate      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime
 }
 
-model BusinessUnit {
-  id             String                @id @default(cuid())
-  code           String                @unique
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model students {
+  id               String    @id
+  nisn             String?   @unique
+  nis              String    @unique
+  fullName         String
+  nickname         String?
+  birthPlace       String
+  birthDate        DateTime
+  gender           String
+  bloodType        String?
+  religion         String    @default("Islam")
+  nationality      String    @default("Indonesia")
+  address          String
+  village          String?
+  district         String?
+  city             String
+  province         String    @default("Jawa Timur")
+  postalCode       String?
+  phone            String?
+  email            String?
+  fatherName       String
+  fatherJob        String?
+  fatherPhone      String?
+  fatherEducation  String?
+  motherName       String
+  motherJob        String?
+  motherPhone      String?
+  motherEducation  String?
+  guardianName     String?
+  guardianJob      String?
+  guardianPhone    String?
+  guardianRelation String?
+  institutionType  String
+  grade            String?
+  enrollmentDate   DateTime
+  enrollmentYear   String
+  previousSchool   String?
+  specialNeeds     String?
+  achievements     String    @default("[]")
+  notes            String?
+  photo            String?
+  documents        String    @default("[]")
+  status           String    @default("ACTIVE")
+  isActive         Boolean   @default(true)
+  graduationDate   DateTime?
+  createdBy        String
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime
+  registrationId   String?   @unique
+  isOrphan         Boolean   @default(false)
+  monthlyNeeds     Decimal?
+  otaProfile       String?
+  deletedAt        DateTime?
+  isDeleted        Boolean   @default(false)
+  deletedBy        String?
+  deleted_at       DateTime? @db.Timestamp(6)
+  is_deleted       Boolean?  @default(false)
+  deleted_by       String?   @db.VarChar(255)
+
+  @@index([is_deleted, deleted_at], map: "idx_students_deleted")
+  @@index([enrollmentYear])
+  @@index([institutionType, status])
+  @@index([isDeleted, deletedAt])
+  @@index([isOrphan])
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model subjects {
+  id          String    @id
+  code        String
+  name        String
+  nameArabic  String?
+  description String?
+  credits     Int       @default(2)
+  type        String    @default("WAJIB")
+  category    String    @default("UMUM")
+  level       String
+  minGrade    String?
+  maxGrade    String?
+  isActive    Boolean   @default(true)
+  sortOrder   Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime
+  deletedAt   DateTime?
+  isDeleted   Boolean   @default(false)
+  deletedBy   String?
+  deleted_at  DateTime? @db.Timestamp(6)
+  is_deleted  Boolean?  @default(false)
+  deleted_by  String?   @db.VarChar(255)
+
+  @@index([is_deleted, deleted_at], map: "idx_subjects_deleted")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model suppliers {
+  id           String    @id
+  name         String
+  code         String?   @unique
+  contact      String?
+  address      String?
+  phone        String?
+  email        String?
+  whatsapp     String?
+  taxId        String?
+  bankAccount  String?
+  paymentTerms String?
+  isActive     Boolean   @default(true)
+  rating       Int       @default(5)
+  notes        String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime
+  deletedAt    DateTime?
+  isDeleted    Boolean   @default(false)
+  deletedBy    String?
+  deleted_at   DateTime? @db.Timestamp(6)
+  is_deleted   Boolean?  @default(false)
+  deleted_by   String?   @db.VarChar(255)
+
+  @@index([is_deleted, deleted_at], map: "idx_suppliers_deleted")
+}
+
+model teacher_subjects {
+  id         String   @id
+  teacherId  String
+  subjectId  String
+  classId    String
+  semesterId String
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model teachers {
+  id             String    @id
+  nip            String?   @unique
   name           String
-  description    String?
-  managerId      String?
-  managerName    String?
-  bankName       String?
-  bankAccount    String?
-  isActive       Boolean               @default(true)
-  startDate      DateTime              @default(now())
-  createdAt      DateTime              @default(now())
-  updatedAt      DateTime              @updatedAt
-  transactions   BusinessTransaction[]
-  monthlyReports BusinessUnitReport[]
+  title          String?
+  gender         String
+  birthPlace     String?
+  birthDate      DateTime?
+  phone          String?
+  email          String?
+  address        String?
+  position       String
+  subjects       String    @default("[]")
+  education      String?
+  university     String?
+  major          String?
+  certifications String    @default("[]")
+  employmentType String    @default("TETAP")
+  joinDate       DateTime?
+  status         String    @default("ACTIVE")
+  institution    String
+  specialization String?
+  experience     Int?
+  photo          String?
+  bio            String?
+  achievements   String    @default("[]")
+  isUstadz       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime
+  createdBy      String?
+  deletedAt      DateTime?
+  isDeleted      Boolean   @default(false)
+  deletedBy      String?
+  deleted_at     DateTime? @db.Timestamp(6)
+  is_deleted     Boolean?  @default(false)
+  deleted_by     String?   @db.VarChar(255)
 
-  @@index([code])
-  @@map("business_units")
+  @@index([is_deleted, deleted_at], map: "idx_teachers_deleted")
+  @@index([institution, status])
+  @@index([isDeleted, deletedAt])
+  @@index([isUstadz, status])
 }
 
-model BusinessUnitReport {
-  id                String       @id @default(cuid())
-  unitId            String
-  year              Int
-  month             Int
-  period            String
-  initialCapital    Decimal
-  revenue           Decimal
-  expenses          Decimal
-  purchaseCost      Decimal
-  operationalCost   Decimal
-  salaryCost        Decimal
-  maintenanceCost   Decimal
-  otherCost         Decimal
-  salesRevenue      Decimal
-  serviceRevenue    Decimal
-  otherRevenue      Decimal
-  grossProfit       Decimal
-  netProfit         Decimal
-  profitMargin      Decimal
-  inventoryValue    Decimal?
-  totalTransactions Int          @default(0)
-  totalCustomers    Int          @default(0)
-  totalItems        Int          @default(0)
-  revenueTarget     Decimal?
-  targetAchievement Decimal?
-  status            String       @default("DRAFT")
-  submittedAt       DateTime?
-  submittedBy       String?
-  approvedAt        DateTime?
-  approvedBy        String?
-  notes             String?
-  highlights        String?
-  createdAt         DateTime     @default(now())
-  updatedAt         DateTime     @updatedAt
-  unit              BusinessUnit @relation(fields: [unitId], references: [id])
-
-  @@unique([unitId, year, month])
-  @@index([unitId, period])
-  @@index([status])
-  @@map("business_unit_reports")
-}
-
-model BusinessTransaction {
-  id            String       @id @default(cuid())
-  transactionNo String       @unique
-  unitId        String
-  date          DateTime
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model transactions {
+  id            String    @id
   type          String
-  category      String
-  amount        Decimal
-  paymentMethod String
-  customerName  String?
-  supplierName  String?
-  items         String       @default("[]")
-  description   String?
-  receiptNo     String?
-  recordedBy    String
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
-  unit          BusinessUnit @relation(fields: [unitId], references: [id])
+  amount        Float
+  description   String
+  date          DateTime
+  createdBy     String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime
+  approvedAt    DateTime?
+  approvedBy    String?
+  attachments   String    @default("[]")
+  categoryId    String
+  deletedAt     DateTime?
+  deletedBy     String?
+  dueDate       DateTime?
+  isDeleted     Boolean   @default(false)
+  notes         String?
+  reference     String?
+  status        String    @default("POSTED")
+  tags          String    @default("[]")
+  transactionNo String
+  deleted_at    DateTime? @db.Timestamp(6)
+  is_deleted    Boolean?  @default(false)
+  deleted_by    String?   @db.VarChar(255)
+  users         users     @relation(fields: [createdBy], references: [id])
 
-  @@index([unitId, date])
-  @@index([type])
-  @@map("business_transactions")
+  @@index([is_deleted, deleted_at], map: "idx_transactions_deleted")
 }
 
-model TwoFactorVerification {
-  id                    String    @id @default(cuid())
-  userId                String    @unique
+model two_factor_verifications {
+  id                    String    @id
+  userId                String
   smsOtp                String?
   smsOtpExpiresAt       DateTime?
   smsAttempts           Int       @default(0)
@@ -2646,68 +2342,931 @@ model TwoFactorVerification {
   backupAttempts        Int       @default(0)
   backupAttemptsResetAt DateTime?
   createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
-  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("two_factor_verifications")
+  updatedAt             DateTime
 }
 
-model SecurityAuditLog {
-  id        String    @id @default(cuid())
-  userId    String
-  event     String
-  metadata  Json?
-  ipAddress String    @default("unknown")
-  userAgent String    @default("unknown")
-  timestamp DateTime  @default(now())
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  deletedAt DateTime?
-  isDeleted Boolean   @default(false)
-  deletedBy String?
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model users {
+  id               String         @id
+  username         String         @unique
+  email            String         @unique
+  password         String
+  name             String
+  role             String         @default("STAFF")
+  isActive         Boolean        @default(true)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime
+  backupCodes      String[]       @default([])
+  deletedAt        DateTime?
+  deletedBy        String?
+  isDeleted        Boolean        @default(false)
+  isUstadz         Boolean        @default(false)
+  phoneVerified    Boolean        @default(false)
+  twoFactorEnabled Boolean        @default(false)
+  twoFactorSecret  String?
+  deleted_at       DateTime?      @db.Timestamp(6)
+  is_deleted       Boolean?       @default(false)
+  deleted_by       String?        @db.VarChar(255)
+  activities       activities[]
+  courses          courses[]
+  ebooks           ebooks[]
+  transactions     transactions[]
+  videos           videos[]
 
-  @@index([userId])
-  @@index([event])
-  @@index([timestamp])
-  @@index([isDeleted, deletedAt])
-  @@map("security_audit_logs")
+  @@index([is_deleted, deleted_at], map: "idx_users_deleted")
 }
 
-model Question {
-  id          String    @id @default(cuid())
-  question    String
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model videos {
+  id          String    @id
+  title       String
+  description String
+  url         String
+  thumbnail   String?
+  duration    String?
   category    String
-  askerName   String?
-  isAnonymous Boolean   @default(false)
-  status      String    @default("pending")
+  teacher     String
+  uploadDate  DateTime
+  views       Int       @default(0)
+  isPublic    Boolean   @default(true)
+  createdBy   String
   createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  answer      Answer?
+  updatedAt   DateTime
   deletedAt   DateTime?
-  isDeleted   Boolean   @default(false)
   deletedBy   String?
+  isDeleted   Boolean   @default(false)
+  deleted_at  DateTime? @db.Timestamp(6)
+  is_deleted  Boolean?  @default(false)
+  deleted_by  String?   @db.VarChar(255)
+  users       users     @relation(fields: [createdBy], references: [id])
 
-  @@index([status])
-  @@index([category])
-  @@index([createdAt])
-  @@index([isDeleted, deletedAt])
-  @@map("questions")
+  @@index([is_deleted, deleted_at], map: "idx_videos_deleted")
 }
 
-model Answer {
-  id         String    @id @default(cuid())
-  questionId String    @unique
-  ustadzId   String
-  answer     String
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-  question   Question  @relation(fields: [questionId], references: [id], onDelete: Cascade)
-  ustadz     User      @relation("UstadzAnswers", fields: [ustadzId], references: [id])
-  deletedAt  DateTime?
-  isDeleted  Boolean   @default(false)
-  deletedBy  String?
+model zakat_calculations {
+  id              String   @id
+  calculationType String
+  inputs          String
+  zakatAmount     Decimal
+  nisabAmount     Decimal?
+  donorName       String?
+  donorEmail      String?
+  donorPhone      String?
+  donationId      String?
+  createdAt       DateTime @default(now())
 
-  @@index([ustadzId])
-  @@index([createdAt])
+  @@index([calculationType, createdAt])
+}
+
+// ============================================================================
+// ADMIN-CONFIGURABLE CONTENT SYSTEM MODELS
+// Added: 2025-10-24
+// Purpose: Enable admin dashboard configuration of all site content
+// Safety: All models are ADDITIVE - no existing tables modified
+// ============================================================================
+
+// ============================================================================
+// 1. ORGANIZATION INFO MANAGEMENT
+// ============================================================================
+
+/// Stores information about the Yayasan (foundation)
+/// This is the top-level organization entity
+model organization_info {
+  id                String    @id @default(cuid())
+
+  // Organization details
+  name              String    // e.g., "Yayasan Pondok Imam Syafii"
+  nameArabic        String?   // Arabic version of name
+  shortName         String?   // Short version for headers
+  legalName         String?   // Full legal name
+
+  // Legal and registration
+  registrationNo    String?   // Foundation registration number
+  establishmentDate DateTime? // Date of establishment
+  notarialDeed      String?   // Notarial deed number
+  taxId             String?   // NPWP
+
+  // Contact information
+  address           String?
+  village           String?
+  district          String?
+  city              String?
+  province          String?
+  postalCode        String?
+  phone             String?
+  fax               String?
+  email             String?
+  website           String?
+
+  // Vision & Mission
+  vision            String?   @db.Text
+  visionArabic      String?   @db.Text
+  mission           String?   @db.Text
+  missionArabic     String?   @db.Text
+
+  // About & History
+  about             String?   @db.Text
+  aboutArabic       String?   @db.Text
+  history           String?   @db.Text
+  historyArabic     String?   @db.Text
+
+  // Organizational structure (JSON)
+  structure         String    @default("{}") @db.Text // Stores hierarchy
+
+  // Media
+  logoUrl           String?   // Main logo
+  logoAltUrl        String?   // Alternative logo (dark mode, etc.)
+  faviconUrl        String?
+  coverImageUrl     String?   // Hero/banner image
+
+  // Social media
+  facebook          String?
+  instagram         String?
+  twitter           String?
+  youtube           String?
+  linkedin          String?
+  tiktok            String?
+
+  // Meta
+  isActive          Boolean   @default(true)
+  publishedAt       DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  createdBy         String?
+  updatedBy         String?
+
+  @@index([isActive])
+  @@map("organization_info")
+}
+
+/// Stores information about educational institutions under the foundation
+/// Supports TK, SD, SMP, and Pondok Pesantren
+model institution_info {
+  id                String    @id @default(cuid())
+
+  // Institution type and identification
+  type              String    // TK, SD, SMP, PONDOK, etc.
+  code              String    @unique // Unique code for each institution
+  name              String
+  nameArabic        String?
+  shortName         String?
+
+  // Accreditation
+  accreditation     String?   // A, B, C, or Not Accredited
+  accreditationNo   String?
+  accreditationDate DateTime?
+
+  // Registration
+  npsn              String?   // National School ID
+  nss               String?   // National School Serial Number
+  nis               String?   // School ID Number
+  establishmentDate DateTime?
+  operationalPermit String?
+
+  // Contact
+  address           String?
+  village           String?
+  district          String?
+  city              String?
+  province          String?
+  postalCode        String?
+  phone             String?
+  email             String?
+  website           String?
+
+  // Vision & Mission (specific to institution)
+  vision            String?   @db.Text
+  visionArabic      String?   @db.Text
+  mission           String?   @db.Text
+  missionArabic     String?   @db.Text
+
+  // About & Description
+  description       String?   @db.Text
+  descriptionArabic String?   @db.Text
+
+  // Programs and facilities (JSON arrays)
+  programs          String    @default("[]") // ["Tahfidz", "Bilingual", etc.]
+  facilities        String    @default("[]") // ["Library", "Lab", "Mosque", etc.]
+  achievements      String    @default("[]") // Array of achievement objects
+
+  // Curriculum
+  curriculum        String?   // "K13", "Merdeka", "Cambridge", etc.
+
+  // Capacity
+  studentCapacity   Int?
+  teacherCount      Int?
+  classCount        Int?
+
+  // Leadership
+  principalName     String?
+  principalNip      String?
+  principalPhone    String?
+  principalEmail    String?
+
+  // Media
+  logoUrl           String?
+  coverImageUrl     String?
+  galleryImages     String    @default("[]") // Array of image URLs
+
+  // Display settings
+  showOnWebsite     Boolean   @default(true)
+  sortOrder         Int       @default(0)
+
+  // Meta
+  isActive          Boolean   @default(true)
+  publishedAt       DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  createdBy         String?
+  updatedBy         String?
+
+  @@index([type, isActive])
+  @@index([code])
+  @@index([sortOrder])
+  @@map("institution_info")
+}
+
+/// Organizational structure for hierarchical display (Board, Directors, etc.)
+model organization_structure {
+  id              String    @id @default(cuid())
+
+  // Hierarchy
+  parentId        String?   // For nested structures
+  level           Int       @default(0) // 0=Board, 1=Director, 2=Manager, etc.
+
+  // Position details
+  positionName    String    // "Ketua Yayasan", "Direktur", etc.
+  positionNameAr  String?   // Arabic version
+  department      String?   // Department or division
+
+  // Person details
+  personName      String?
+  personNameAr    String?
+  photoUrl        String?
+
+  // Contact
+  email           String?
+  phone           String?
+
+  // Biography
+  bio             String?   @db.Text
+  bioArabic       String?   @db.Text
+  qualifications  String    @default("[]") // Array of degrees/certs
+
+  // Period of service
+  startDate       DateTime?
+  endDate         DateTime?
+  isActive        Boolean   @default(true)
+
+  // Display
+  sortOrder       Int       @default(0)
+  showOnWebsite   Boolean   @default(true)
+
+  // Meta
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  createdBy       String?
+  updatedBy       String?
+
+  @@index([parentId, sortOrder])
+  @@index([level, isActive])
+  @@map("organization_structure")
+}
+
+// ============================================================================
+// 2. SITE CONFIGURATION
+// ============================================================================
+
+/// Global site configuration and appearance settings
+model site_config {
+  id              String    @id @default(cuid())
+  key             String    @unique // Unique config key
+
+  // Value and metadata
+  value           String?   @db.Text // JSON or plain text value
+  dataType        String    @default("STRING") // STRING, JSON, BOOLEAN, NUMBER
+  category        String    @default("GENERAL") // GENERAL, NAVBAR, FOOTER, SEO, etc.
+
+  // Description
+  label           String    // Human-readable label
+  description     String?   // Help text
+
+  // Display
+  isEditable      Boolean   @default(true)
+  isPublic        Boolean   @default(true) // Whether to expose in public API
+  sortOrder       Int       @default(0)
+
+  // Validation
+  validationRules String?   @db.Text // JSON schema for validation
+  defaultValue    String?
+
+  // Meta
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  updatedBy       String?
+
+  @@index([category, key])
+  @@index([isPublic])
+  @@map("site_config")
+}
+
+/// Navbar menu items configuration
+model navbar_items {
+  id              String    @id @default(cuid())
+
+  // Hierarchy
+  parentId        String?   // For dropdown menus
+  level           Int       @default(0) // 0=top level, 1=dropdown, etc.
+
+  // Menu item details
+  label           String
+  labelArabic     String?
+  icon            String?   // Icon name or URL
+
+  // Link configuration
+  linkType        String    @default("INTERNAL") // INTERNAL, EXTERNAL, PAGE, CUSTOM
+  linkUrl         String?   // URL or path
+  pageId          String?   // Reference to cms_pages if linkType=PAGE
+
+  // Behavior
+  openInNewTab    Boolean   @default(false)
+  requiresAuth    Boolean   @default(false)
+  allowedRoles    String    @default("[]") // Array of roles if restricted
+
+  // Display
+  isActive        Boolean   @default(true)
+  showOnMobile    Boolean   @default(true)
+  showOnDesktop   Boolean   @default(true)
+  sortOrder       Int       @default(0)
+
+  // Styling
+  cssClass        String?
+  highlightColor  String?   // For active/hover states
+
+  // Meta
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  createdBy       String?
+  updatedBy       String?
+
+  @@index([parentId, sortOrder])
+  @@index([isActive, level])
+  @@map("navbar_items")
+}
+
+/// Footer configuration sections
+model footer_sections {
+  id              String    @id @default(cuid())
+
+  // Section details
+  title           String
+  titleArabic     String?
+  type            String    // LINKS, CONTACT, SOCIAL, CUSTOM
+
+  // Content (flexible JSON structure)
+  content         String    @db.Text // JSON: links, text, widgets, etc.
+
+  // Layout
+  column          Int       @default(1) // 1, 2, 3, 4 for grid layout
+
+  // Display
+  isActive        Boolean   @default(true)
+  sortOrder       Int       @default(0)
+
+  // Styling
+  cssClass        String?
+
+  // Meta
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  createdBy       String?
+  updatedBy       String?
+
+  @@index([isActive, sortOrder])
+  @@index([column])
+  @@map("footer_sections")
+}
+
+// ============================================================================
+// 3. FINANCIAL TRANSACTIONS (General & OTA)
+// ============================================================================
+
+/// General financial transactions (income/expense) separate from school billing
+model general_transactions {
+  id              String    @id @default(cuid())
+
+  // Transaction identification
+  transactionNo   String    @unique
+
+  // Basic info
+  date            DateTime  @db.Date
+  type            String    // INCOME, EXPENSE
+  category        String    // DONATION, OTA, OPERATIONAL, SALARY, etc.
+  subCategory     String?   // More specific categorization
+
+  // Financial details
+  amount          Decimal   @db.Decimal(15, 2)
+  currency        String    @default("IDR")
+
+  // Description
+  description     String
+  notes           String?   @db.Text
+
+  // Party information (donor, supplier, etc.)
+  partyName       String?
+  partyType       String?   // DONOR, SUPPLIER, EMPLOYEE, OTHER
+  partyContact    String?
+  partyEmail      String?
+
+  // Payment details
+  paymentMethod   String?   // CASH, TRANSFER, CHECK, etc.
+  paymentChannel  String?   // Bank name, payment gateway, etc.
+  referenceNo     String?   // Bank reference, receipt number, etc.
+
+  // Documentation
+  proofUrl        String?   // Receipt/proof image URL
+  attachments     String    @default("[]") // Array of attachment URLs
+
+  // Verification
+  status          String    @default("PENDING") // PENDING, VERIFIED, REJECTED
+  verifiedBy      String?
+  verifiedAt      DateTime?
+  rejectionReason String?
+
+  // Accounting
+  accountCode     String?   // Link to chart of accounts
+  fiscalYear      String?
+  fiscalPeriod    String?
+
+  // OTA specific fields (if applicable)
+  isOtaRelated    Boolean   @default(false)
+  otaProgramId    String?   // Link to ota_programs
+  otaMonth        String?
+  otaSponsorId    String?   // Link to ota_sponsors
+
+  // Recurring transaction
+  isRecurring     Boolean   @default(false)
+  recurringType   String?   // MONTHLY, QUARTERLY, YEARLY
+  recurringGroup  String?   // Group ID for related recurring transactions
+
+  // Bulk entry support
+  bulkEntryId     String?   // Groups multiple transactions entered together
+  entrySequence   Int?      // Order in bulk entry
+
+  // Tags and categorization
+  tags            String    @default("[]") // Flexible tagging
+
+  // Meta
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  createdBy       String
+  updatedBy       String?
+
+  // Soft delete
+  deletedAt       DateTime?
+  deletedBy       String?
+  isDeleted       Boolean   @default(false)
+
+  @@index([date, type])
+  @@index([category, subCategory])
+  @@index([status, verifiedAt])
+  @@index([isOtaRelated, otaMonth])
+  @@index([bulkEntryId])
   @@index([isDeleted, deletedAt])
-  @@map("answers")
+  @@index([fiscalYear, fiscalPeriod])
+  @@map("general_transactions")
+}
+
+/// Bulk entry tracking for multiple transactions entered at once
+model transaction_bulk_entries {
+  id              String    @id @default(cuid())
+
+  // Entry info
+  bulkEntryNo     String    @unique
+  totalTransactions Int     @default(0)
+
+  // Summary
+  totalIncome     Decimal   @db.Decimal(15, 2) @default(0)
+  totalExpense    Decimal   @db.Decimal(15, 2) @default(0)
+  netAmount       Decimal   @db.Decimal(15, 2) @default(0)
+
+  // Period
+  startDate       DateTime  @db.Date
+  endDate         DateTime  @db.Date
+
+  // Description
+  description     String?
+  notes           String?   @db.Text
+
+  // Processing
+  status          String    @default("DRAFT") // DRAFT, SUBMITTED, VERIFIED, REJECTED
+  submittedAt     DateTime?
+  verifiedBy      String?
+  verifiedAt      DateTime?
+
+  // Meta
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  createdBy       String
+  updatedBy       String?
+
+  @@index([status, createdAt])
+  @@index([startDate, endDate])
+  @@map("transaction_bulk_entries")
+}
+
+/// Transaction reports and summaries
+model transaction_reports {
+  id              String    @id @default(cuid())
+
+  // Report identification
+  reportNo        String    @unique
+  reportType      String    // MONTHLY, QUARTERLY, YEARLY, CUSTOM, OTA_SPECIFIC
+
+  // Period
+  startDate       DateTime  @db.Date
+  endDate         DateTime  @db.Date
+  fiscalYear      String?
+  fiscalPeriod    String?
+
+  // Filters (JSON)
+  filters         String    @default("{}") @db.Text
+
+  // Summary data (JSON)
+  summary         String    @db.Text // Income, expense, net, by category, etc.
+
+  // Details (JSON - can be large)
+  details         String?   @db.Text // Detailed breakdown
+
+  // Charts/visualizations data
+  chartData       String?   @db.Text // Data for charts
+
+  // Files
+  pdfUrl          String?
+  excelUrl        String?
+
+  // Generation
+  status          String    @default("GENERATING") // GENERATING, COMPLETED, FAILED
+  progress        Int       @default(0)
+  errorMessage    String?
+
+  // Meta
+  generatedAt     DateTime  @default(now())
+  generatedBy     String
+  completedAt     DateTime?
+
+  @@index([reportType, startDate])
+  @@index([status])
+  @@index([fiscalYear, fiscalPeriod])
+  @@map("transaction_reports")
+}
+
+// ============================================================================
+// 4. CONTENT MANAGEMENT SYSTEM (Articles/Blog)
+// ============================================================================
+
+/// CMS Pages and Articles with full SEO support
+model cms_pages {
+  id              String    @id @default(cuid())
+
+  // Identification
+  slug            String    @unique
+  title           String
+  titleArabic     String?
+
+  // Content
+  excerpt         String?   @db.Text // Short summary
+  content         String    @db.Text // Full content (HTML/Markdown)
+  contentArabic   String?   @db.Text
+
+  // Type and categorization
+  type            String    @default("PAGE") // PAGE, ARTICLE, POST, NEWS
+  category        String?   // Blog category, news category, etc.
+  subCategory     String?
+  tags            String    @default("[]") // Array of tags
+
+  // Media
+  featuredImage   String?
+  featuredImageAlt String?
+  galleryImages   String    @default("[]") // Array of image objects
+  videoUrl        String?
+
+  // Author and attribution
+  authorId        String?
+  authorName      String?
+  coAuthors       String    @default("[]") // Array of co-author names
+
+  // Publishing
+  status          String    @default("DRAFT") // DRAFT, PUBLISHED, SCHEDULED, ARCHIVED
+  publishedAt     DateTime?
+  scheduledFor    DateTime?
+  archivedAt      DateTime?
+
+  // Display options
+  showAuthor      Boolean   @default(true)
+  showDate        Boolean   @default(true)
+  allowComments   Boolean   @default(false)
+  isFeatured      Boolean   @default(false)
+  isPinned        Boolean   @default(false)
+
+  // Template and layout
+  template        String    @default("DEFAULT") // DEFAULT, SIDEBAR, FULLWIDTH, CUSTOM
+  layout          String?   @db.Text // JSON for custom layout configuration
+
+  // Access control
+  isPublic        Boolean   @default(true)
+  requiresAuth    Boolean   @default(false)
+  allowedRoles    String    @default("[]")
+  password        String?   // Optional password protection
+
+  // SEO - Basic
+  metaTitle       String?
+  metaDescription String?   @db.Text
+  metaKeywords    String?
+
+  // SEO - Open Graph
+  ogTitle         String?
+  ogDescription   String?
+  ogImage         String?
+  ogType          String    @default("article")
+
+  // SEO - Twitter Card
+  twitterCard     String    @default("summary_large_image")
+  twitterTitle    String?
+  twitterDescription String?
+  twitterImage    String?
+
+  // SEO - Advanced
+  canonicalUrl    String?
+  robotsIndex     Boolean   @default(true)
+  robotsFollow    Boolean   @default(true)
+  structuredData  String?   @db.Text // JSON-LD structured data
+
+  // Language and localization
+  language        String    @default("id")
+  translationOf   String?   // ID of original page for translations
+
+  // Analytics
+  viewCount       Int       @default(0)
+  shareCount      Int       @default(0)
+  likeCount       Int       @default(0)
+  commentCount    Int       @default(0)
+
+  // Reading metrics
+  readingTime     Int?      // Estimated reading time in minutes
+
+  // Related content
+  relatedPages    String    @default("[]") // Array of page IDs
+
+  // Sorting
+  sortOrder       Int       @default(0)
+
+  // Version control
+  version         Int       @default(1)
+  lastEditedBy    String?
+
+  // Meta
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  createdBy       String
+  updatedBy       String?
+
+  // Soft delete
+  deletedAt       DateTime?
+  deletedBy       String?
+  isDeleted       Boolean   @default(false)
+
+  @@index([slug])
+  @@index([type, status])
+  @@index([category, publishedAt])
+  @@index([isFeatured, publishedAt])
+  @@index([status, scheduledFor])
+  @@index([isDeleted, deletedAt])
+  @@index([authorId, publishedAt])
+  @@map("cms_pages")
+}
+
+/// Page revisions for version history
+model cms_page_revisions {
+  id              String    @id @default(cuid())
+
+  // Reference
+  pageId          String
+  version         Int
+
+  // Snapshot of content at this version
+  title           String
+  content         String    @db.Text
+  excerpt         String?   @db.Text
+
+  // Change tracking
+  changesSummary  String?   // Brief description of what changed
+
+  // Meta
+  createdAt       DateTime  @default(now())
+  createdBy       String
+
+  @@index([pageId, version])
+  @@map("cms_page_revisions")
+}
+
+/// Article categories for blog/news organization
+model cms_categories {
+  id              String    @id @default(cuid())
+
+  // Hierarchy
+  parentId        String?
+  level           Int       @default(0)
+
+  // Details
+  name            String
+  nameArabic      String?
+  slug            String    @unique
+  description     String?   @db.Text
+
+  // Media
+  icon            String?
+  color           String?
+  coverImage      String?
+
+  // SEO
+  metaTitle       String?
+  metaDescription String?
+
+  // Display
+  isActive        Boolean   @default(true)
+  showInMenu      Boolean   @default(true)
+  sortOrder       Int       @default(0)
+
+  // Meta
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  createdBy       String?
+  updatedBy       String?
+
+  @@index([slug])
+  @@index([parentId, sortOrder])
+  @@index([isActive])
+  @@map("cms_categories")
+}
+
+/// Media library for managing uploads
+model cms_media {
+  id              String    @id @default(cuid())
+
+  // File info
+  filename        String
+  originalName    String
+  fileUrl         String
+  thumbnailUrl    String?
+
+  // File metadata
+  mimeType        String
+  fileSize        Int       // Bytes
+  width           Int?      // For images
+  height          Int?      // For images
+  duration        Int?      // For videos/audio in seconds
+
+  // Organization
+  folder          String    @default("/")
+
+  // Alt text and description
+  altText         String?
+  caption         String?
+  description     String?
+
+  // Usage tracking
+  usageCount      Int       @default(0)
+
+  // Meta
+  uploadedAt      DateTime  @default(now())
+  uploadedBy      String
+
+  @@index([folder])
+  @@index([mimeType])
+  @@index([uploadedAt])
+  @@map("cms_media")
+}
+
+// ============================================================================
+// 5. SEO SYSTEM (Global & Page-Specific)
+// ============================================================================
+
+/// Global SEO settings for the entire site
+model seo_global_settings {
+  id              String    @id @default(cuid())
+
+  // Site identity
+  siteName        String
+  siteNameArabic  String?
+  siteTagline     String?
+  siteDescription String?   @db.Text
+
+  // Default meta
+  defaultMetaTitle String?
+  defaultMetaDescription String? @db.Text
+  defaultMetaKeywords String?
+
+  // Default Open Graph
+  defaultOgImage  String?
+  defaultOgType   String    @default("website")
+
+  // Social profiles for structured data
+  facebookAppId   String?
+  twitterHandle   String?
+
+  // Verification codes
+  googleVerification String?
+  bingVerification String?
+  yandexVerification String?
+  pinterestVerification String?
+
+  // Analytics
+  googleAnalyticsId String?
+  googleTagManagerId String?
+  facebookPixelId String?
+
+  // Schema.org structured data (JSON-LD)
+  organizationSchema String? @db.Text
+  websiteSchema   String?   @db.Text
+
+  // Robots.txt content
+  robotsTxt       String?   @db.Text
+
+  // Default robots meta
+  defaultRobotsIndex Boolean @default(true)
+  defaultRobotsFollow Boolean @default(true)
+
+  // Sitemap settings
+  sitemapEnabled  Boolean   @default(true)
+  sitemapChangefreq String  @default("weekly")
+  sitemapPriority Decimal   @db.Decimal(2, 1) @default(0.5)
+
+  // Meta
+  updatedAt       DateTime  @updatedAt
+  updatedBy       String?
+
+  @@map("seo_global_settings")
+}
+
+/// Custom redirects for SEO management
+model seo_redirects {
+  id              String    @id @default(cuid())
+
+  // Redirect details
+  fromPath        String    @unique
+  toPath          String
+  redirectType    Int       @default(301) // 301, 302, 307, 308
+
+  // Description
+  reason          String?
+
+  // Status
+  isActive        Boolean   @default(true)
+
+  // Analytics
+  hitCount        Int       @default(0)
+  lastHitAt       DateTime?
+
+  // Meta
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  createdBy       String?
+  updatedBy       String?
+
+  @@index([fromPath])
+  @@index([isActive])
+  @@map("seo_redirects")
+}
+
+/// Sitemap entries for dynamic sitemap generation
+model seo_sitemap_entries {
+  id              String    @id @default(cuid())
+
+  // URL details
+  loc             String    @unique // URL
+  changefreq      String    @default("weekly") // always, hourly, daily, weekly, monthly, yearly, never
+  priority        Decimal   @db.Decimal(2, 1) @default(0.5) // 0.0 to 1.0
+  lastmod         DateTime  @default(now())
+
+  // Content type
+  contentType     String    // PAGE, ARTICLE, CATEGORY, INSTITUTION, etc.
+  contentId       String?   // ID of the content
+
+  // Language/alternate versions
+  alternates      String    @default("[]") // Array of {lang, url} objects
+
+  // Media (for image/video sitemaps)
+  images          String    @default("[]") // Array of image objects
+  videos          String    @default("[]") // Array of video objects
+
+  // Status
+  isActive        Boolean   @default(true)
+
+  // Meta
+  updatedAt       DateTime  @updatedAt
+
+  @@index([contentType, isActive])
+  @@index([lastmod])
+  @@map("seo_sitemap_entries")
 }

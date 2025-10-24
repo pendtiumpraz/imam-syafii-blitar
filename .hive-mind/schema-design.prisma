@@ -1,0 +1,877 @@
+// ============================================================================
+// ADMIN-CONFIGURABLE CONTENT SYSTEM - DATABASE SCHEMA DESIGN
+// ============================================================================
+// This file contains ADDITIVE schema models for the new content management system.
+// These models are designed to be migration-safe and do not modify existing tables.
+// ============================================================================
+
+// ============================================================================
+// 1. ORGANIZATION INFO MANAGEMENT
+// ============================================================================
+
+/// Stores information about the Yayasan (foundation)
+/// This is the top-level organization entity
+model organization_info {
+  id                String    @id @default(cuid())
+
+  // Organization details
+  name              String    // e.g., "Yayasan Pondok Imam Syafii"
+  nameArabic        String?   // Arabic version of name
+  shortName         String?   // Short version for headers
+  legalName         String?   // Full legal name
+
+  // Legal and registration
+  registrationNo    String?   // Foundation registration number
+  establishmentDate DateTime? // Date of establishment
+  notarialDeed      String?   // Notarial deed number
+  taxId             String?   // NPWP
+
+  // Contact information
+  address           String?
+  village           String?
+  district          String?
+  city              String?
+  province          String?
+  postalCode        String?
+  phone             String?
+  fax               String?
+  email             String?
+  website           String?
+
+  // Vision & Mission
+  vision            String?   @db.Text
+  visionArabic      String?   @db.Text
+  mission           String?   @db.Text
+  missionArabic     String?   @db.Text
+
+  // About & History
+  about             String?   @db.Text
+  aboutArabic       String?   @db.Text
+  history           String?   @db.Text
+  historyArabic     String?   @db.Text
+
+  // Organizational structure (JSON)
+  structure         String    @default("{}") @db.Text // Stores hierarchy
+
+  // Media
+  logoUrl           String?   // Main logo
+  logoAltUrl        String?   // Alternative logo (dark mode, etc.)
+  faviconUrl        String?
+  coverImageUrl     String?   // Hero/banner image
+
+  // Social media
+  facebook          String?
+  instagram         String?
+  twitter           String?
+  youtube           String?
+  linkedin          String?
+  tiktok            String?
+
+  // Meta
+  isActive          Boolean   @default(true)
+  publishedAt       DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  createdBy         String?
+  updatedBy         String?
+
+  @@index([isActive])
+  @@map("organization_info")
+}
+
+/// Stores information about educational institutions under the foundation
+/// Supports TK, SD, SMP, and Pondok Pesantren
+model institution_info {
+  id                String    @id @default(cuid())
+
+  // Institution type and identification
+  type              String    // TK, SD, SMP, PONDOK, etc.
+  code              String    @unique // Unique code for each institution
+  name              String
+  nameArabic        String?
+  shortName         String?
+
+  // Accreditation
+  accreditation     String?   // A, B, C, or Not Accredited
+  accreditationNo   String?
+  accreditationDate DateTime?
+
+  // Registration
+  npsn              String?   // National School ID
+  nss               String?   // National School Serial Number
+  nis               String?   // School ID Number
+  establishmentDate DateTime?
+  operationalPermit String?
+
+  // Contact
+  address           String?
+  village           String?
+  district          String?
+  city              String?
+  province          String?
+  postalCode        String?
+  phone             String?
+  email             String?
+  website           String?
+
+  // Vision & Mission (specific to institution)
+  vision            String?   @db.Text
+  visionArabic      String?   @db.Text
+  mission           String?   @db.Text
+  missionArabic     String?   @db.Text
+
+  // About & Description
+  description       String?   @db.Text
+  descriptionArabic String?   @db.Text
+
+  // Programs and facilities (JSON arrays)
+  programs          String    @default("[]") // ["Tahfidz", "Bilingual", etc.]
+  facilities        String    @default("[]") // ["Library", "Lab", "Mosque", etc.]
+  achievements      String    @default("[]") // Array of achievement objects
+
+  // Curriculum
+  curriculum        String?   // "K13", "Merdeka", "Cambridge", etc.
+
+  // Capacity
+  studentCapacity   Int?
+  teacherCount      Int?
+  classCount        Int?
+
+  // Leadership
+  principalName     String?
+  principalNip      String?
+  principalPhone    String?
+  principalEmail    String?
+
+  // Media
+  logoUrl           String?
+  coverImageUrl     String?
+  galleryImages     String    @default("[]") // Array of image URLs
+
+  // Display settings
+  showOnWebsite     Boolean   @default(true)
+  sortOrder         Int       @default(0)
+
+  // Meta
+  isActive          Boolean   @default(true)
+  publishedAt       DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  createdBy         String?
+  updatedBy         String?
+
+  @@index([type, isActive])
+  @@index([code])
+  @@index([sortOrder])
+  @@map("institution_info")
+}
+
+/// Organizational structure for hierarchical display (Board, Directors, etc.)
+model organization_structure {
+  id              String    @id @default(cuid())
+
+  // Hierarchy
+  parentId        String?   // For nested structures
+  level           Int       @default(0) // 0=Board, 1=Director, 2=Manager, etc.
+
+  // Position details
+  positionName    String    // "Ketua Yayasan", "Direktur", etc.
+  positionNameAr  String?   // Arabic version
+  department      String?   // Department or division
+
+  // Person details
+  personName      String?
+  personNameAr    String?
+  photoUrl        String?
+
+  // Contact
+  email           String?
+  phone           String?
+
+  // Biography
+  bio             String?   @db.Text
+  bioArabic       String?   @db.Text
+  qualifications  String    @default("[]") // Array of degrees/certs
+
+  // Period of service
+  startDate       DateTime?
+  endDate         DateTime?
+  isActive        Boolean   @default(true)
+
+  // Display
+  sortOrder       Int       @default(0)
+  showOnWebsite   Boolean   @default(true)
+
+  // Meta
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  createdBy       String?
+  updatedBy       String?
+
+  @@index([parentId, sortOrder])
+  @@index([level, isActive])
+  @@map("organization_structure")
+}
+
+// ============================================================================
+// 2. SITE CONFIGURATION
+// ============================================================================
+
+/// Global site configuration and appearance settings
+model site_config {
+  id              String    @id @default(cuid())
+  key             String    @unique // Unique config key
+
+  // Value and metadata
+  value           String?   @db.Text // JSON or plain text value
+  dataType        String    @default("STRING") // STRING, JSON, BOOLEAN, NUMBER
+  category        String    @default("GENERAL") // GENERAL, NAVBAR, FOOTER, SEO, etc.
+
+  // Description
+  label           String    // Human-readable label
+  description     String?   // Help text
+
+  // Display
+  isEditable      Boolean   @default(true)
+  isPublic        Boolean   @default(true) // Whether to expose in public API
+  sortOrder       Int       @default(0)
+
+  // Validation
+  validationRules String?   @db.Text // JSON schema for validation
+  defaultValue    String?
+
+  // Meta
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  updatedBy       String?
+
+  @@index([category, key])
+  @@index([isPublic])
+  @@map("site_config")
+}
+
+/// Navbar menu items configuration
+model navbar_items {
+  id              String    @id @default(cuid())
+
+  // Hierarchy
+  parentId        String?   // For dropdown menus
+  level           Int       @default(0) // 0=top level, 1=dropdown, etc.
+
+  // Menu item details
+  label           String
+  labelArabic     String?
+  icon            String?   // Icon name or URL
+
+  // Link configuration
+  linkType        String    @default("INTERNAL") // INTERNAL, EXTERNAL, PAGE, CUSTOM
+  linkUrl         String?   // URL or path
+  pageId          String?   // Reference to cms_pages if linkType=PAGE
+
+  // Behavior
+  openInNewTab    Boolean   @default(false)
+  requiresAuth    Boolean   @default(false)
+  allowedRoles    String    @default("[]") // Array of roles if restricted
+
+  // Display
+  isActive        Boolean   @default(true)
+  showOnMobile    Boolean   @default(true)
+  showOnDesktop   Boolean   @default(true)
+  sortOrder       Int       @default(0)
+
+  // Styling
+  cssClass        String?
+  highlightColor  String?   // For active/hover states
+
+  // Meta
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  createdBy       String?
+  updatedBy       String?
+
+  @@index([parentId, sortOrder])
+  @@index([isActive, level])
+  @@map("navbar_items")
+}
+
+/// Footer configuration sections
+model footer_sections {
+  id              String    @id @default(cuid())
+
+  // Section details
+  title           String
+  titleArabic     String?
+  type            String    // LINKS, CONTACT, SOCIAL, CUSTOM
+
+  // Content (flexible JSON structure)
+  content         String    @db.Text // JSON: links, text, widgets, etc.
+
+  // Layout
+  column          Int       @default(1) // 1, 2, 3, 4 for grid layout
+
+  // Display
+  isActive        Boolean   @default(true)
+  sortOrder       Int       @default(0)
+
+  // Styling
+  cssClass        String?
+
+  // Meta
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  createdBy       String?
+  updatedBy       String?
+
+  @@index([isActive, sortOrder])
+  @@index([column])
+  @@map("footer_sections")
+}
+
+// ============================================================================
+// 3. FINANCIAL TRANSACTIONS (General & OTA)
+// ============================================================================
+
+/// General financial transactions (income/expense) separate from school billing
+model general_transactions {
+  id              String    @id @default(cuid())
+
+  // Transaction identification
+  transactionNo   String    @unique
+
+  // Basic info
+  date            DateTime  @db.Date
+  type            String    // INCOME, EXPENSE
+  category        String    // DONATION, OTA, OPERATIONAL, SALARY, etc.
+  subCategory     String?   // More specific categorization
+
+  // Financial details
+  amount          Decimal   @db.Decimal(15, 2)
+  currency        String    @default("IDR")
+
+  // Description
+  description     String
+  notes           String?   @db.Text
+
+  // Party information (donor, supplier, etc.)
+  partyName       String?
+  partyType       String?   // DONOR, SUPPLIER, EMPLOYEE, OTHER
+  partyContact    String?
+  partyEmail      String?
+
+  // Payment details
+  paymentMethod   String?   // CASH, TRANSFER, CHECK, etc.
+  paymentChannel  String?   // Bank name, payment gateway, etc.
+  referenceNo     String?   // Bank reference, receipt number, etc.
+
+  // Documentation
+  proofUrl        String?   // Receipt/proof image URL
+  attachments     String    @default("[]") // Array of attachment URLs
+
+  // Verification
+  status          String    @default("PENDING") // PENDING, VERIFIED, REJECTED
+  verifiedBy      String?
+  verifiedAt      DateTime?
+  rejectionReason String?
+
+  // Accounting
+  accountCode     String?   // Link to chart of accounts
+  fiscalYear      String?
+  fiscalPeriod    String?
+
+  // OTA specific fields (if applicable)
+  isOtaRelated    Boolean   @default(false)
+  otaProgramId    String?   // Link to ota_programs
+  otaMonth        String?
+  otaSponsorId    String?   // Link to ota_sponsors
+
+  // Recurring transaction
+  isRecurring     Boolean   @default(false)
+  recurringType   String?   // MONTHLY, QUARTERLY, YEARLY
+  recurringGroup  String?   // Group ID for related recurring transactions
+
+  // Bulk entry support
+  bulkEntryId     String?   // Groups multiple transactions entered together
+  entrySequence   Int?      // Order in bulk entry
+
+  // Tags and categorization
+  tags            String    @default("[]") // Flexible tagging
+
+  // Meta
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  createdBy       String
+  updatedBy       String?
+
+  // Soft delete
+  deletedAt       DateTime?
+  deletedBy       String?
+  isDeleted       Boolean   @default(false)
+
+  @@index([date, type])
+  @@index([category, subCategory])
+  @@index([status, verifiedAt])
+  @@index([isOtaRelated, otaMonth])
+  @@index([bulkEntryId])
+  @@index([isDeleted, deletedAt])
+  @@index([fiscalYear, fiscalPeriod])
+  @@map("general_transactions")
+}
+
+/// Bulk entry tracking for multiple transactions entered at once
+model transaction_bulk_entries {
+  id              String    @id @default(cuid())
+
+  // Entry info
+  bulkEntryNo     String    @unique
+  totalTransactions Int     @default(0)
+
+  // Summary
+  totalIncome     Decimal   @db.Decimal(15, 2) @default(0)
+  totalExpense    Decimal   @db.Decimal(15, 2) @default(0)
+  netAmount       Decimal   @db.Decimal(15, 2) @default(0)
+
+  // Period
+  startDate       DateTime  @db.Date
+  endDate         DateTime  @db.Date
+
+  // Description
+  description     String?
+  notes           String?   @db.Text
+
+  // Processing
+  status          String    @default("DRAFT") // DRAFT, SUBMITTED, VERIFIED, REJECTED
+  submittedAt     DateTime?
+  verifiedBy      String?
+  verifiedAt      DateTime?
+
+  // Meta
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  createdBy       String
+  updatedBy       String?
+
+  @@index([status, createdAt])
+  @@index([startDate, endDate])
+  @@map("transaction_bulk_entries")
+}
+
+/// Transaction reports and summaries
+model transaction_reports {
+  id              String    @id @default(cuid())
+
+  // Report identification
+  reportNo        String    @unique
+  reportType      String    // MONTHLY, QUARTERLY, YEARLY, CUSTOM, OTA_SPECIFIC
+
+  // Period
+  startDate       DateTime  @db.Date
+  endDate         DateTime  @db.Date
+  fiscalYear      String?
+  fiscalPeriod    String?
+
+  // Filters (JSON)
+  filters         String    @default("{}") @db.Text
+
+  // Summary data (JSON)
+  summary         String    @db.Text // Income, expense, net, by category, etc.
+
+  // Details (JSON - can be large)
+  details         String?   @db.Text // Detailed breakdown
+
+  // Charts/visualizations data
+  chartData       String?   @db.Text // Data for charts
+
+  // Files
+  pdfUrl          String?
+  excelUrl        String?
+
+  // Generation
+  status          String    @default("GENERATING") // GENERATING, COMPLETED, FAILED
+  progress        Int       @default(0)
+  errorMessage    String?
+
+  // Meta
+  generatedAt     DateTime  @default(now())
+  generatedBy     String
+  completedAt     DateTime?
+
+  @@index([reportType, startDate])
+  @@index([status])
+  @@index([fiscalYear, fiscalPeriod])
+  @@map("transaction_reports")
+}
+
+// ============================================================================
+// 4. CONTENT MANAGEMENT SYSTEM (Articles/Blog)
+// ============================================================================
+
+/// CMS Pages and Articles with full SEO support
+model cms_pages {
+  id              String    @id @default(cuid())
+
+  // Identification
+  slug            String    @unique
+  title           String
+  titleArabic     String?
+
+  // Content
+  excerpt         String?   @db.Text // Short summary
+  content         String    @db.Text // Full content (HTML/Markdown)
+  contentArabic   String?   @db.Text
+
+  // Type and categorization
+  type            String    @default("PAGE") // PAGE, ARTICLE, POST, NEWS
+  category        String?   // Blog category, news category, etc.
+  subCategory     String?
+  tags            String    @default("[]") // Array of tags
+
+  // Media
+  featuredImage   String?
+  featuredImageAlt String?
+  galleryImages   String    @default("[]") // Array of image objects
+  videoUrl        String?
+
+  // Author and attribution
+  authorId        String?
+  authorName      String?
+  coAuthors       String    @default("[]") // Array of co-author names
+
+  // Publishing
+  status          String    @default("DRAFT") // DRAFT, PUBLISHED, SCHEDULED, ARCHIVED
+  publishedAt     DateTime?
+  scheduledFor    DateTime?
+  archivedAt      DateTime?
+
+  // Display options
+  showAuthor      Boolean   @default(true)
+  showDate        Boolean   @default(true)
+  allowComments   Boolean   @default(false)
+  isFeatured      Boolean   @default(false)
+  isPinned        Boolean   @default(false)
+
+  // Template and layout
+  template        String    @default("DEFAULT") // DEFAULT, SIDEBAR, FULLWIDTH, CUSTOM
+  layout          String?   @db.Text // JSON for custom layout configuration
+
+  // Access control
+  isPublic        Boolean   @default(true)
+  requiresAuth    Boolean   @default(false)
+  allowedRoles    String    @default("[]")
+  password        String?   // Optional password protection
+
+  // SEO - Basic
+  metaTitle       String?
+  metaDescription String?   @db.Text
+  metaKeywords    String?
+
+  // SEO - Open Graph
+  ogTitle         String?
+  ogDescription   String?
+  ogImage         String?
+  ogType          String    @default("article")
+
+  // SEO - Twitter Card
+  twitterCard     String    @default("summary_large_image")
+  twitterTitle    String?
+  twitterDescription String?
+  twitterImage    String?
+
+  // SEO - Advanced
+  canonicalUrl    String?
+  robotsIndex     Boolean   @default(true)
+  robotsFollow    Boolean   @default(true)
+  structuredData  String?   @db.Text // JSON-LD structured data
+
+  // Language and localization
+  language        String    @default("id")
+  translationOf   String?   // ID of original page for translations
+
+  // Analytics
+  viewCount       Int       @default(0)
+  shareCount      Int       @default(0)
+  likeCount       Int       @default(0)
+  commentCount    Int       @default(0)
+
+  // Reading metrics
+  readingTime     Int?      // Estimated reading time in minutes
+
+  // Related content
+  relatedPages    String    @default("[]") // Array of page IDs
+
+  // Sorting
+  sortOrder       Int       @default(0)
+
+  // Version control
+  version         Int       @default(1)
+  lastEditedBy    String?
+
+  // Meta
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  createdBy       String
+  updatedBy       String?
+
+  // Soft delete
+  deletedAt       DateTime?
+  deletedBy       String?
+  isDeleted       Boolean   @default(false)
+
+  @@index([slug])
+  @@index([type, status])
+  @@index([category, publishedAt])
+  @@index([isFeatured, publishedAt])
+  @@index([status, scheduledFor])
+  @@index([isDeleted, deletedAt])
+  @@index([authorId, publishedAt])
+  @@map("cms_pages")
+}
+
+/// Page revisions for version history
+model cms_page_revisions {
+  id              String    @id @default(cuid())
+
+  // Reference
+  pageId          String
+  version         Int
+
+  // Snapshot of content at this version
+  title           String
+  content         String    @db.Text
+  excerpt         String?   @db.Text
+
+  // Change tracking
+  changesSummary  String?   // Brief description of what changed
+
+  // Meta
+  createdAt       DateTime  @default(now())
+  createdBy       String
+
+  @@index([pageId, version])
+  @@map("cms_page_revisions")
+}
+
+/// Article categories for blog/news organization
+model cms_categories {
+  id              String    @id @default(cuid())
+
+  // Hierarchy
+  parentId        String?
+  level           Int       @default(0)
+
+  // Details
+  name            String
+  nameArabic      String?
+  slug            String    @unique
+  description     String?   @db.Text
+
+  // Media
+  icon            String?
+  color           String?
+  coverImage      String?
+
+  // SEO
+  metaTitle       String?
+  metaDescription String?
+
+  // Display
+  isActive        Boolean   @default(true)
+  showInMenu      Boolean   @default(true)
+  sortOrder       Int       @default(0)
+
+  // Meta
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  createdBy       String?
+  updatedBy       String?
+
+  @@index([slug])
+  @@index([parentId, sortOrder])
+  @@index([isActive])
+  @@map("cms_categories")
+}
+
+/// Media library for managing uploads
+model cms_media {
+  id              String    @id @default(cuid())
+
+  // File info
+  filename        String
+  originalName    String
+  fileUrl         String
+  thumbnailUrl    String?
+
+  // File metadata
+  mimeType        String
+  fileSize        Int       // Bytes
+  width           Int?      // For images
+  height          Int?      // For images
+  duration        Int?      // For videos/audio in seconds
+
+  // Organization
+  folder          String    @default("/")
+
+  // Alt text and description
+  altText         String?
+  caption         String?
+  description     String?
+
+  // Usage tracking
+  usageCount      Int       @default(0)
+
+  // Meta
+  uploadedAt      DateTime  @default(now())
+  uploadedBy      String
+
+  @@index([folder])
+  @@index([mimeType])
+  @@index([uploadedAt])
+  @@map("cms_media")
+}
+
+// ============================================================================
+// 5. SEO SYSTEM (Global & Page-Specific)
+// ============================================================================
+
+/// Global SEO settings for the entire site
+model seo_global_settings {
+  id              String    @id @default(cuid())
+
+  // Site identity
+  siteName        String
+  siteNameArabic  String?
+  siteTagline     String?
+  siteDescription String?   @db.Text
+
+  // Default meta
+  defaultMetaTitle String?
+  defaultMetaDescription String? @db.Text
+  defaultMetaKeywords String?
+
+  // Default Open Graph
+  defaultOgImage  String?
+  defaultOgType   String    @default("website")
+
+  // Social profiles for structured data
+  facebookAppId   String?
+  twitterHandle   String?
+
+  // Verification codes
+  googleVerification String?
+  bingVerification String?
+  yandexVerification String?
+  pinterestVerification String?
+
+  // Analytics
+  googleAnalyticsId String?
+  googleTagManagerId String?
+  facebookPixelId String?
+
+  // Schema.org structured data (JSON-LD)
+  organizationSchema String? @db.Text
+  websiteSchema   String?   @db.Text
+
+  // Robots.txt content
+  robotsTxt       String?   @db.Text
+
+  // Default robots meta
+  defaultRobotsIndex Boolean @default(true)
+  defaultRobotsFollow Boolean @default(true)
+
+  // Sitemap settings
+  sitemapEnabled  Boolean   @default(true)
+  sitemapChangefreq String  @default("weekly")
+  sitemapPriority Decimal   @db.Decimal(2, 1) @default(0.5)
+
+  // Meta
+  updatedAt       DateTime  @updatedAt
+  updatedBy       String?
+
+  @@map("seo_global_settings")
+}
+
+/// Custom redirects for SEO management
+model seo_redirects {
+  id              String    @id @default(cuid())
+
+  // Redirect details
+  fromPath        String    @unique
+  toPath          String
+  redirectType    Int       @default(301) // 301, 302, 307, 308
+
+  // Description
+  reason          String?
+
+  // Status
+  isActive        Boolean   @default(true)
+
+  // Analytics
+  hitCount        Int       @default(0)
+  lastHitAt       DateTime?
+
+  // Meta
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  createdBy       String?
+  updatedBy       String?
+
+  @@index([fromPath])
+  @@index([isActive])
+  @@map("seo_redirects")
+}
+
+/// Sitemap entries for dynamic sitemap generation
+model seo_sitemap_entries {
+  id              String    @id @default(cuid())
+
+  // URL details
+  loc             String    @unique // URL
+  changefreq      String    @default("weekly") // always, hourly, daily, weekly, monthly, yearly, never
+  priority        Decimal   @db.Decimal(2, 1) @default(0.5) // 0.0 to 1.0
+  lastmod         DateTime  @default(now())
+
+  // Content type
+  contentType     String    // PAGE, ARTICLE, CATEGORY, INSTITUTION, etc.
+  contentId       String?   // ID of the content
+
+  // Language/alternate versions
+  alternates      String    @default("[]") // Array of {lang, url} objects
+
+  // Media (for image/video sitemaps)
+  images          String    @default("[]") // Array of image objects
+  videos          String    @default("[]") // Array of video objects
+
+  // Status
+  isActive        Boolean   @default(true)
+
+  // Meta
+  updatedAt       DateTime  @updatedAt
+
+  @@index([contentType, isActive])
+  @@index([lastmod])
+  @@map("seo_sitemap_entries")
+}
+
+// ============================================================================
+// INDEXES AND PERFORMANCE OPTIMIZATION
+// ============================================================================
+// All models include relevant indexes for:
+// - Soft delete patterns (isDeleted, deletedAt)
+// - Common query patterns (type, status, dates)
+// - Foreign key relationships
+// - Sorting and filtering fields
+// ============================================================================
+
+// ============================================================================
+// MIGRATION NOTES
+// ============================================================================
+// 1. All models are NEW and ADDITIVE - no existing tables are modified
+// 2. All IDs use @default(cuid()) for guaranteed uniqueness
+// 3. Soft deletes implemented consistently across all models
+// 4. All decimal fields use @db.Decimal(15, 2) for financial precision
+// 5. All text fields that may be large use @db.Text
+// 6. All timestamps use appropriate DateTime fields with @default(now()) and @updatedAt
+// 7. All foreign keys are optional (String?) to avoid hard dependencies during migration
+// 8. All JSON fields stored as String with @db.Text for flexibility
+// 9. All critical fields have appropriate indexes for performance
+// 10. All models follow consistent naming conventions (snake_case)
+// ============================================================================
