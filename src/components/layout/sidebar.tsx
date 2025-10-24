@@ -42,7 +42,11 @@ import {
   Shield,
   Bell,
   Server,
-  UserCog
+  UserCog,
+  Globe,
+  Building2,
+  FileEdit,
+  Search
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -185,6 +189,34 @@ const menuItems: MenuItem[] = [
     href: '/admin/perpustakaan',
     icon: Library,
     adminOnly: true
+  },
+  {
+    title: 'Konten Website',
+    href: '/admin/website',
+    icon: Globe,
+    adminOnly: true,
+    children: [
+      {
+        title: 'Halaman Depan',
+        href: '/admin/site-config',
+        icon: Globe
+      },
+      {
+        title: 'Info Organisasi',
+        href: '/admin/organization',
+        icon: Building2
+      },
+      {
+        title: 'Artikel',
+        href: '/admin/articles',
+        icon: FileEdit
+      },
+      {
+        title: 'SEO',
+        href: '/admin/seo',
+        icon: Search
+      }
+    ]
   },
   {
     title: 'Tanya Ustadz',

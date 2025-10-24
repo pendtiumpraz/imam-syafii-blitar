@@ -123,6 +123,19 @@ const permissions: Permission[] = [
   { id: 'library.update', name: 'Update Ebook', description: 'Edit ebook details', category: 'Perpustakaan' },
   { id: 'library.delete', name: 'Delete Ebook', description: 'Delete ebook', category: 'Perpustakaan', critical: true },
 
+  // Konten Website
+  { id: 'website.siteconfig.view', name: 'View Site Config', description: 'View homepage and site configuration', category: 'Konten Website' },
+  { id: 'website.siteconfig.update', name: 'Update Site Config', description: 'Edit logo, navbar, footer, social media', category: 'Konten Website', critical: true },
+  { id: 'website.organization.view', name: 'View Organization', description: 'View organization information', category: 'Konten Website' },
+  { id: 'website.organization.update', name: 'Update Organization', description: 'Edit Yayasan, TK, SD, Pondok info, vision/mission', category: 'Konten Website', critical: true },
+  { id: 'website.articles.view', name: 'View Articles', description: 'View article list and content', category: 'Konten Website' },
+  { id: 'website.articles.create', name: 'Create Article', description: 'Write new articles', category: 'Konten Website' },
+  { id: 'website.articles.update', name: 'Update Article', description: 'Edit article content and metadata', category: 'Konten Website' },
+  { id: 'website.articles.delete', name: 'Delete Article', description: 'Delete articles', category: 'Konten Website', critical: true },
+  { id: 'website.articles.publish', name: 'Publish Article', description: 'Publish/unpublish articles', category: 'Konten Website' },
+  { id: 'website.seo.view', name: 'View SEO Settings', description: 'View SEO configuration', category: 'Konten Website' },
+  { id: 'website.seo.update', name: 'Update SEO Settings', description: 'Edit SEO meta tags, sitemap, robots.txt', category: 'Konten Website', critical: true },
+
   // Tanya Ustadz
   { id: 'tanyaustadz.view', name: 'View Questions', description: 'View student questions', category: 'Tanya Ustadz' },
   { id: 'tanyaustadz.answer', name: 'Answer Questions', description: 'Respond to questions', category: 'Tanya Ustadz' },
