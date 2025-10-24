@@ -6,7 +6,7 @@ async function seedTeachers() {
   console.log('🌱 Seeding teachers (Ustadz & Ustadzah)...');
 
   // Get first admin user for createdBy
-  const adminUser = await prisma.user.findFirst({
+  const adminUser = await prisma.users.findFirst({
     where: {
       role: { in: ['ADMIN', 'SUPER_ADMIN'] }
     }

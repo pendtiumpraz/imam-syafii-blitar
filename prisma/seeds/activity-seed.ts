@@ -6,7 +6,7 @@ async function seedActivities() {
   console.log('🌱 Seeding activities...');
 
   // Get first admin user for createdBy
-  const adminUser = await prisma.user.findFirst({
+  const adminUser = await prisma.users.findFirst({
     where: {
       role: { in: ['ADMIN', 'SUPER_ADMIN'] }
     }
@@ -143,17 +143,17 @@ async function seedActivities() {
 
   for (const activity of activities) {
     // Check if activity exists by title
-    const existing = await prisma.activity.findFirst({
+    const existing = await prisma.activities.findFirst({
       where: { title: activity.title }
     });
 
     if (existing) {
-      await prisma.activity.update({
+      await prisma.activities.update({
         where: { id: existing.id },
         data: activity
       });
     } else {
-      await prisma.activity.create({
+      await prisma.activities.create({
         data: activity
       });
     }

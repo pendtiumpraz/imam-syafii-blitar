@@ -10,7 +10,7 @@ async function main() {
   // Create admin user
   const hashedPassword = await bcrypt.hash('admin123', 10);
   
-  const admin = await prisma.user.upsert({
+  const admin = await prisma.users.upsert({
     where: { username: 'admin' },
     update: {
       password: hashedPassword,
@@ -32,7 +32,7 @@ async function main() {
   // Create staff user
   const staffPassword = await bcrypt.hash('staff123', 10);
   
-  const staff = await prisma.user.upsert({
+  const staff = await prisma.users.upsert({
     where: { username: 'staff' },
     update: {
       password: staffPassword,
@@ -54,7 +54,7 @@ async function main() {
   // Create ustadz user
   const ustadzPassword = await bcrypt.hash('ustadz123', 10);
   
-  const ustadz = await prisma.user.upsert({
+  const ustadz = await prisma.users.upsert({
     where: { username: 'ustadz' },
     update: {
       password: ustadzPassword,
@@ -74,7 +74,7 @@ async function main() {
   console.log('✅ Created/Updated ustadz user:', ustadz.username);
 
   // Create financial accounts
-  const incomeAccount = await prisma.financialAccount.upsert({
+  const incomeAccount = await prisma.financial_accounts.upsert({
     where: { code: '4001' },
     update: {},
     create: {
@@ -88,7 +88,7 @@ async function main() {
     }
   });
 
-  const expenseAccount = await prisma.financialAccount.upsert({
+  const expenseAccount = await prisma.financial_accounts.upsert({
     where: { code: '5001' },
     update: {},
     create: {
@@ -103,7 +103,7 @@ async function main() {
   });
 
   // Create financial categories
-  const sppCategory = await prisma.financialCategory.upsert({
+  const sppCategory = await prisma.financial_categories.upsert({
     where: { name_type: { name: 'SPP', type: 'INCOME' } },
     update: {},
     create: {
@@ -118,7 +118,7 @@ async function main() {
     }
   });
 
-  const infaqCategory = await prisma.financialCategory.upsert({
+  const infaqCategory = await prisma.financial_categories.upsert({
     where: { name_type: { name: 'Infaq', type: 'DONATION' } },
     update: {},
     create: {
@@ -133,7 +133,7 @@ async function main() {
     }
   });
 
-  const operationalCategory = await prisma.financialCategory.upsert({
+  const operationalCategory = await prisma.financial_categories.upsert({
     where: { name_type: { name: 'Operational', type: 'EXPENSE' } },
     update: {},
     create: {
@@ -152,7 +152,7 @@ async function main() {
 
   // Create sample transactions
   const transactions = await Promise.all([
-    prisma.transaction.create({
+    prisma.transactions.create({
       data: {
         transactionNo: 'TRX-2024-001',
         type: 'INCOME',
@@ -164,7 +164,7 @@ async function main() {
         createdBy: admin.id,
       },
     }),
-    prisma.transaction.create({
+    prisma.transactions.create({
       data: {
         transactionNo: 'TRX-2024-002',
         type: 'DONATION',
@@ -176,7 +176,7 @@ async function main() {
         createdBy: admin.id,
       },
     }),
-    prisma.transaction.create({
+    prisma.transactions.create({
       data: {
         transactionNo: 'TRX-2024-003',
         type: 'EXPENSE',
@@ -194,7 +194,7 @@ async function main() {
 
   // Create sample activities
   const activities = await Promise.all([
-    prisma.activity.create({
+    prisma.activities.create({
       data: {
         title: 'Pengajian Rutin Mingguan',
         description: 'Kajian kitab Riyadhus Shalihin bersama Ustadz Ahmad',
@@ -206,7 +206,7 @@ async function main() {
         createdBy: admin.id,
       },
     }),
-    prisma.activity.create({
+    prisma.activities.create({
       data: {
         title: 'Lomba Tahfidz Antar Santri',
         description: 'Lomba hafalan Al-Quran untuk santri tingkat SMP',
@@ -224,7 +224,7 @@ async function main() {
 
   // Create sample courses
   const courses = await Promise.all([
-    prisma.course.create({
+    prisma.courses.create({
       data: {
         name: 'Tahfidz Al-Quran',
         description: 'Program hafalan Al-Quran 30 Juz dengan metode mutqin',
@@ -238,7 +238,7 @@ async function main() {
         createdBy: admin.id,
       },
     }),
-    prisma.course.create({
+    prisma.courses.create({
       data: {
         name: 'Bahasa Arab Dasar',
         description: 'Pembelajaran bahasa Arab untuk pemula',
@@ -258,7 +258,7 @@ async function main() {
 
   // Create sample videos
   const videos = await Promise.all([
-    prisma.video.create({
+    prisma.videos.create({
       data: {
         title: 'Kajian Tafsir Surat Al-Fatihah',
         description: 'Pembahasan mendalam tentang makna dan kandungan Surat Al-Fatihah',
@@ -273,7 +273,7 @@ async function main() {
         createdBy: admin.id,
       },
     }),
-    prisma.video.create({
+    prisma.videos.create({
       data: {
         title: 'Adab Menuntut Ilmu',
         description: 'Penjelasan tentang adab-adab dalam menuntut ilmu menurut Islam',
@@ -294,7 +294,7 @@ async function main() {
 
   // Create sample ebooks
   const ebooks = await Promise.all([
-    prisma.ebook.create({
+    prisma.ebooks.create({
       data: {
         title: 'Riyadhus Shalihin',
         author: 'Imam An-Nawawi',
@@ -310,7 +310,7 @@ async function main() {
         createdBy: admin.id,
       },
     }),
-    prisma.ebook.create({
+    prisma.ebooks.create({
       data: {
         title: 'Fiqih Sunnah',
         author: 'Sayyid Sabiq',
@@ -332,7 +332,7 @@ async function main() {
 
   // Create sample students
   const students = await Promise.all([
-    prisma.student.create({
+    prisma.students.create({
       data: {
         nis: '2024001',
         nisn: '1234567890',
@@ -363,7 +363,7 @@ async function main() {
         createdBy: admin.id,
       },
     }),
-    prisma.student.create({
+    prisma.students.create({
       data: {
         nis: '2024002',
         nisn: '1234567891',
@@ -394,7 +394,7 @@ async function main() {
         createdBy: admin.id,
       },
     }),
-    prisma.student.create({
+    prisma.students.create({
       data: {
         nis: '2024003',
         fullName: 'Muhammad Iqbal Ramadhan',
@@ -422,7 +422,7 @@ async function main() {
         createdBy: admin.id,
       },
     }),
-    prisma.student.create({
+    prisma.students.create({
       data: {
         nis: '2024004',
         fullName: 'Siti Nur Halimah',
@@ -449,7 +449,7 @@ async function main() {
         createdBy: admin.id,
       },
     }),
-    prisma.student.create({
+    prisma.students.create({
       data: {
         nis: '2024005',
         fullName: 'Abdullah Aziz',

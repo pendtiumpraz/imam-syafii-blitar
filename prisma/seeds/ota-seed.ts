@@ -7,7 +7,7 @@ async function seedOTAData() {
 
   try {
     // First, let's create some orphan students if they don't exist
-    const existingOrphans = await prisma.student.count({
+    const existingOrphans = await prisma.students.count({
       where: { isOrphan: true }
     })
 
@@ -88,7 +88,7 @@ async function seedOTAData() {
       ]
 
       for (const studentData of orphanStudents) {
-        await prisma.student.create({
+        await prisma.students.create({
           data: {
             ...studentData,
             createdBy: 'system', // We'll need to get a valid user ID in real implementation
@@ -100,7 +100,7 @@ async function seedOTAData() {
     }
 
     // Create OTA programs for orphan students
-    const orphanStudents = await prisma.student.findMany({
+    const orphanStudents = await prisma.students.findMany({
       where: { 
         isOrphan: true,
         otaProgram: null // Students without existing programs
@@ -190,7 +190,7 @@ async function seedOTAData() {
     }
 
     // Create sample hafalan progress for some students
-    const studentsNeedingHafalan = await prisma.student.findMany({
+    const studentsNeedingHafalan = await prisma.students.findMany({
       where: {
         isOrphan: true,
         hafalanProgress: null
@@ -230,7 +230,7 @@ async function seedOTAData() {
     // Print summary
     const totalPrograms = await prisma.oTAProgram.count()
     const totalSponsors = await prisma.oTASponsor.count()
-    const totalOrphans = await prisma.student.count({ where: { isOrphan: true } })
+    const totalOrphans = await prisma.students.count({ where: { isOrphan: true } })
 
     console.log('\n📊 OTA System Summary:')
     console.log(`   • Total Orphan Students: ${totalOrphans}`)
