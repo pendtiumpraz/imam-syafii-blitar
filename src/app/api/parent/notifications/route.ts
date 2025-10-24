@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get notifications
-    const notifications = await prisma.notification.findMany({
+    const notifications = await prisma.notifications.findMany({
       where: whereConditions,
       orderBy: [
         { isRead: 'asc' },
@@ -47,12 +47,12 @@ export async function GET(request: NextRequest) {
     });
 
     // Get total count
-    const totalCount = await prisma.notification.count({
+    const totalCount = await prisma.notifications.count({
       where: whereConditions
     });
 
     // Get unread count
-    const unreadCount = await prisma.notification.count({
+    const unreadCount = await prisma.notifications.count({
       where: {
         userId,
         isRead: false,
@@ -75,7 +75,7 @@ export async function GET(request: NextRequest) {
 
     const countByType = await Promise.all(
       notificationTypes.map(async (notificationType) => {
-        const count = await prisma.notification.count({
+        const count = await prisma.notifications.count({
           where: {
             userId,
             type: notificationType,
@@ -157,7 +157,7 @@ export async function POST(request: NextRequest) {
       case 'markAsRead':
         if (notificationId) {
           // Mark single notification as read
-          await prisma.notification.updateMany({
+          await prisma.notifications.updateMany({
             where: {
               id: notificationId,
               userId
@@ -169,7 +169,7 @@ export async function POST(request: NextRequest) {
           });
         } else if (notificationIds && Array.isArray(notificationIds)) {
           // Mark multiple notifications as read
-          await prisma.notification.updateMany({
+          await prisma.notifications.updateMany({
             where: {
               id: { in: notificationIds },
               userId
@@ -189,7 +189,7 @@ export async function POST(request: NextRequest) {
 
       case 'markAllAsRead':
         // Mark all unread notifications as read
-        await prisma.notification.updateMany({
+        await prisma.notifications.updateMany({
           where: {
             userId,
             isRead: false
@@ -204,7 +204,7 @@ export async function POST(request: NextRequest) {
       case 'delete':
         if (notificationId) {
           // Delete single notification
-          await prisma.notification.deleteMany({
+          await prisma.notifications.deleteMany({
             where: {
               id: notificationId,
               userId
@@ -212,7 +212,7 @@ export async function POST(request: NextRequest) {
           });
         } else if (notificationIds && Array.isArray(notificationIds)) {
           // Delete multiple notifications
-          await prisma.notification.deleteMany({
+          await prisma.notifications.deleteMany({
             where: {
               id: { in: notificationIds },
               userId
@@ -228,7 +228,7 @@ export async function POST(request: NextRequest) {
 
       case 'clearExpired':
         // Delete expired notifications
-        await prisma.notification.deleteMany({
+        await prisma.notifications.deleteMany({
           where: {
             userId,
             expiresAt: { lt: new Date() }

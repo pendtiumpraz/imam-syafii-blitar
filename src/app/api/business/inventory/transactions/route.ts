@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
     }
 
     const [transactions, total, summary] = await Promise.all([
-      prisma.inventoryTransaction.findMany({
+      prisma.inventory_transactions.findMany({
         where,
         include: {
           product: {
@@ -86,9 +86,9 @@ export async function GET(request: NextRequest) {
         skip,
         take: query.limit,
       }),
-      prisma.inventoryTransaction.count({ where }),
+      prisma.inventory_transactions.count({ where }),
       // Get summary statistics
-      prisma.inventoryTransaction.groupBy({
+      prisma.inventory_transactions.groupBy({
         by: ['type'],
         _sum: {
           quantity: true,

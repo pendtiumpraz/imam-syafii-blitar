@@ -1026,7 +1026,7 @@ class SMSAutomationService {
 
     switch (announcement.targetAudience) {
       case 'all':
-        const allUsers = await prisma.user.findMany({
+        const allUsers = await prisma.users.findMany({
           where: { phoneNumber: { not: null } },
           select: { phoneNumber: true }
         })
@@ -1043,7 +1043,7 @@ class SMSAutomationService {
 
       case 'class':
         if (announcement.classId) {
-          const classStudents = await prisma.student.findMany({
+          const classStudents = await prisma.students.findMany({
             where: { classId: announcement.classId },
             include: { parent: true }
           })
@@ -1225,7 +1225,7 @@ class TwoFactorAuthService {
     }
 
     // Enable 2FA for user
-    await prisma.user.update({
+    await prisma.users.update({
       where: { id: userId },
       data: {
         twoFactorEnabled: true,
@@ -1247,7 +1247,7 @@ class TwoFactorAuthService {
   }
 
   async sendLoginOTP(userId: string): Promise<boolean> {
-    const user = await prisma.user.findUnique({
+    const user = await prisma.users.findUnique({
       where: { id: userId },
       select: { twoFactorEnabled: true, twoFactorPhone: true }
     })
@@ -1261,7 +1261,7 @@ class TwoFactorAuthService {
   }
 
   async verifyLoginOTP(userId: string, code: string): Promise<boolean> {
-    const user = await prisma.user.findUnique({
+    const user = await prisma.users.findUnique({
       where: { id: userId },
       select: { twoFactorPhone: true }
     })
@@ -1275,7 +1275,7 @@ class TwoFactorAuthService {
 
   async sendPasswordResetOTP(phoneNumber: string): Promise<boolean> {
     // Verify user exists with this phone number
-    const user = await prisma.user.findFirst({
+    const user = await prisma.users.findFirst({
       where: { 
         OR: [
           { phoneNumber },
@@ -1301,7 +1301,7 @@ class TwoFactorAuthService {
 
     // Generate reset token
     const resetToken = crypto.randomBytes(32).toString('hex')
-    const user = await prisma.user.findFirst({
+    const user = await prisma.users.findFirst({
       where: { 
         OR: [
           { phoneNumber },

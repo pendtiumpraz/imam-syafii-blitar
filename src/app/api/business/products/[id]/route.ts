@@ -38,7 +38,7 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const product = await prisma.product.findUnique({
+    const product = await prisma.products.findUnique({
       where: { id: params.id },
       include: {
         category: true,
@@ -136,7 +136,7 @@ export async function PUT(
     const data = updateProductSchema.parse(body)
 
     // Check if product exists
-    const existingProduct = await prisma.product.findUnique({
+    const existingProduct = await prisma.products.findUnique({
       where: { id: params.id },
     })
 
@@ -149,7 +149,7 @@ export async function PUT(
 
     // Check if code is being updated and already exists elsewhere
     if (data.code && data.code !== existingProduct.code) {
-      const codeExists = await prisma.product.findFirst({
+      const codeExists = await prisma.products.findFirst({
         where: {
           code: data.code,
           id: { not: params.id },
@@ -166,7 +166,7 @@ export async function PUT(
 
     // Verify category if being updated
     if (data.categoryId) {
-      const category = await prisma.productCategory.findFirst({
+      const category = await prisma.product_categories.findFirst({
         where: {
           id: data.categoryId,
           isActive: true,
@@ -249,7 +249,7 @@ export async function PUT(
         return product
       })
     } else {
-      result = await prisma.product.update({
+      result = await prisma.products.update({
         where: { id: params.id },
         data: updateData,
         include: {
@@ -293,7 +293,7 @@ export async function DELETE(
     }
 
     // Check if product exists
-    const product = await prisma.product.findUnique({
+    const product = await prisma.products.findUnique({
       where: { id: params.id },
       include: {
         saleItems: true,
@@ -313,7 +313,7 @@ export async function DELETE(
 
     if (hasTransactions) {
       // Soft delete - just deactivate
-      const updatedProduct = await prisma.product.update({
+      const updatedProduct = await prisma.products.update({
         where: { id: params.id },
         data: { isActive: false },
         include: {

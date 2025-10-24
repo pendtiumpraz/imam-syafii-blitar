@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Save calculation
-    const calculation = await prisma.zakatCalculation.create({
+    const calculation = await prisma.zakat_calculations.create({
       data: {
         calculationType,
         inputs: JSON.stringify(inputs),
@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
       where.donorEmail = email
     }
 
-    const calculations = await prisma.zakatCalculation.findMany({
+    const calculations = await prisma.zakat_calculations.findMany({
       where,
       orderBy: { createdAt: 'desc' },
       take: limit

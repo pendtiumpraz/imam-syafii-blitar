@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     const userId = session.user.id;
 
     // Get parent account with children
-    const parentAccount = await prisma.parentAccount.findUnique({
+    const parentAccount = await prisma.parent_accounts.findUnique({
       where: { userId },
       include: {
         parentStudents: {
@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get current semester
-    const currentSemester = await prisma.semester.findFirst({
+    const currentSemester = await prisma.semesters.findFirst({
       where: { isActive: true },
       include: {
         academicYear: { select: { name: true } }
@@ -88,7 +88,7 @@ export async function GET(request: NextRequest) {
         break;
       case 'last_semester':
         // Get previous semester
-        const lastSemester = await prisma.semester.findFirst({
+        const lastSemester = await prisma.semesters.findFirst({
           where: { 
             endDate: { lt: currentSemester.startDate }
           },
@@ -117,12 +117,12 @@ export async function GET(request: NextRequest) {
           const student = parentStudent.student;
           
           // Get hafalan progress
-          const hafalanProgress = await prisma.hafalanProgress.findUnique({
+          const hafalanProgress = await prisma.hafalan_progress.findUnique({
             where: { studentId: student.id }
           });
 
           // Get payments data
-          const payments = await prisma.payment.findMany({
+          const payments = await prisma.payments.findMany({
             where: {
               studentId: student.id,
               createdAt: {

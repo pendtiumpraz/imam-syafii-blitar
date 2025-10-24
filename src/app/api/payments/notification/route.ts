@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Find payment record
-    const payment = await prisma.payment.findFirst({
+    const payment = await prisma.payments.findFirst({
       where: { 
         externalId: notification.order_id 
       },
@@ -192,7 +192,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Update payment record
-    const updatedPayment = await prisma.payment.update({
+    const updatedPayment = await prisma.payments.update({
       where: { id: payment.id },
       data: updateData
     })
@@ -203,7 +203,7 @@ export async function POST(request: NextRequest) {
 
       // Update registration payment status if applicable
       if (payment.registrationId && payment.registration) {
-        await prisma.registration.update({
+        await prisma.registrations.update({
           where: { id: payment.registrationId },
           data: {
             paymentStatus: 'PAID',

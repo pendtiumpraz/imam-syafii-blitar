@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
       whereConditions.status = status;
     }
 
-    const reportCards = await prisma.reportCard.findMany({
+    const reportCards = await prisma.report_cards.findMany({
       where: whereConditions,
       include: {
         student: {
@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if report card already exists
-    const existingReportCard = await prisma.reportCard.findUnique({
+    const existingReportCard = await prisma.report_cards.findUnique({
       where: {
         studentId_semesterId: {
           studentId,
@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get student's grades for the semester
-    const grades = await prisma.grade.findMany({
+    const grades = await prisma.grades.findMany({
       where: {
         studentId,
         semesterId,
@@ -159,7 +159,7 @@ export async function POST(request: NextRequest) {
     const overallAverage = totalCredits > 0 ? totalScore / totalCredits : null;
 
     // Get attendance data
-    const attendances = await prisma.attendance.findMany({
+    const attendances = await prisma.attendances.findMany({
       where: {
         studentId,
         semesterId,
@@ -177,7 +177,7 @@ export async function POST(request: NextRequest) {
     const attendancePercentage = totalDays > 0 ? (presentDays / totalDays) * 100 : 0;
 
     // Calculate class ranking
-    const classmates = await prisma.studentClass.findMany({
+    const classmates = await prisma.student_classes.findMany({
       where: {
         classId,
         status: 'ACTIVE',
@@ -190,7 +190,7 @@ export async function POST(request: NextRequest) {
     const classmateIds = classmates.map(c => c.studentId);
 
     // Get all classmates' grades for ranking
-    const classmateGrades = await prisma.grade.findMany({
+    const classmateGrades = await prisma.grades.findMany({
       where: {
         studentId: { in: classmateIds },
         semesterId,
@@ -230,7 +230,7 @@ export async function POST(request: NextRequest) {
 
     const rank = rankedStudents.findIndex(s => s.studentId === studentId) + 1;
 
-    const reportCard = await prisma.reportCard.create({
+    const reportCard = await prisma.report_cards.create({
       data: {
         studentId,
         semesterId,
@@ -333,7 +333,7 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const reportCard = await prisma.reportCard.update({
+    const reportCard = await prisma.report_cards.update({
       where: { id },
       data: {
         behavior,
@@ -421,7 +421,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Check if report card is finalized
-    const reportCard = await prisma.reportCard.findUnique({
+    const reportCard = await prisma.report_cards.findUnique({
       where: { id },
       select: { status: true },
     });
@@ -440,7 +440,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    await softDelete(prisma.reportCard, { id }, session.user.id);
+    await softDelete(prisma.report_cards, { id }, session.user.id);
 
     return NextResponse.json({ message: 'Report card soft deleted successfully' });
   } catch (error) {

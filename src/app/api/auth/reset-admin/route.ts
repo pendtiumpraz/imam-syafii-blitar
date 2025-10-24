@@ -21,13 +21,13 @@ export async function POST(request: NextRequest) {
     const hashedPassword = await bcrypt.hash('admin123', 10)
 
     // Find admin (use findFirst to avoid middleware issues)
-    const admin = await prisma.user.findFirst({
+    const admin = await prisma.users.findFirst({
       where: { username: 'admin' }
     })
 
     if (!admin) {
       // Create if doesn't exist
-      const newAdmin = await prisma.user.create({
+      const newAdmin = await prisma.users.create({
         data: {
           username: 'admin',
           email: 'admin@ponpesimamsyafii.id',
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Update existing
-    const updated = await prisma.user.update({
+    const updated = await prisma.users.update({
       where: { id: admin.id },
       data: {
         password: hashedPassword,

@@ -16,16 +16,16 @@ export async function GET(request: NextRequest) {
       totalActivities,
       totalDonations
     ] = await Promise.all([
-      prisma.student.count({ where: { status: 'ACTIVE' } }), // TK students (will filter by class later)
-      prisma.student.count({ where: { status: 'ACTIVE' } }), // SD students (will filter by class later)
-      prisma.student.count({ where: { status: 'ACTIVE' } }), // Santri (will filter by type later)
+      prisma.students.count({ where: { status: 'ACTIVE' } }), // TK students (will filter by class later)
+      prisma.students.count({ where: { status: 'ACTIVE' } }), // SD students (will filter by class later)
+      prisma.students.count({ where: { status: 'ACTIVE' } }), // Santri (will filter by type later)
       prisma.alumni.count(),
-      prisma.user.count({ where: { role: { in: ['USTADZ', 'ADMIN'] }, isActive: true } }),
-      prisma.course.count({ where: { status: 'active' } }),
-      prisma.video.count({ where: { isPublic: true } }),
-      prisma.ebook.count({ where: { isPublic: true } }),
-      prisma.activity.count({ where: { status: 'completed' } }),
-      prisma.transaction.count({ where: { type: 'DONATION' } })
+      prisma.users.count({ where: { role: { in: ['USTADZ', 'ADMIN'] }, isActive: true } }),
+      prisma.courses.count({ where: { status: 'active' } }),
+      prisma.videos.count({ where: { isPublic: true } }),
+      prisma.ebooks.count({ where: { isPublic: true } }),
+      prisma.activities.count({ where: { status: 'completed' } }),
+      prisma.transactions.count({ where: { type: 'DONATION' } })
     ])
 
     return NextResponse.json({

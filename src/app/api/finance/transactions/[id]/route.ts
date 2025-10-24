@@ -27,7 +27,7 @@ interface RouteParams {
 
 // Helper function to reverse journal entries
 async function reverseJournalEntry(transactionId: string, userId: string) {
-  const originalEntry = await prisma.journalEntry.findFirst({
+  const originalEntry = await prisma.journal_entries.findFirst({
     where: { transactionId },
     include: {
       entries: {
@@ -42,7 +42,7 @@ async function reverseJournalEntry(transactionId: string, userId: string) {
 
   // Generate reversal entry number
   const year = new Date().getFullYear()
-  const jeCount = await prisma.journalEntry.count({
+  const jeCount = await prisma.journal_entries.count({
     where: {
       entryNo: {
         startsWith: `JER-${year}-`,
@@ -52,7 +52,7 @@ async function reverseJournalEntry(transactionId: string, userId: string) {
   const entryNo = `JER-${year}-${String(jeCount + 1).padStart(4, '0')}`
 
   // Create reversal entry with swapped debits and credits
-  const reversalEntry = await prisma.journalEntry.create({
+  const reversalEntry = await prisma.journal_entries.create({
     data: {
       entryNo,
       description: `Reversal of ${originalEntry.entryNo}: ${originalEntry.description}`,
@@ -83,7 +83,7 @@ async function reverseJournalEntry(transactionId: string, userId: string) {
 
   // Update account balances (reverse the original entries)
   for (const entry of originalEntry.entries) {
-    await prisma.financialAccount.update({
+    await prisma.financial_accounts.update({
       where: { id: entry.accountId },
       data: {
         balance: {
@@ -94,7 +94,7 @@ async function reverseJournalEntry(transactionId: string, userId: string) {
   }
 
   // Mark original entry as reversed
-  await prisma.journalEntry.update({
+  await prisma.journal_entries.update({
     where: { id: originalEntry.id },
     data: {
       status: 'REVERSED',
@@ -114,7 +114,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const transaction = await prisma.transaction.findUnique({
+    const transaction = await prisma.transactions.findUnique({
       where: { id: params.id },
       include: {
         category: {
@@ -178,7 +178,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     const data = updateTransactionSchema.parse(body)
 
     // Check if transaction exists
-    const existingTransaction = await prisma.transaction.findUnique({
+    const existingTransaction = await prisma.transactions.findUnique({
       where: { id: params.id },
       include: {
         journalEntry: true,
@@ -210,7 +210,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     // If categoryId is being updated, verify it exists and matches type
     if (data.categoryId && data.categoryId !== existingTransaction.categoryId) {
-      const category = await prisma.financialCategory.findFirst({
+      const category = await prisma.financial_categories.findFirst({
         where: {
           id: data.categoryId,
           type: data.type || existingTransaction.type,
@@ -255,7 +255,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       }
     }
 
-    const transaction = await prisma.transaction.update({
+    const transaction = await prisma.transactions.update({
       where: { id: params.id },
       data: updateData,
       include: {
@@ -319,7 +319,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     // Check if transaction exists
-    const transaction = await prisma.transaction.findUnique({
+    const transaction = await prisma.transactions.findUnique({
       where: { id: params.id },
       include: {
         journalEntry: true,
@@ -347,7 +347,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     // Soft delete by setting status to CANCELLED
-    await prisma.transaction.update({
+    await prisma.transactions.update({
       where: { id: params.id },
       data: {
         status: 'CANCELLED',

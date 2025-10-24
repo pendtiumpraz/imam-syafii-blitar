@@ -36,7 +36,7 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const supplier = await prisma.supplier.findUnique({
+    const supplier = await prisma.suppliers.findUnique({
       where: { id: params.id },
       include: {
         purchaseOrders: {
@@ -148,7 +148,7 @@ export async function PUT(
     const data = updateSupplierSchema.parse(body)
 
     // Check if supplier exists
-    const existingSupplier = await prisma.supplier.findUnique({
+    const existingSupplier = await prisma.suppliers.findUnique({
       where: { id: params.id },
     })
 
@@ -161,7 +161,7 @@ export async function PUT(
 
     // Check if code is being updated and already exists elsewhere
     if (data.code && data.code !== existingSupplier.code) {
-      const codeExists = await prisma.supplier.findFirst({
+      const codeExists = await prisma.suppliers.findFirst({
         where: {
           code: data.code,
           id: { not: params.id },
@@ -178,7 +178,7 @@ export async function PUT(
 
     // Check if email is being updated and already exists elsewhere
     if (data.email && data.email !== existingSupplier.email) {
-      const emailExists = await prisma.supplier.findFirst({
+      const emailExists = await prisma.suppliers.findFirst({
         where: {
           email: data.email,
           isActive: true,
@@ -194,7 +194,7 @@ export async function PUT(
       }
     }
 
-    const supplier = await prisma.supplier.update({
+    const supplier = await prisma.suppliers.update({
       where: { id: params.id },
       data,
       include: {
@@ -238,7 +238,7 @@ export async function DELETE(
     }
 
     // Check if supplier exists
-    const supplier = await prisma.supplier.findUnique({
+    const supplier = await prisma.suppliers.findUnique({
       where: { id: params.id },
       include: {
         purchaseOrders: true,
@@ -258,7 +258,7 @@ export async function DELETE(
     if (hasPurchaseOrders) {
       // Soft delete if has purchase orders
       const updatedSupplier = await softDelete(
-        prisma.supplier,
+        prisma.suppliers,
         { id: params.id },
         session.user.id
       )
@@ -269,7 +269,7 @@ export async function DELETE(
       })
     } else {
       // Hard delete if no purchase orders
-      await forceDelete(prisma.supplier, { id: params.id })
+      await forceDelete(prisma.suppliers, { id: params.id })
 
       return NextResponse.json({
         message: 'Supplier deleted successfully',

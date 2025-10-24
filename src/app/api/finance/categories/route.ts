@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
     if (query.isActive !== undefined) where.isActive = query.isActive
     if (query.parentId) where.parentId = query.parentId
 
-    const categories = await prisma.financialCategory.findMany({
+    const categories = await prisma.financial_categories.findMany({
       where,
       include: {
         account: true,
@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
     const data = categorySchema.parse(body)
 
     // Check if category name already exists for this type
-    const existingCategory = await prisma.financialCategory.findFirst({
+    const existingCategory = await prisma.financial_categories.findFirst({
       where: {
         name: data.name,
         type: data.type,
@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify account exists
-    const account = await prisma.financialAccount.findUnique({
+    const account = await prisma.financial_accounts.findUnique({
       where: { id: data.accountId },
     })
 
@@ -126,7 +126,7 @@ export async function POST(request: NextRequest) {
 
     // If parentId is provided, verify parent exists and has same type
     if (data.parentId) {
-      const parent = await prisma.financialCategory.findUnique({
+      const parent = await prisma.financial_categories.findUnique({
         where: { id: data.parentId },
       })
 
@@ -145,7 +145,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const category = await prisma.financialCategory.create({
+    const category = await prisma.financial_categories.create({
       data,
       include: {
         account: true,

@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
     console.log('🔍 Debug login attempt:', { username, hasPassword: !!password })
 
     // Check if user exists
-    const user = await prisma.user.findFirst({
+    const user = await prisma.users.findFirst({
       where: { username }
     })
 

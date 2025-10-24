@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch students data
-    const students = await prisma.student.findMany({
+    const students = await prisma.students.findMany({
       where,
       select: {
         id: true,

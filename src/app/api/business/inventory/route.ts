@@ -95,7 +95,7 @@ export async function GET(request: NextRequest) {
       where.product = {
         ...where.product,
         stock: {
-          lt: prisma.product.fields.minStock,
+          lt: prisma.products.fields.minStock,
         },
       }
     }
@@ -131,7 +131,7 @@ export async function GET(request: NextRequest) {
         where: {
           product: {
             stock: {
-              lt: prisma.product.fields.minStock,
+              lt: prisma.products.fields.minStock,
             },
           },
         },
@@ -207,7 +207,7 @@ export async function POST(request: NextRequest) {
     const data = stockAdjustmentSchema.parse(body)
 
     // Verify product exists
-    const product = await prisma.product.findUnique({
+    const product = await prisma.products.findUnique({
       where: { id: data.productId },
     })
 

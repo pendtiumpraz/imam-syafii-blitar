@@ -24,9 +24,9 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const student = await prisma.student.findUnique({
+    const student = await prisma.students.findUnique({
       where: { id: studentId },
-      include: { otaProgram: true }
+      include: { ota_program: true }
     });
 
     if (!student) {
@@ -51,12 +51,12 @@ export async function PUT(request: NextRequest) {
       updateData.otaProfile = otaProfile;
     }
 
-    const updatedStudent = await prisma.student.update({
+    const updatedStudent = await prisma.students.update({
       where: { id: studentId },
       data: updateData,
       include: {
-        otaProgram: true,
-        hafalanProgress: {
+        ota_program: true,
+        hafalan_progress: {
           select: {
             totalSurah: true,
             totalAyat: true,
@@ -130,10 +130,10 @@ export async function GET(request: NextRequest) {
     }
 
     const [students, total] = await Promise.all([
-      prisma.student.findMany({
+      prisma.students.findMany({
         where: whereConditions,
         include: {
-          otaProgram: {
+          ota_program: {
             select: {
               id: true,
               monthlyTarget: true,
@@ -142,7 +142,7 @@ export async function GET(request: NextRequest) {
               isActive: true,
             }
           },
-          hafalanProgress: {
+          hafalan_progress: {
             select: {
               totalSurah: true,
               totalAyat: true,
@@ -158,7 +158,7 @@ export async function GET(request: NextRequest) {
         skip,
         take: limit,
       }),
-      prisma.student.count({ where: whereConditions })
+      prisma.students.count({ where: whereConditions })
     ]);
 
     return NextResponse.json({

@@ -8,13 +8,13 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const academicYear = searchParams.get('academicYear') || '2024/2025';
     
-    let settings = await prisma.pPDBSettings.findUnique({
+    let settings = await prisma.ppdb_settings.findUnique({
       where: { academicYear }
     });
     
     // If settings don't exist, create default settings
     if (!settings) {
-      settings = await prisma.pPDBSettings.create({
+      settings = await prisma.ppdb_settings.create({
         data: {
           academicYear,
           openDate: new Date('2024-01-01'),
@@ -53,13 +53,13 @@ export async function GET(request: NextRequest) {
     
     for (const level of ['TK', 'SD', 'SMP', 'PONDOK']) {
       const [registered, accepted, enrolled] = await Promise.all([
-        prisma.pPDBRegistration.count({
+        prisma.ppdb_registrations.count({
           where: { level, academicYear, status: { not: 'DRAFT' } }
         }),
-        prisma.pPDBRegistration.count({
+        prisma.ppdb_registrations.count({
           where: { level, academicYear, status: 'ACCEPTED' }
         }),
-        prisma.pPDBRegistration.count({
+        prisma.ppdb_registrations.count({
           where: { level, academicYear, status: 'ENROLLED' }
         })
       ]);
@@ -110,7 +110,7 @@ export async function PUT(request: NextRequest) {
       updateData.requiredDocs = JSON.stringify(updateData.requiredDocs);
     }
     
-    const settings = await prisma.pPDBSettings.upsert({
+    const settings = await prisma.ppdb_settings.upsert({
       where: { academicYear },
       update: updateData,
       create: {

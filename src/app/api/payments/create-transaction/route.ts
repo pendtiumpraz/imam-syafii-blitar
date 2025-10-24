@@ -187,7 +187,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create payment record
-    const payment = await prisma.payment.create({
+    const payment = await prisma.payments.create({
       data: {
         paymentNo,
         billId,
@@ -313,7 +313,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Update payment record
-      await prisma.payment.update({
+      await prisma.payments.update({
         where: { id: payment.id },
         data: updateData
       })
@@ -355,7 +355,7 @@ export async function POST(request: NextRequest) {
 
     } catch (gatewayError: any) {
       // Update payment status to failed
-      await prisma.payment.update({
+      await prisma.payments.update({
         where: { id: payment.id },
         data: { 
           status: 'FAILED',
@@ -416,7 +416,7 @@ async function generatePaymentNumber(): Promise<string> {
   const startOfMonth = new Date(year, new Date().getMonth(), 1)
   const endOfMonth = new Date(year, new Date().getMonth() + 1, 0)
   
-  const paymentCount = await prisma.payment.count({
+  const paymentCount = await prisma.payments.count({
     where: {
       createdAt: {
         gte: startOfMonth,

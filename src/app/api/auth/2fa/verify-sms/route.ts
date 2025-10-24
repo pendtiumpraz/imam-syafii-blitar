@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Mark phone as verified
-    await prisma.user.update({
+    await prisma.users.update({
       where: { id: session.user.id },
       data: { phoneVerified: true }
     })

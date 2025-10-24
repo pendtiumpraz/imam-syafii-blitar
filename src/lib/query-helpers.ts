@@ -17,7 +17,7 @@
  *
  * @example
  * ```typescript
- * const users = await prisma.user.findMany({
+ * const users = await prisma.users.findMany({
  *   where: withoutDeleted({ role: 'ADMIN' })
  * });
  * ```
@@ -41,7 +41,7 @@ export function withoutDeleted<T extends object>(where?: T): T & { isDeleted: fa
  *
  * @example
  * ```typescript
- * const deletedUsers = await prisma.user.findMany({
+ * const deletedUsers = await prisma.users.findMany({
  *   where: onlyDeleted({ role: 'ADMIN' })
  * });
  * ```
@@ -65,7 +65,7 @@ export function onlyDeleted<T extends object>(where?: T): T & { isDeleted: true 
  *
  * @example
  * ```typescript
- * const allUsers = await prisma.user.findMany({
+ * const allUsers = await prisma.users.findMany({
  *   where: includeDeleted({ role: 'ADMIN' })
  * });
  * ```

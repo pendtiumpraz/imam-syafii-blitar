@@ -9,7 +9,7 @@ export async function POST(
     const { slug } = params
 
     // Increment share count
-    const updatedCampaign = await prisma.donationCampaign.update({
+    const updatedCampaign = await prisma.donations_campaigns.update({
       where: { slug },
       data: {
         shareCount: {

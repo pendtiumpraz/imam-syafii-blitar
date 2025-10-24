@@ -294,7 +294,7 @@ export class TestDatabase {
 
   async seedTestData(): Promise<TestData> {
     // Create test users
-    const testAdmin = await this.prisma.user.create({
+    const testAdmin = await this.prisma.users.create({
       data: {
         email: 'admin@test.com',
         name: 'Test Admin',
@@ -304,7 +304,7 @@ export class TestDatabase {
       }
     })
 
-    const testTeacher = await this.prisma.user.create({
+    const testTeacher = await this.prisma.users.create({
       data: {
         email: 'teacher@test.com',
         name: 'Test Teacher',
@@ -315,7 +315,7 @@ export class TestDatabase {
     })
 
     // Create test class
-    const testClass = await this.prisma.class.create({
+    const testClass = await this.prisma.classes.create({
       data: {
         name: 'Test Class A',
         grade: '10',
@@ -326,7 +326,7 @@ export class TestDatabase {
 
     // Create test students
     const testStudents = await Promise.all([
-      this.prisma.student.create({
+      this.prisma.students.create({
         data: {
           studentId: 'STD001',
           name: 'Ahmad Test',
@@ -337,7 +337,7 @@ export class TestDatabase {
           enrollmentDate: new Date()
         }
       }),
-      this.prisma.student.create({
+      this.prisma.students.create({
         data: {
           studentId: 'STD002',
           name: 'Fatimah Test',
@@ -353,7 +353,7 @@ export class TestDatabase {
     // Create test payments
     const testPayments = await Promise.all(
       testStudents.map(student =>
-        this.prisma.payment.create({
+        this.prisma.payments.create({
           data: {
             studentId: student.id,
             amount: 500000,

@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const units = await prisma.businessUnit.findMany({
+    const units = await prisma.business_units.findMany({
       include: {
         _count: {
           select: {
@@ -52,13 +52,13 @@ export async function GET(request: NextRequest) {
       ];
 
       for (const unit of defaultUnits) {
-        await prisma.businessUnit.create({
+        await prisma.business_units.create({
           data: unit
         });
       }
 
       // Fetch again after initialization
-      const newUnits = await prisma.businessUnit.findMany({
+      const newUnits = await prisma.business_units.findMany({
         include: {
           _count: {
             select: {
@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const unit = await prisma.businessUnit.create({
+    const unit = await prisma.business_units.create({
       data: {
         code: code.toUpperCase(),
         name,
@@ -154,7 +154,7 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const unit = await prisma.businessUnit.update({
+    const unit = await prisma.business_units.update({
       where: { id },
       data: updateData
     });

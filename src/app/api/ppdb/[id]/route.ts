@@ -10,7 +10,7 @@ export async function GET(
   try {
     const { default: prisma } = await import('@/lib/prisma');
     
-    const registration = await prisma.registration.findUnique({
+    const registration = await prisma.registrations.findUnique({
       where: { id: params.id },
       include: {
         payments: {
@@ -79,7 +79,7 @@ export async function PUT(
       updateData.submittedAt = new Date();
     }
     
-    const registration = await prisma.registration.update({
+    const registration = await prisma.registrations.update({
       where: { id: params.id },
       data: updateData
     });
@@ -114,7 +114,7 @@ export async function DELETE(
     const { default: prisma } = await import('@/lib/prisma');
     
     // Check if registration exists
-    const registration = await prisma.registration.findUnique({
+    const registration = await prisma.registrations.findUnique({
       where: { id: params.id },
       include: { payments: true }
     });
@@ -135,7 +135,7 @@ export async function DELETE(
     }
     
     // Soft delete registration (preserve data for audit trail)
-    await softDelete(prisma.registration, { id: params.id }, session.user.id);
+    await softDelete(prisma.registrations, { id: params.id }, session.user.id);
 
     return NextResponse.json({
       success: true,

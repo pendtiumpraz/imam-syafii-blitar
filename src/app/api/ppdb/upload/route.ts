@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
     const { default: prisma } = await import('@/lib/prisma');
     
     // Get current documents
-    const registration = await prisma.registration.findUnique({
+    const registration = await prisma.registrations.findUnique({
       where: { id: registrationId },
       select: { documents: true }
     });
@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Update registration
-    await prisma.registration.update({
+    await prisma.registrations.update({
       where: { id: registrationId },
       data: {
         documents: JSON.stringify(documents),
@@ -141,7 +141,7 @@ export async function DELETE(request: NextRequest) {
     const { default: prisma } = await import('@/lib/prisma');
     
     // Get current documents
-    const registration = await prisma.registration.findUnique({
+    const registration = await prisma.registrations.findUnique({
       where: { id: registrationId },
       select: { documents: true }
     });
@@ -177,7 +177,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Update registration
-    await prisma.registration.update({
+    await prisma.registrations.update({
       where: { id: registrationId },
       data: {
         documents: JSON.stringify(documents),

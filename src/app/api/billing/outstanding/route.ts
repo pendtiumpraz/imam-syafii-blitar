@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
 
     // Get bills with related data
     const [bills, total] = await Promise.all([
-      prisma.bill.findMany({
+      prisma.bills.findMany({
         where,
         include: {
           student: {
@@ -127,7 +127,7 @@ export async function GET(request: NextRequest) {
         skip,
         take: limit,
       }),
-      prisma.bill.count({ where }),
+      prisma.bills.count({ where }),
     ]);
 
     // Calculate additional fields and update overdue status if needed
@@ -142,7 +142,7 @@ export async function GET(request: NextRequest) {
 
       // Update overdue status if it has changed
       if (bill.isOverdue !== isCurrentlyOverdue || bill.daysPastDue !== daysPastDue) {
-        await prisma.bill.update({
+        await prisma.bills.update({
           where: { id: bill.id },
           data: {
             isOverdue: isCurrentlyOverdue,

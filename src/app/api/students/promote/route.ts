@@ -24,10 +24,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const student = await prisma.student.findUnique({
+    const student = await prisma.students.findUnique({
       where: { id: studentId },
       include: {
-        otaProgram: true,
+        ota_program: true,
       }
     });
 
@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
 
       // If student has OTA program, deactivate it
       if (student.otaProgram) {
-        await prisma.oTAProgram.update({
+        await prisma.ota_programs.update({
           where: { id: student.otaProgram.id },
           data: {
             isActive: false,
@@ -118,12 +118,12 @@ export async function POST(request: NextRequest) {
 
     // Update student and create alumni record if graduating
     const [updatedStudent, alumni] = await Promise.all([
-      prisma.student.update({
+      prisma.students.update({
         where: { id: studentId },
         data: updateData,
         include: {
-          otaProgram: true,
-          hafalanProgress: true,
+          ota_program: true,
+          hafalan_progress: true,
         }
       }),
       alumniData ? prisma.alumni.create({ data: alumniData }) : null
@@ -165,7 +165,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const student = await prisma.student.findUnique({
+    const student = await prisma.students.findUnique({
       where: { id: studentId },
       select: {
         id: true,

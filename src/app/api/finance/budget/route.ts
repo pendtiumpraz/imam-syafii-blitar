@@ -32,7 +32,7 @@ const querySchema = z.object({
 
 // Helper function to calculate budget actuals
 async function calculateBudgetActuals(budgetId: string, budget: any) {
-  const budgetItems = await prisma.budgetItem.findMany({
+  const budgetItems = await prisma.budget_items.findMany({
     where: { budgetId },
     include: {
       category: true,
@@ -40,7 +40,7 @@ async function calculateBudgetActuals(budgetId: string, budget: any) {
   })
 
   // Get actual transactions for the budget period
-  const actualTransactions = await prisma.transaction.groupBy({
+  const actualTransactions = await prisma.transactions.groupBy({
     by: ['categoryId'],
     _sum: {
       amount: true,
@@ -68,7 +68,7 @@ async function calculateBudgetActuals(budgetId: string, budget: any) {
     const variance = actualAmount - item.budgetAmount
     const percentage = item.budgetAmount > 0 ? (actualAmount / item.budgetAmount) * 100 : 0
 
-    return prisma.budgetItem.update({
+    return prisma.budget_items.update({
       where: { id: item.id },
       data: {
         actualAmount,
@@ -125,7 +125,7 @@ export async function GET(request: NextRequest) {
     }
 
     const [budgets, total] = await Promise.all([
-      prisma.budget.findMany({
+      prisma.budgets.findMany({
         where,
         include: {
           creator: {
@@ -158,7 +158,7 @@ export async function GET(request: NextRequest) {
         skip,
         take: query.limit,
       }),
-      prisma.budget.count({ where }),
+      prisma.budgets.count({ where }),
     ])
 
     // Calculate actuals if requested
@@ -171,7 +171,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Calculate summary statistics
-    const summary = await prisma.budget.groupBy({
+    const summary = await prisma.budgets.groupBy({
       by: ['status', 'type'],
       _count: true,
       _sum: {
@@ -236,7 +236,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check for overlapping active budgets of the same type
-    const overlappingBudget = await prisma.budget.findFirst({
+    const overlappingBudget = await prisma.budgets.findFirst({
       where: {
         type: data.type,
         status: 'ACTIVE',
@@ -272,7 +272,7 @@ export async function POST(request: NextRequest) {
 
     // Verify all categories exist and are active
     const categoryIds = data.items.map(item => item.categoryId)
-    const categories = await prisma.financialCategory.findMany({
+    const categories = await prisma.financial_categories.findMany({
       where: {
         id: { in: categoryIds },
         isActive: true,
@@ -290,7 +290,7 @@ export async function POST(request: NextRequest) {
     const totalBudget = data.items.reduce((sum, item) => sum + item.budgetAmount, 0)
 
     // Create budget with items
-    const budget = await prisma.budget.create({
+    const budget = await prisma.budgets.create({
       data: {
         name: data.name,
         type: data.type,

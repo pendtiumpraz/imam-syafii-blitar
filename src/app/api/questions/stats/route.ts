@@ -7,13 +7,13 @@ export async function GET(request: NextRequest) {
   try {
     // Get counts for different statuses
     const [totalQuestions, answeredQuestions, pendingQuestions] = await Promise.all([
-      prisma.question.count(),
-      prisma.question.count({
+      prisma.questions.count(),
+      prisma.questions.count({
         where: {
           status: 'answered'
         }
       }),
-      prisma.question.count({
+      prisma.questions.count({
         where: {
           status: 'pending'
         }
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     ])
 
     // Get category breakdown
-    const categoryStats = await prisma.question.groupBy({
+    const categoryStats = await prisma.questions.groupBy({
       by: ['category'],
       _count: {
         id: true
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
     const sevenDaysAgo = new Date()
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
     
-    const recentQuestions = await prisma.question.count({
+    const recentQuestions = await prisma.questions.count({
       where: {
         createdAt: {
           gte: sevenDaysAgo
@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    const recentAnswers = await prisma.answer.count({
+    const recentAnswers = await prisma.answers.count({
       where: {
         createdAt: {
           gte: sevenDaysAgo
@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
     })
 
     // Calculate average response time for answered questions
-    const answeredQuestionsWithTime = await prisma.question.findMany({
+    const answeredQuestionsWithTime = await prisma.questions.findMany({
       where: {
         status: 'answered',
         answer: {

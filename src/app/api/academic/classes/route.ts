@@ -73,7 +73,7 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit;
 
     const [classes, totalCount] = await Promise.all([
-      prisma.class.findMany({
+      prisma.classes.findMany({
         where: whereConditions,
         skip,
         take: limit,
@@ -108,7 +108,7 @@ export async function GET(request: NextRequest) {
         { name: 'asc' },
       ],
     }),
-    prisma.class.count({ where: whereConditions })
+    prisma.classes.count({ where: whereConditions })
   ]);
 
     const response: any = {
@@ -125,7 +125,7 @@ export async function GET(request: NextRequest) {
 
     // Add student count if requested and user has permission
     if (includeStudentCount && hasPermission(session.user.role, 'read')) {
-      const studentCounts = await prisma.studentClass.groupBy({
+      const studentCounts = await prisma.student_classes.groupBy({
         by: ['classId'],
         where: {
           classId: { in: classes.map(c => c.id) },
@@ -201,7 +201,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if academic year exists
-    const academicYear = await prisma.academicYear.findUnique({
+    const academicYear = await prisma.academic_years.findUnique({
       where: { id: academicYearId },
     });
 
@@ -214,7 +214,7 @@ export async function POST(request: NextRequest) {
 
     // Check if teacher exists (if provided)
     if (teacherId) {
-      const teacher = await prisma.user.findUnique({
+      const teacher = await prisma.users.findUnique({
         where: { id: teacherId },
       });
 
@@ -226,7 +226,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const classData = await prisma.class.create({
+    const classData = await prisma.classes.create({
       data: {
         name,
         grade,
@@ -338,7 +338,7 @@ export async function PUT(request: NextRequest) {
 
     // Check if teacher exists (if provided)
     if (teacherId) {
-      const teacher = await prisma.user.findUnique({
+      const teacher = await prisma.users.findUnique({
         where: { id: teacherId },
       });
 
@@ -350,7 +350,7 @@ export async function PUT(request: NextRequest) {
       }
     }
 
-    const classData = await prisma.class.update({
+    const classData = await prisma.classes.update({
       where: { id },
       data: {
         name,
@@ -437,7 +437,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Check if class has associated data
-    const classData = await prisma.class.findUnique({
+    const classData = await prisma.classes.findUnique({
       where: { id },
       include: {
         _count: {
@@ -466,7 +466,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    await softDelete(prisma.class, { id }, session.user.id);
+    await softDelete(prisma.classes, { id }, session.user.id);
 
     return NextResponse.json({ message: 'Class soft deleted successfully' });
   } catch (error) {

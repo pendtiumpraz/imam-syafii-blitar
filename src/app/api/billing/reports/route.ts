@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
     const reportName = validated.name || `${validated.type.replace(/_/g, ' ')} Report - ${startDate.toLocaleDateString()} to ${endDate.toLocaleDateString()}`;
 
     // Create report record
-    const report = await prisma.billingReport.create({
+    const report = await prisma.billing_reports.create({
       data: {
         name: reportName,
         type: validated.type,
@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
     summary = calculateReportSummary(reportData, validated.type);
 
     // Update report with data
-    const updatedReport = await prisma.billingReport.update({
+    const updatedReport = await prisma.billing_reports.update({
       where: { id: report.id },
       data: {
         data: JSON.stringify(reportData),
@@ -169,7 +169,7 @@ export async function GET(request: NextRequest) {
 
     if (reportId) {
       // Get specific report
-      const report = await prisma.billingReport.findUnique({
+      const report = await prisma.billing_reports.findUnique({
         where: { id: reportId },
       });
 
@@ -199,7 +199,7 @@ export async function GET(request: NextRequest) {
     }
 
     const [reports, total] = await Promise.all([
-      prisma.billingReport.findMany({
+      prisma.billing_reports.findMany({
         where,
         select: {
           id: true,
@@ -220,7 +220,7 @@ export async function GET(request: NextRequest) {
         skip,
         take: limit,
       }),
-      prisma.billingReport.count({ where }),
+      prisma.billing_reports.count({ where }),
     ]);
 
     const processedReports = reports.map(report => ({
@@ -260,7 +260,7 @@ async function generateMonthlyCollectionReport(prisma: any, startDate: Date, end
     where.method = { in: filters.paymentMethods };
   }
 
-  const payments = await prisma.billPayment.findMany({
+  const payments = await prisma.bill_payments.findMany({
     where,
     include: {
       bill: {
@@ -344,7 +344,7 @@ async function generateOutstandingBillsReport(prisma: any, startDate: Date, endD
     }
   }
 
-  const bills = await prisma.bill.findMany({
+  const bills = await prisma.bills.findMany({
     where,
     include: {
       student: {

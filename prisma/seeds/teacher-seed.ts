@@ -322,20 +322,28 @@ async function seedTeachers() {
 
   console.log(`📝 Creating ${teachers.length} teachers...`);
 
-  for (const teacher of teachers) {
+  for (let i = 0; i < teachers.length; i++) {
+    const teacher = teachers[i];
     // Check if teacher exists by NIP
-    const existing = await prisma.teacher.findUnique({
+    const existing = await prisma.teachers.findUnique({
       where: { nip: teacher.nip }
     });
 
     if (existing) {
-      await prisma.teacher.update({
+      await prisma.teachers.update({
         where: { id: existing.id },
-        data: teacher
+        data: {
+          ...teacher,
+          updatedAt: new Date(),
+        }
       });
     } else {
-      await prisma.teacher.create({
-        data: teacher
+      await prisma.teachers.create({
+        data: {
+          id: `seed-teacher-${String(i + 1).padStart(3, '0')}`,
+          ...teacher,
+          updatedAt: new Date(),
+        }
       });
     }
   }

@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
     }
 
     const [reports, total] = await Promise.all([
-      prisma.oTAReport.findMany({
+      prisma.ota_reports.findMany({
         where: whereConditions,
         orderBy: [
           { year: 'desc' },
@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
         skip,
         take: limit,
       }),
-      prisma.oTAReport.count({ where: whereConditions })
+      prisma.ota_reports.count({ where: whereConditions })
     ]);
 
     return NextResponse.json({
@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
     const reportMonth = `${year}-${month.toString().padStart(2, '0')}`;
 
     // Check if report already exists
-    const existingReport = await prisma.oTAReport.findFirst({
+    const existingReport = await prisma.ota_reports.findFirst({
       where: {
         month: reportMonth,
         reportType,
@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
     const reportData = await generateMonthlyReport(reportMonth);
 
     // Create the report
-    const report = await prisma.oTAReport.create({
+    const report = await prisma.ota_reports.create({
       data: {
         month: reportMonth,
         year: year.toString(),
@@ -174,7 +174,7 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const report = await prisma.oTAReport.findUnique({
+    const report = await prisma.ota_reports.findUnique({
       where: { id }
     });
 
@@ -209,7 +209,7 @@ export async function PUT(request: NextRequest) {
       updateData.distributionNotes = distributionNotes;
     }
 
-    const updatedReport = await prisma.oTAReport.update({
+    const updatedReport = await prisma.ota_reports.update({
       where: { id },
       data: updateData
     });
@@ -245,7 +245,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const report = await prisma.oTAReport.findUnique({
+    const report = await prisma.ota_reports.findUnique({
       where: { id }
     });
 
@@ -266,7 +266,7 @@ export async function DELETE(request: NextRequest) {
 
     // Soft delete report
     await softDelete(
-      prisma.oTAReport,
+      prisma.ota_reports,
       { id },
       session.user.id
     );
@@ -288,7 +288,7 @@ async function generateMonthlyReport(month: string) {
   const [year, monthNum] = month.split('-');
   
   // Get all active OTA programs
-  const programs = await prisma.oTAProgram.findMany({
+  const programs = await prisma.ota_programs.findMany({
     where: {
       isActive: true,
     },
@@ -375,7 +375,7 @@ async function generateMonthlyReport(month: string) {
   
   // Get previous month data for comparison
   const prevMonth = getPreviousMonth(month);
-  const prevMonthSponsors = await prisma.oTASponsor.findMany({
+  const prevMonthSponsors = await prisma.ota_sponsors.findMany({
     where: {
       month: prevMonth,
       isPaid: true,
@@ -387,7 +387,7 @@ async function generateMonthlyReport(month: string) {
   const recurringDonors = allSponsors.filter(s => prevDonors.has(s.donorEmail || s.donorName)).length;
 
   // Get carry-over amount from previous month
-  const prevReport = await prisma.oTAReport.findFirst({
+  const prevReport = await prisma.ota_reports.findFirst({
     where: {
       month: prevMonth,
       reportType: 'MONTHLY',

@@ -14,7 +14,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const { id } = params
 
     // Find payment by ID or external ID
-    const payment = await prisma.payment.findFirst({
+    const payment = await prisma.payments.findFirst({
       where: {
         OR: [
           { id },
@@ -83,7 +83,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           }
 
           if (newStatus !== payment.status) {
-            await prisma.payment.update({
+            await prisma.payments.update({
               where: { id: payment.id },
               data: {
                 status: newStatus,
@@ -184,7 +184,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     const { status, paidAt, verifiedBy, notes } = validation.data
 
     // Find payment
-    const payment = await prisma.payment.findFirst({
+    const payment = await prisma.payments.findFirst({
       where: {
         OR: [
           { id },
@@ -224,7 +224,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     }
 
     // Update payment
-    const updatedPayment = await prisma.payment.update({
+    const updatedPayment = await prisma.payments.update({
       where: { id: payment.id },
       data: updateData
     })

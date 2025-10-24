@@ -25,10 +25,10 @@ export async function GET(request: NextRequest) {
     const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
 
     // Get all bills
-    const totalBills = await prisma.bill.count();
+    const totalBills = await prisma.bills.count();
 
     // Get outstanding bills (not fully paid)
-    const outstandingBills = await prisma.bill.findMany({
+    const outstandingBills = await prisma.bills.findMany({
       where: {
         status: { in: ['OUTSTANDING', 'PARTIAL'] },
       },
@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
     const totalOverdue = outstandingBills.filter(bill => bill.isOverdue).length;
 
     // Get total collected this month
-    const collectedThisMonth = await prisma.billPayment.aggregate({
+    const collectedThisMonth = await prisma.bill_payments.aggregate({
       where: {
         verificationStatus: 'VERIFIED',
         paymentDate: {
@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
     const totalCollected = Number(collectedThisMonth._sum.amount || 0);
 
     // Calculate payment rate (percentage of bills that are fully paid)
-    const paidBills = await prisma.bill.count({
+    const paidBills = await prisma.bills.count({
       where: { status: 'PAID' },
     });
     const paymentRate = totalBills > 0 ? (paidBills / totalBills) * 100 : 0;
@@ -96,7 +96,7 @@ export async function GET(request: NextRequest) {
     ` as any[];
 
     // Get payment method distribution
-    const paymentMethodStats = await prisma.billPayment.groupBy({
+    const paymentMethodStats = await prisma.bill_payments.groupBy({
       by: ['method'],
       where: {
         verificationStatus: 'VERIFIED',
@@ -126,7 +126,7 @@ export async function GET(request: NextRequest) {
     ` as any[];
 
     // Recent payment activity
-    const recentPayments = await prisma.billPayment.findMany({
+    const recentPayments = await prisma.bill_payments.findMany({
       take: 10,
       orderBy: { paymentDate: 'desc' },
       where: {

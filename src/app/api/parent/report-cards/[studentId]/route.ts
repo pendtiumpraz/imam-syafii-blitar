@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma';
 
 // Helper function to verify parent access to student
 async function verifyParentAccess(userId: string, studentId: string) {
-  const parentStudent = await prisma.parentStudent.findFirst({
+  const parentStudent = await prisma.parent_students.findFirst({
     where: {
       studentId,
       parent: {
@@ -57,7 +57,7 @@ export async function GET(
 
     // If specific report card requested
     if (reportCardId) {
-      const reportCard = await prisma.reportCard.findFirst({
+      const reportCard = await prisma.report_cards.findFirst({
         where: {
           id: reportCardId,
           studentId,
@@ -109,7 +109,7 @@ export async function GET(
       }
 
       // Get detailed grades for this semester
-      const grades = await prisma.grade.findMany({
+      const grades = await prisma.grades.findMany({
         where: {
           studentId,
           semesterId: reportCard.semesterId,
@@ -179,7 +179,7 @@ export async function GET(
     }
 
     // Get report cards list
-    const reportCards = await prisma.reportCard.findMany({
+    const reportCards = await prisma.report_cards.findMany({
       where: whereConditions,
       include: {
         semester: {

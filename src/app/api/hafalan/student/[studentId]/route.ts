@@ -19,7 +19,7 @@ export async function GET(
     const recordLimit = searchParams.get('recordLimit') || '10';
 
     // Check if student exists
-    const student = await prisma.student.findUnique({
+    const student = await prisma.students.findUnique({
       where: { id: studentId },
       select: {
         id: true,
@@ -40,14 +40,14 @@ export async function GET(
     }
 
     // Get progress summary
-    const progress = await prisma.hafalanProgress.findUnique({
+    const progress = await prisma.hafalan_progress.findUnique({
       where: { studentId }
     });
 
     // Get recent records
     let recentRecords: any[] = [];
     if (includeRecords) {
-      recentRecords = await prisma.hafalanRecord.findMany({
+      recentRecords = await prisma.hafalan_records.findMany({
         where: { studentId },
         orderBy: { date: 'desc' },
         take: parseInt(recordLimit),
@@ -72,7 +72,7 @@ export async function GET(
     }
 
     // Get current targets
-    const currentTargets = await prisma.hafalanTarget.findMany({
+    const currentTargets = await prisma.hafalan_targets.findMany({
       where: {
         studentId,
         status: 'ACTIVE'
@@ -98,14 +98,14 @@ export async function GET(
     });
 
     // Get achievements
-    const achievements = await prisma.hafalanAchievement.findMany({
+    const achievements = await prisma.hafalan_achievements.findMany({
       where: { studentId },
       orderBy: { earnedAt: 'desc' },
       take: 5
     });
 
     // Get next schedule
-    const nextSchedule = await prisma.setoranSchedule.findFirst({
+    const nextSchedule = await prisma.setoran_schedules.findFirst({
       where: {
         studentId,
         isActive: true
@@ -121,7 +121,7 @@ export async function GET(
     });
 
     // Calculate surah completion status
-    const allRecords = await prisma.hafalanRecord.findMany({
+    const allRecords = await prisma.hafalan_records.findMany({
       where: { studentId },
       include: { surah: true }
     });
@@ -129,7 +129,7 @@ export async function GET(
     const surahStatus: { [key: number]: any } = {};
     
     // Initialize all surahs
-    const allSurahs = await prisma.quranSurah.findMany({
+    const allSurahs = await prisma.quran_surahs.findMany({
       orderBy: { number: 'asc' }
     });
 

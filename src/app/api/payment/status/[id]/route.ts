@@ -10,7 +10,7 @@ export async function GET(
     const paymentId = params.id
 
     // Find payment by ID
-    const payment = await prisma.payment.findUnique({
+    const payment = await prisma.payments.findUnique({
       where: { id: paymentId },
       include: {
         registration: {
@@ -78,7 +78,7 @@ export async function GET(
 
           // Update payment in database
           if (newStatus !== 'PENDING') {
-            const updatedPayment = await prisma.payment.update({
+            const updatedPayment = await prisma.payments.update({
               where: { id: payment.id },
               data: {
                 status: newStatus,
@@ -89,7 +89,7 @@ export async function GET(
 
             // Update registration if payment successful
             if (newStatus === 'SUCCESS' && payment.registrationId) {
-              await prisma.registration.update({
+              await prisma.registrations.update({
                 where: { id: payment.registrationId },
                 data: {
                   paymentStatus: 'PAID',
@@ -119,7 +119,7 @@ export async function GET(
 
     // Handle expired payments
     if (isExpired && payment.status === 'PENDING') {
-      await prisma.payment.update({
+      await prisma.payments.update({
         where: { id: payment.id },
         data: {
           status: 'EXPIRED',
@@ -165,7 +165,7 @@ export async function POST(
     const { action } = body
 
     // Find payment
-    const payment = await prisma.payment.findUnique({
+    const payment = await prisma.payments.findUnique({
       where: { id: paymentId },
       include: {
         registration: true,
@@ -201,7 +201,7 @@ export async function POST(
       }
 
       // Update payment status
-      const updatedPayment = await prisma.payment.update({
+      const updatedPayment = await prisma.payments.update({
         where: { id: payment.id },
         data: {
           status: 'FAILED',
@@ -248,7 +248,7 @@ export async function POST(
             newStatus = 'PENDING'
         }
 
-        const updatedPayment = await prisma.payment.update({
+        const updatedPayment = await prisma.payments.update({
           where: { id: payment.id },
           data: {
             status: newStatus,
@@ -259,7 +259,7 @@ export async function POST(
 
         // Update registration if payment successful
         if (newStatus === 'SUCCESS' && payment.registrationId) {
-          await prisma.registration.update({
+          await prisma.registrations.update({
             where: { id: payment.registrationId },
             data: {
               paymentStatus: 'PAID',
@@ -313,7 +313,7 @@ export async function POST(
         )
       }
 
-      const updatedPayment = await prisma.payment.update({
+      const updatedPayment = await prisma.payments.update({
         where: { id: payment.id },
         data: {
           status: 'SUCCESS',
@@ -327,7 +327,7 @@ export async function POST(
 
       // Update registration if payment successful
       if (payment.registrationId) {
-        await prisma.registration.update({
+        await prisma.registrations.update({
           where: { id: payment.registrationId },
           data: {
             paymentStatus: 'PAID',

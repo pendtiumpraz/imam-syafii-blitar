@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
       whereConditions.status = status;
     }
 
-    const exams = await prisma.exam.findMany({
+    const exams = await prisma.exams.findMany({
       where: whereConditions,
       include: {
         subject: {
@@ -151,7 +151,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const exam = await prisma.exam.create({
+    const exam = await prisma.exams.create({
       data: {
         name,
         code,
@@ -258,7 +258,7 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const exam = await prisma.exam.update({
+    const exam = await prisma.exams.update({
       where: { id },
       data: {
         name,
@@ -356,7 +356,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Check if exam has results
-    const exam = await prisma.exam.findUnique({
+    const exam = await prisma.exams.findUnique({
       where: { id },
       include: {
         _count: {
@@ -382,7 +382,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Soft delete the exam
-    await softDelete(prisma.exam, { id }, session.user?.id);
+    await softDelete(prisma.exams, { id }, session.user?.id);
 
     return NextResponse.json({ message: 'Exam deleted successfully' });
   } catch (error) {

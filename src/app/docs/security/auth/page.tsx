@@ -606,7 +606,7 @@ export async function enable2FA(req: NextRequest) {
   const backupCodes = generateBackupCodes()
   
   // Save to database
-  await prisma.user.update({
+  await prisma.users.update({
     where: { id: userId },
     data: {
       twoFactorEnabled: true,
@@ -638,7 +638,7 @@ export async function loginWith2FA(req: NextRequest) {
   const { username, password, totpCode } = await req.json()
   
   // Verify credentials
-  const user = await prisma.user.findUnique({
+  const user = await prisma.users.findUnique({
     where: { username },
     include: { backupCodes: true }
   })

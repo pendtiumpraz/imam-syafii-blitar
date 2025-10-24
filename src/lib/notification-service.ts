@@ -39,7 +39,7 @@ export interface NotificationPreferences {
 
 class NotificationService {
   async createNotification(data: NotificationData): Promise<string> {
-    const notification = await prisma.notification.create({
+    const notification = await prisma.notifications.create({
       data: {
         userId: data.userId,
         type: data.type,
@@ -61,7 +61,7 @@ class NotificationService {
   }
 
   async processNotification(notificationId: string) {
-    const notification = await prisma.notification.findUnique({
+    const notification = await prisma.notifications.findUnique({
       where: { id: notificationId },
       include: {
         user: {
@@ -94,7 +94,7 @@ class NotificationService {
     if (this.isInQuietHours(preferences.quietHours)) {
       // Schedule for later
       const nextAllowedTime = this.getNextAllowedTime(preferences.quietHours);
-      await prisma.notification.update({
+      await prisma.notifications.update({
         where: { id: notificationId },
         data: { scheduledFor: nextAllowedTime },
       });
@@ -141,7 +141,7 @@ class NotificationService {
 
       const sent = await emailService.sendEmail(notification.user.email, template);
       
-      await prisma.notification.update({
+      await prisma.notifications.update({
         where: { id: notification.id },
         data: {
           emailSent: sent,
@@ -158,7 +158,7 @@ class NotificationService {
     // This would integrate with services like Firebase Cloud Messaging
     try {
       // Placeholder for push notification logic
-      await prisma.notification.update({
+      await prisma.notifications.update({
         where: { id: notification.id },
         data: {
           pushSent: true,
@@ -174,7 +174,7 @@ class NotificationService {
     // Implementation for SMS notifications
     try {
       // Placeholder for SMS logic (integrate with Twilio, etc.)
-      await prisma.notification.update({
+      await prisma.notifications.update({
         where: { id: notification.id },
         data: {
           smsSent: true,
@@ -207,7 +207,7 @@ class NotificationService {
       );
 
       // Update notification status
-      await prisma.notification.update({
+      await prisma.notifications.update({
         where: { id: notification.id },
         data: {
           // Note: We don't have whatsappSent field in the schema yet
@@ -228,7 +228,7 @@ class NotificationService {
   private async getUserWhatsAppNumber(userId: string): Promise<string | null> {
     try {
       // Try to get WhatsApp number from parent account
-      const user = await prisma.user.findUnique({
+      const user = await prisma.users.findUnique({
         where: { id: userId },
         include: {
           parentAccount: true,
@@ -241,7 +241,7 @@ class NotificationService {
 
       // If no WhatsApp number in parent account, try to get from student data
       // This assumes the user is linked to a student record
-      const student = await prisma.student.findFirst({
+      const student = await prisma.students.findFirst({
         where: {
           OR: [
             { fatherPhone: { not: null } },
@@ -260,7 +260,7 @@ class NotificationService {
   }
 
   async getUserPreferences(userId: string): Promise<NotificationPreferences> {
-    const user = await prisma.user.findUnique({
+    const user = await prisma.users.findUnique({
       where: { id: userId },
       include: {
         parentAccount: true,
@@ -301,7 +301,7 @@ class NotificationService {
   }
 
   async updateUserPreferences(userId: string, preferences: Partial<NotificationPreferences>) {
-    const user = await prisma.user.findUnique({
+    const user = await prisma.users.findUnique({
       where: { id: userId },
       include: { parentAccount: true },
     });
@@ -312,7 +312,7 @@ class NotificationService {
     const newPrefs = { ...currentPrefs, ...preferences };
 
     if (user.parentAccount) {
-      await prisma.parentAccount.update({
+      await prisma.parent_accounts.update({
         where: { userId },
         data: {
           notificationSettings: JSON.stringify(newPrefs),
@@ -321,7 +321,7 @@ class NotificationService {
     } else {
       // For non-parent users, we might store preferences differently
       // For now, we'll create a parent account entry
-      await prisma.parentAccount.create({
+      await prisma.parent_accounts.create({
         data: {
           userId,
           notificationSettings: JSON.stringify(newPrefs),
@@ -331,7 +331,7 @@ class NotificationService {
   }
 
   async getUnreadNotifications(userId: string, limit = 20) {
-    return await prisma.notification.findMany({
+    return await prisma.notifications.findMany({
       where: {
         userId,
         isRead: false,
@@ -346,7 +346,7 @@ class NotificationService {
   }
 
   async getAllNotifications(userId: string, limit = 50, offset = 0) {
-    return await prisma.notification.findMany({
+    return await prisma.notifications.findMany({
       where: {
         userId,
         OR: [
@@ -361,7 +361,7 @@ class NotificationService {
   }
 
   async markAsRead(notificationId: string) {
-    await prisma.notification.update({
+    await prisma.notifications.update({
       where: { id: notificationId },
       data: {
         isRead: true,
@@ -371,7 +371,7 @@ class NotificationService {
   }
 
   async markAllAsRead(userId: string) {
-    await prisma.notification.updateMany({
+    await prisma.notifications.updateMany({
       where: {
         userId,
         isRead: false,
@@ -385,10 +385,10 @@ class NotificationService {
 
   async getNotificationStats(userId: string) {
     const [total, unread] = await Promise.all([
-      prisma.notification.count({
+      prisma.notifications.count({
         where: { userId },
       }),
-      prisma.notification.count({
+      prisma.notifications.count({
         where: {
           userId,
           isRead: false,
@@ -457,7 +457,7 @@ class NotificationService {
 
   // Bulk notification methods
   async createBulkNotifications(notifications: NotificationData[]): Promise<string[]> {
-    const createdNotifications = await prisma.notification.createMany({
+    const createdNotifications = await prisma.notifications.createMany({
       data: notifications.map(data => ({
         userId: data.userId,
         type: data.type,
@@ -473,7 +473,7 @@ class NotificationService {
     });
 
     // Get the IDs of created notifications
-    const notificationIds = await prisma.notification.findMany({
+    const notificationIds = await prisma.notifications.findMany({
       where: {
         userId: { in: notifications.map(n => n.userId) },
         createdAt: { gte: new Date(Date.now() - 60000) }, // Last minute
@@ -491,7 +491,7 @@ class NotificationService {
 
   // Announcement notifications
   async sendAnnouncementNotification(announcementId: string) {
-    const announcement = await prisma.announcement.findUnique({
+    const announcement = await prisma.announcements.findUnique({
       where: { id: announcementId },
     });
 
@@ -535,7 +535,7 @@ class NotificationService {
         const targetClasses = JSON.parse(announcement.targetClasses || '[]');
         if (targetClasses.length > 0) {
           // Get students in specific classes
-          const students = await prisma.student.findMany({
+          const students = await prisma.students.findMany({
             where: {
               studentClasses: {
                 some: {
@@ -557,7 +557,7 @@ class NotificationService {
         break;
     }
 
-    return await prisma.user.findMany({
+    return await prisma.users.findMany({
       where: whereClause,
     });
   }

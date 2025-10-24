@@ -20,7 +20,7 @@ export async function GET(
     const registrationId = params.id
 
     // Get detailed registration data
-    const registration = await prisma.registration.findUnique({
+    const registration = await prisma.registrations.findUnique({
       where: { id: registrationId },
       include: {
         payments: {
@@ -55,7 +55,7 @@ export async function GET(
     // Get admin who verified (if exists)
     let verifiedByAdmin = null
     if (registration.verifiedBy) {
-      verifiedByAdmin = await prisma.user.findUnique({
+      verifiedByAdmin = await prisma.users.findUnique({
         where: { id: registration.verifiedBy },
         select: { id: true, name: true, username: true }
       })
@@ -173,7 +173,7 @@ export async function PUT(
     const body = await request.json()
 
     // Get current registration
-    const currentReg = await prisma.registration.findUnique({
+    const currentReg = await prisma.registrations.findUnique({
       where: { id: registrationId }
     })
 
@@ -214,7 +214,7 @@ export async function PUT(
     }
 
     // Update registration
-    const updatedRegistration = await prisma.registration.update({
+    const updatedRegistration = await prisma.registrations.update({
       where: { id: registrationId },
       data: updateData,
       include: {

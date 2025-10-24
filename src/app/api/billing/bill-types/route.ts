@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
       where.isRecurring = isRecurring === 'true';
     }
 
-    const billTypes = await prisma.billType.findMany({
+    const billTypes = await prisma.bill_types.findMany({
       where,
       orderBy: [
         { sortOrder: 'asc' },
@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
     const validated = createBillTypeSchema.parse(body);
 
     // Check if name already exists
-    const existing = await prisma.billType.findUnique({
+    const existing = await prisma.bill_types.findUnique({
       where: { name: validated.name },
     });
 
@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const billType = await prisma.billType.create({
+    const billType = await prisma.bill_types.create({
       data: {
         ...validated,
         priceByGrade: JSON.stringify(validated.priceByGrade),

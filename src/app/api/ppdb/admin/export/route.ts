@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     if (paymentStatus) where.paymentStatus = paymentStatus
 
     // Get registrations
-    const registrations = await prisma.registration.findMany({
+    const registrations = await prisma.registrations.findMany({
       where,
       include: {
         payments: {
@@ -299,28 +299,28 @@ async function getExportStats() {
     recentRegistrations
   ] = await Promise.all([
     // Total registrations
-    prisma.registration.count(),
+    prisma.registrations.count(),
     
     // By status
-    prisma.registration.groupBy({
+    prisma.registrations.groupBy({
       by: ['status'],
       _count: { status: true }
     }),
     
     // By level
-    prisma.registration.groupBy({
+    prisma.registrations.groupBy({
       by: ['level'],
       _count: { level: true }
     }),
     
     // By payment status
-    prisma.registration.groupBy({
+    prisma.registrations.groupBy({
       by: ['paymentStatus'],
       _count: { paymentStatus: true }
     }),
     
     // Recent registrations (last 7 days)
-    prisma.registration.count({
+    prisma.registrations.count({
       where: {
         createdAt: {
           gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)

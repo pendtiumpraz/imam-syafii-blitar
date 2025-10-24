@@ -29,7 +29,7 @@ export interface DashboardAnalytics {
     passingRate: number;
     attendanceRate: number;
   }[];
-  hafalanProgress: {
+  hafalan_progress: {
     level: string;
     totalStudents: number;
     averageProgress: number;
@@ -114,9 +114,9 @@ class DashboardAnalyticsService {
       currentMonthStudents,
       lastMonthStudents,
     ] = await Promise.all([
-      prisma.student.count({ where: { status: 'ACTIVE' } }),
-      prisma.user.count({ where: { role: { in: ['USTADZ', 'ADMIN'] } } }),
-      prisma.transaction.aggregate({
+      prisma.students.count({ where: { status: 'ACTIVE' } }),
+      prisma.users.count({ where: { role: { in: ['USTADZ', 'ADMIN'] } } }),
+      prisma.transactions.aggregate({
         where: {
           type: 'INCOME',
           date: { gte: currentMonth },
@@ -124,7 +124,7 @@ class DashboardAnalyticsService {
         },
         _sum: { amount: true },
       }),
-      prisma.transaction.aggregate({
+      prisma.transactions.aggregate({
         where: {
           type: 'INCOME',
           date: { gte: lastMonth, lt: currentMonth },
@@ -132,18 +132,18 @@ class DashboardAnalyticsService {
         },
         _sum: { amount: true },
       }),
-      prisma.activity.count({
+      prisma.activities.count({
         where: {
           date: { gte: currentMonth },
         },
       }),
-      prisma.student.count({
+      prisma.students.count({
         where: {
           enrollmentDate: { gte: currentMonth },
           status: 'ACTIVE',
         },
       }),
-      prisma.student.count({
+      prisma.students.count({
         where: {
           enrollmentDate: { gte: lastMonth, lt: currentMonth },
           status: 'ACTIVE',
@@ -181,7 +181,7 @@ class DashboardAnalyticsService {
       const nextDate = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
       
       const [newEnrollments, graduations] = await Promise.all([
-        prisma.student.count({
+        prisma.students.count({
           where: {
             enrollmentDate: {
               gte: date,
@@ -189,7 +189,7 @@ class DashboardAnalyticsService {
             },
           },
         }),
-        prisma.student.count({
+        prisma.students.count({
           where: {
             graduationDate: {
               gte: date,
@@ -219,7 +219,7 @@ class DashboardAnalyticsService {
       const nextDate = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
       
       const [income, expenses, collections, outstanding] = await Promise.all([
-        prisma.transaction.aggregate({
+        prisma.transactions.aggregate({
           where: {
             type: 'INCOME',
             date: { gte: date, lt: nextDate },
@@ -227,7 +227,7 @@ class DashboardAnalyticsService {
           },
           _sum: { amount: true },
         }),
-        prisma.transaction.aggregate({
+        prisma.transactions.aggregate({
           where: {
             type: 'EXPENSE',
             date: { gte: date, lt: nextDate },
@@ -235,14 +235,14 @@ class DashboardAnalyticsService {
           },
           _sum: { amount: true },
         }),
-        prisma.billPayment.aggregate({
+        prisma.bill_payments.aggregate({
           where: {
             paymentDate: { gte: date, lt: nextDate },
             verificationStatus: 'VERIFIED',
           },
           _sum: { amount: true },
         }),
-        prisma.bill.aggregate({
+        prisma.bills.aggregate({
           where: {
             dueDate: { gte: date, lt: nextDate },
             status: { in: ['OUTSTANDING', 'OVERDUE'] },
@@ -319,13 +319,13 @@ class DashboardAnalyticsService {
     const hafalanData = [];
 
     for (const level of levels) {
-      const students = await prisma.student.findMany({
+      const students = await prisma.students.findMany({
         where: { 
           institutionType: level,
           status: 'ACTIVE',
         },
         include: {
-          hafalanProgress: true,
+          hafalan_progress: true,
           hafalanRecords: {
             where: { status: 'MUTQIN' },
             include: { surah: true },
@@ -391,7 +391,7 @@ class DashboardAnalyticsService {
   }
 
   private async getTeacherWorkload() {
-    const teachers = await prisma.user.findMany({
+    const teachers = await prisma.users.findMany({
       where: { role: { in: ['USTADZ', 'ADMIN'] } },
       include: {
         teacherSubjects: {
@@ -455,12 +455,12 @@ class DashboardAnalyticsService {
       outstandingBills,
       paymentMethodStats,
     ] = await Promise.all([
-      prisma.bill.count({
+      prisma.bills.count({
         where: {
           dueDate: { gte: lastMonth },
         },
       }),
-      prisma.bill.count({
+      prisma.bills.count({
         where: {
           dueDate: { gte: lastMonth },
           status: 'PAID',
@@ -472,14 +472,14 @@ class DashboardAnalyticsService {
           },
         },
       }),
-      prisma.billPayment.aggregate({
+      prisma.bill_payments.aggregate({
         where: {
           paymentDate: { gte: lastMonth },
           verificationStatus: 'VERIFIED',
         },
         _sum: { amount: true },
       }),
-      prisma.bill.aggregate({
+      prisma.bills.aggregate({
         where: {
           status: { in: ['OUTSTANDING', 'OVERDUE'] },
         },

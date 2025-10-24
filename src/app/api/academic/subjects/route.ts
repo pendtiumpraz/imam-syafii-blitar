@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit;
 
     const [subjects, totalCount] = await Promise.all([
-      prisma.subject.findMany({
+      prisma.subjects.findMany({
         where: whereConditions,
         skip,
         take: limit,
@@ -78,7 +78,7 @@ export async function GET(request: NextRequest) {
         { name: 'asc' },
       ],
     }),
-    prisma.subject.count({ where: whereConditions })
+    prisma.subjects.count({ where: whereConditions })
   ]);
 
     const response: any = {
@@ -95,7 +95,7 @@ export async function GET(request: NextRequest) {
 
     // Include teacher assignments if requested
     if (includeTeachers && hasPermission(session.user?.role || '', 'read')) {
-      const teacherSubjects = await prisma.teacherSubject.findMany({
+      const teacherSubjects = await prisma.teacher_subjects.findMany({
         where: {
           subjectId: { in: subjects.map(s => s.id) },
           isActive: true
@@ -212,7 +212,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const subject = await prisma.subject.create({
+    const subject = await prisma.subjects.create({
       data: {
         code,
         name,
@@ -293,7 +293,7 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const subject = await prisma.subject.update({
+    const subject = await prisma.subjects.update({
       where: { id },
       data: {
         code,
@@ -369,7 +369,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Check if subject has associated data
-    const subject = await prisma.subject.findUnique({
+    const subject = await prisma.subjects.findUnique({
       where: { id },
       include: {
         _count: {
@@ -400,7 +400,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Soft delete the subject
-    await softDelete(prisma.subject, { id }, session.user?.id);
+    await softDelete(prisma.subjects, { id }, session.user?.id);
 
     return NextResponse.json({ message: 'Subject deleted successfully' });
   } catch (error) {

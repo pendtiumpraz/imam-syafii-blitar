@@ -11,7 +11,7 @@ export async function GET(
     const { slug } = params
     
     // Find campaign first
-    const campaign = await prisma.donationCampaign.findUnique({
+    const campaign = await prisma.donations_campaigns.findUnique({
       where: { slug },
       select: { id: true }
     })
@@ -24,7 +24,7 @@ export async function GET(
     }
 
     // Get updates
-    const updates = await prisma.campaignUpdate.findMany({
+    const updates = await prisma.campaign_updates.findMany({
       where: {
         campaignId: campaign.id,
         isPublic: true
@@ -66,7 +66,7 @@ export async function POST(
     const { title, content, images = [], isPublic = true } = body
 
     // Find campaign
-    const campaign = await prisma.donationCampaign.findUnique({
+    const campaign = await prisma.donations_campaigns.findUnique({
       where: { slug },
       select: { id: true, createdBy: true }
     })
@@ -95,7 +95,7 @@ export async function POST(
     }
 
     // Create update
-    const update = await prisma.campaignUpdate.create({
+    const update = await prisma.campaign_updates.create({
       data: {
         campaignId: campaign.id,
         title,

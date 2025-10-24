@@ -6,7 +6,7 @@ import { Decimal } from '@prisma/client/runtime/library';
 
 // Helper function to generate billing number
 async function generateBillingNumber(year: number, month: number): Promise<string> {
-  const count = await prisma.sPPBilling.count({
+  const count = await prisma.spp_billings.count({
     where: { year, month }
   });
   
@@ -106,7 +106,7 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit;
     
     const [billings, totalCount] = await Promise.all([
-      prisma.sPPBilling.findMany({
+      prisma.spp_billings.findMany({
         where: whereConditions,
         skip,
         take: limit,
@@ -157,11 +157,11 @@ export async function GET(request: NextRequest) {
           { createdAt: 'desc' }
         ]
       }),
-      prisma.sPPBilling.count({ where: whereConditions })
+      prisma.spp_billings.count({ where: whereConditions })
     ]);
     
     // Calculate summary statistics
-    const summary = await prisma.sPPBilling.aggregate({
+    const summary = await prisma.spp_billings.aggregate({
       where: whereConditions,
       _sum: {
         totalAmount: true,
@@ -170,7 +170,7 @@ export async function GET(request: NextRequest) {
       _count: true
     });
     
-    const statusCounts = await prisma.sPPBilling.groupBy({
+    const statusCounts = await prisma.spp_billings.groupBy({
       by: ['status'],
       where: whereConditions,
       _count: true
@@ -243,7 +243,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Check if billing already exists for this student and period
-    const existing = await prisma.sPPBilling.findUnique({
+    const existing = await prisma.spp_billings.findUnique({
       where: {
         studentId_month_year: {
           studentId,
@@ -277,7 +277,7 @@ export async function POST(request: NextRequest) {
     });
     
     // Create billing
-    const billing = await prisma.sPPBilling.create({
+    const billing = await prisma.spp_billings.create({
       data: {
         billNo,
         studentId,
@@ -339,7 +339,7 @@ export async function PUT(request: NextRequest) {
     }
     
     // Check if billing exists
-    const existing = await prisma.sPPBilling.findUnique({
+    const existing = await prisma.spp_billings.findUnique({
       where: { id }
     });
     
@@ -374,7 +374,7 @@ export async function PUT(request: NextRequest) {
     }
     
     // Update billing
-    const billing = await prisma.sPPBilling.update({
+    const billing = await prisma.spp_billings.update({
       where: { id },
       data: updateData,
       include: {
@@ -423,7 +423,7 @@ export async function PATCH(request: NextRequest) {
     }
     
     // Get all active students in the class
-    const studentClasses = await prisma.studentClass.findMany({
+    const studentClasses = await prisma.student_classes.findMany({
       where: {
         classId,
         status: 'ACTIVE'
@@ -439,7 +439,7 @@ export async function PATCH(request: NextRequest) {
     });
     
     // Get SPP settings for the class level
-    const classData = await prisma.class.findUnique({
+    const classData = await prisma.classes.findUnique({
       where: { id: classId },
       select: { level: true }
     });
@@ -451,7 +451,7 @@ export async function PATCH(request: NextRequest) {
       );
     }
     
-    const sppSettings = await prisma.sPPSettings.findUnique({
+    const sppSettings = await prisma.spp_settings.findUnique({
       where: { level: classData.level }
     });
     
@@ -468,7 +468,7 @@ export async function PATCH(request: NextRequest) {
     for (const sc of studentClasses) {
       try {
         // Check if billing already exists
-        const existing = await prisma.sPPBilling.findUnique({
+        const existing = await prisma.spp_billings.findUnique({
           where: {
             studentId_month_year: {
               studentId: sc.studentId,
@@ -500,7 +500,7 @@ export async function PATCH(request: NextRequest) {
         });
         
         // Create billing
-        const billing = await prisma.sPPBilling.create({
+        const billing = await prisma.spp_billings.create({
           data: {
             billNo,
             studentId: sc.studentId,

@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
     }
     
     // Check if user is ustadz or admin
-    const user = await prisma.user.findUnique({
+    const user = await prisma.users.findUnique({
       where: { id: session.user.id },
       select: { id: true, role: true, isUstadz: true, name: true }
     })
@@ -72,10 +72,10 @@ export async function GET(request: NextRequest) {
     const skip = (query.page - 1) * query.limit
     
     // Get total count for pagination
-    const totalCount = await prisma.question.count({ where })
+    const totalCount = await prisma.questions.count({ where })
     
     // Fetch pending questions
-    const questions = await prisma.question.findMany({
+    const questions = await prisma.questions.findMany({
       where,
       orderBy: {
         [query.sortBy]: query.sortOrder

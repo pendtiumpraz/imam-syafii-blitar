@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const isActive = searchParams.get('active');
 
-    const academicYears = await prisma.academicYear.findMany({
+    const academicYears = await prisma.academic_years.findMany({
       where: isActive === 'true' ? { isActive: true } : {},
       include: {
         semesters: {
@@ -69,13 +69,13 @@ export async function POST(request: NextRequest) {
 
     // If this is being set as active, deactivate others
     if (isActive) {
-      await prisma.academicYear.updateMany({
+      await prisma.academic_years.updateMany({
         where: { isActive: true },
         data: { isActive: false },
       });
     }
 
-    const academicYear = await prisma.academicYear.create({
+    const academicYear = await prisma.academic_years.create({
       data: {
         name,
         startDate: new Date(startDate),
@@ -131,7 +131,7 @@ export async function PUT(request: NextRequest) {
 
     // If this is being set as active, deactivate others
     if (isActive) {
-      await prisma.academicYear.updateMany({
+      await prisma.academic_years.updateMany({
         where: { 
           isActive: true,
           NOT: { id }
@@ -140,7 +140,7 @@ export async function PUT(request: NextRequest) {
       });
     }
 
-    const academicYear = await prisma.academicYear.update({
+    const academicYear = await prisma.academic_years.update({
       where: { id },
       data: {
         name,
@@ -203,7 +203,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Check if academic year has associated data
-    const academicYear = await prisma.academicYear.findUnique({
+    const academicYear = await prisma.academic_years.findUnique({
       where: { id },
       include: {
         _count: {
@@ -231,7 +231,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    await softDelete(prisma.academicYear, { id }, session.user.id);
+    await softDelete(prisma.academic_years, { id }, session.user.id);
 
     return NextResponse.json({ message: 'Academic year soft deleted successfully' });
   } catch (error) {

@@ -12,10 +12,10 @@ export async function GET(request: NextRequest) {
     }
 
     // Get or create settings
-    let settings = await prisma.lineSettings.findFirst()
+    let settings = await prisma.line_settings.findFirst()
     
     if (!settings) {
-      settings = await prisma.lineSettings.create({
+      settings = await prisma.line_settings.create({
         data: {
           enabled: false,
           welcomeMessage: 'Selamat datang di LINE Official Account Pondok Imam Syafii! 🎓\n\nSilakan ketik "menu" untuk melihat menu utama.',
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
     const data = await request.json()
     
     // Get existing settings
-    let settings = await prisma.lineSettings.findFirst()
+    let settings = await prisma.line_settings.findFirst()
     
     // Prepare update data
     const updateData: any = {
@@ -89,13 +89,13 @@ export async function POST(request: NextRequest) {
     
     if (settings) {
       // Update existing
-      settings = await prisma.lineSettings.update({
+      settings = await prisma.line_settings.update({
         where: { id: settings.id },
         data: updateData
       })
     } else {
       // Create new
-      settings = await prisma.lineSettings.create({
+      settings = await prisma.line_settings.create({
         data: updateData
       })
     }
@@ -128,7 +128,7 @@ export async function PUT(request: NextRequest) {
 
     const { action } = await request.json()
     
-    const settings = await prisma.lineSettings.findFirst()
+    const settings = await prisma.line_settings.findFirst()
     if (!settings || !settings.channelAccessToken) {
       return NextResponse.json({ error: 'LINE not configured' }, { status: 400 })
     }

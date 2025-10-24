@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
       where.isFeatured = true;
     }
     
-    const ebooks = await prisma.ebook.findMany({
+    const ebooks = await prisma.ebooks.findMany({
       where,
       orderBy: {
         createdAt: 'desc',
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
     
     const data = await request.json();
     
-    const ebook = await prisma.ebook.create({
+    const ebook = await prisma.ebooks.create({
       data: {
         ...data,
         createdBy: session.user.id,

@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user has permission to create notifications (admin/teacher only)
-    const user = await prisma.user.findUnique({
+    const user = await prisma.users.findUnique({
       where: { id: session.user.id },
     });
 

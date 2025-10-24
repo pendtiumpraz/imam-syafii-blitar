@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit;
 
     const [schedules, totalCount] = await Promise.all([
-      prisma.schedule.findMany({
+      prisma.schedules.findMany({
         where: whereConditions,
         skip,
         take: limit,
@@ -106,7 +106,7 @@ export async function GET(request: NextRequest) {
         { startTime: 'asc' },
       ],
     }),
-    prisma.schedule.count({ where: whereConditions })
+    prisma.schedules.count({ where: whereConditions })
   ]);
 
     const response: any = {
@@ -188,7 +188,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Enhanced conflict checking with time overlap detection
-    const conflictingSchedules = await prisma.schedule.findMany({
+    const conflictingSchedules = await prisma.schedules.findMany({
       where: {
         OR: [
           { classId, day, isActive: true },
@@ -221,7 +221,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const schedule = await prisma.schedule.create({
+    const schedule = await prisma.schedules.create({
       data: {
         classId,
         subjectId,
@@ -317,7 +317,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Get current schedule to check conflicts
-    const currentSchedule = await prisma.schedule.findUnique({
+    const currentSchedule = await prisma.schedules.findUnique({
       where: { id },
       select: { classId: true, day: true, startTime: true },
     });
@@ -335,7 +335,7 @@ export async function PUT(request: NextRequest) {
       const newStartTime = startTime || currentSchedule.startTime;
 
       // Check for class conflicts
-      const existingSchedule = await prisma.schedule.findFirst({
+      const existingSchedule = await prisma.schedules.findFirst({
         where: {
           classId: currentSchedule.classId,
           day: newDay,
@@ -354,7 +354,7 @@ export async function PUT(request: NextRequest) {
 
       // Check teacher availability if teacher is being changed
       if (teacherId) {
-        const teacherConflict = await prisma.schedule.findFirst({
+        const teacherConflict = await prisma.schedules.findFirst({
           where: {
             teacherId,
             day: newDay,
@@ -373,7 +373,7 @@ export async function PUT(request: NextRequest) {
       }
     }
 
-    const schedule = await prisma.schedule.update({
+    const schedule = await prisma.schedules.update({
       where: { id },
       data: {
         subjectId,
@@ -458,7 +458,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Check if schedule exists
-    const schedule = await prisma.schedule.findUnique({
+    const schedule = await prisma.schedules.findUnique({
       where: { id },
     });
 
@@ -470,7 +470,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Soft delete the schedule
-    await softDelete(prisma.schedule, { id }, session.user?.id);
+    await softDelete(prisma.schedules, { id }, session.user?.id);
 
     return NextResponse.json({ message: 'Schedule deleted successfully' });
   } catch (error) {

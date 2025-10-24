@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const user = await prisma.user.findUnique({
+    const user = await prisma.users.findUnique({
       where: { id: session.user.id },
       select: {
         id: true,
@@ -62,7 +62,7 @@ export async function PUT(request: NextRequest) {
         )
       }
 
-      const user = await prisma.user.findUnique({
+      const user = await prisma.users.findUnique({
         where: { id: session.user.id },
       })
 
@@ -81,7 +81,7 @@ export async function PUT(request: NextRequest) {
 
     // Check if email is being changed and already exists
     if (email && email !== session.user.email) {
-      const existingUser = await prisma.user.findUnique({
+      const existingUser = await prisma.users.findUnique({
         where: { email },
       })
 
@@ -102,7 +102,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Update user
-    const user = await prisma.user.update({
+    const user = await prisma.users.update({
       where: { id: session.user.id },
       data: updateData,
       select: {

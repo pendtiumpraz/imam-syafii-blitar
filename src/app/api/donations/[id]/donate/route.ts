@@ -48,7 +48,7 @@ export async function POST(
     }
 
     // Validate campaign exists and is active
-    const campaign = await prisma.donationCampaign.findUnique({
+    const campaign = await prisma.donations_campaigns.findUnique({
       where: { id: campaignId },
       select: {
         id: true,
@@ -97,7 +97,7 @@ export async function POST(
     const month = String(now.getMonth() + 1).padStart(2, '0')
 
     // Get next sequence number for this month
-    const lastDonation = await prisma.donation.findFirst({
+    const lastDonation = await prisma.donations.findFirst({
       where: {
         donationNo: {
           startsWith: `DON-${year}${month}`
@@ -115,7 +115,7 @@ export async function POST(
     const donationNo = `DON-${year}${month}-${String(sequence).padStart(4, '0')}`
 
     // Create donation record
-    const donation = await prisma.donation.create({
+    const donation = await prisma.donations.create({
       data: {
         donationNo,
         campaignId,
@@ -182,7 +182,7 @@ export async function POST(
 
       // Update donation with payment gateway data
       if (paymentData.externalId || paymentData.vaNumber || paymentData.qrisCode || paymentData.paymentUrl) {
-        await prisma.donation.update({
+        await prisma.donations.update({
           where: { id: donation.id },
           data: {
             externalId: paymentData.externalId || null,
@@ -290,7 +290,7 @@ async function getBankAccountInfo() {
 
 async function upsertDonorProfile(email: string, name: string, phone?: string, amount?: number) {
   try {
-    await prisma.donorProfile.upsert({
+    await prisma.donor_profiles.upsert({
       where: { email },
       update: {
         name,
@@ -327,7 +327,7 @@ async function upsertDonorProfile(email: string, name: string, phone?: string, a
  * // In payment callback/verification endpoint:
  * await prisma.$transaction([
  *   // Update donation status
- *   prisma.donation.update({
+ *   prisma.donations.update({
  *     where: { id: donationId },
  *     data: {
  *       paymentStatus: 'VERIFIED',
@@ -337,7 +337,7 @@ async function upsertDonorProfile(email: string, name: string, phone?: string, a
  *     }
  *   }),
  *   // Update campaign currentAmount
- *   prisma.donationCampaign.update({
+ *   prisma.donations_campaigns.update({
  *     where: { id: campaignId },
  *     data: {
  *       currentAmount: {

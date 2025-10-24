@@ -786,7 +786,7 @@ export class WorkflowEngine {
         const { studentId, status, reason } = step.config
         
         const prisma = new PrismaClient()
-        const student = await prisma.student.update({
+        const student = await prisma.students.update({
           where: { id: this.resolveVariable(studentId, context) },
           data: { 
             status: this.resolveVariable(status, context),

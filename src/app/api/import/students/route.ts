@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
         const validatedData = StudentImportSchema.parse(row);
 
         // Check for existing student with same NIS or NISN
-        const existingStudent = await prisma.student.findFirst({
+        const existingStudent = await prisma.students.findFirst({
           where: {
             OR: [
               { nis: validatedData.nis },
@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
           results.validRows++;
         } else {
           // Create new student
-          const newStudent = await prisma.student.create({
+          const newStudent = await prisma.students.create({
             data: {
               nisn: validatedData.nisn,
               nis: validatedData.nis,

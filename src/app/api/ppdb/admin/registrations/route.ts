@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
 
     // Get registrations with pagination
     const [registrations, total] = await Promise.all([
-      prisma.registration.findMany({
+      prisma.registrations.findMany({
         where,
         skip,
         take: limit,
@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
           }
         }
       }),
-      prisma.registration.count({ where })
+      prisma.registrations.count({ where })
     ])
 
     // Parse JSON fields and add computed fields

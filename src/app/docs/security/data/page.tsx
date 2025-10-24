@@ -206,7 +206,7 @@ export class PrivacyManager {
   // Data subject access request
   static async exportUserData(userId: string): Promise<any> {
     const userData = {
-      profile: await prisma.user.findUnique({
+      profile: await prisma.users.findUnique({
         where: { id: userId },
         select: {
           id: true,
@@ -216,7 +216,7 @@ export class PrivacyManager {
           updatedAt: true
         }
       }),
-      students: await prisma.student.findMany({
+      students: await prisma.students.findMany({
         where: { parentId: userId },
         include: {
           bills: true,
@@ -224,7 +224,7 @@ export class PrivacyManager {
           grades: true
         }
       }),
-      activities: await prisma.activityParticipant.findMany({
+      activities: await prisma.activitiesParticipant.findMany({
         where: { userId },
         include: {
           activity: {
@@ -287,7 +287,7 @@ export class PrivacyManager {
 
   // Consent management
   static async updateConsent(userId: string, consentTypes: Record<string, boolean>): Promise<void> {
-    await prisma.userConsent.upsert({
+    await prisma.usersConsent.upsert({
       where: { userId },
       create: {
         userId,
@@ -455,7 +455,7 @@ export class AccessControl {
   }
 
   static async hasResourceAccess(userId: string, resourceType: string, resourceId: string): Promise<boolean> {
-    const user = await prisma.user.findUnique({
+    const user = await prisma.users.findUnique({
       where: { id: userId },
       include: { students: true }
     })
@@ -779,7 +779,7 @@ export async function POST(request: Request) {
     const rawData = await request.json()
     const sanitizedData = DataSanitizer.sanitizeInput(rawData, studentSchema)
     
-    const student = await prisma.student.create({
+    const student = await prisma.students.create({
       data: sanitizedData
     })
     

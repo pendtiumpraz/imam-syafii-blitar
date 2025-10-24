@@ -11,7 +11,7 @@ export async function GET(
   try {
     const { slug } = params
 
-    const campaign = await prisma.donationCampaign.findUnique({
+    const campaign = await prisma.donations_campaigns.findUnique({
       where: { slug },
       include: {
         category: true,
@@ -68,7 +68,7 @@ export async function PUT(
     const body = await request.json()
 
     // Find existing campaign
-    const existingCampaign = await prisma.donationCampaign.findUnique({
+    const existingCampaign = await prisma.donations_campaigns.findUnique({
       where: { slug }
     })
 
@@ -105,7 +105,7 @@ export async function PUT(
     } = body
 
     // Update campaign
-    const updatedCampaign = await prisma.donationCampaign.update({
+    const updatedCampaign = await prisma.donations_campaigns.update({
       where: { slug },
       data: {
         ...(title && { title }),
@@ -163,7 +163,7 @@ export async function DELETE(
     const { slug } = params
 
     // Find existing campaign
-    const existingCampaign = await prisma.donationCampaign.findUnique({
+    const existingCampaign = await prisma.donations_campaigns.findUnique({
       where: { slug }
     })
 
@@ -175,7 +175,7 @@ export async function DELETE(
     }
 
     // Check if campaign has donations
-    const donationCount = await prisma.donation.count({
+    const donationCount = await prisma.donations.count({
       where: { campaignId: existingCampaign.id }
     })
 
@@ -188,7 +188,7 @@ export async function DELETE(
 
     // Soft delete campaign
     await softDelete(
-      prisma.donationCampaign,
+      prisma.donations_campaigns,
       { slug },
       session.user.id
     )

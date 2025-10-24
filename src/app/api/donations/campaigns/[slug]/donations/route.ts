@@ -14,7 +14,7 @@ export async function GET(
     const skip = (page - 1) * limit
     
     // Find campaign first
-    const campaign = await prisma.donationCampaign.findUnique({
+    const campaign = await prisma.donations_campaigns.findUnique({
       where: { slug },
       select: { id: true }
     })
@@ -28,7 +28,7 @@ export async function GET(
 
     // Get donations for this campaign
     const [donations, total] = await Promise.all([
-      prisma.donation.findMany({
+      prisma.donations.findMany({
         where: {
           campaignId: campaign.id,
           paymentStatus: 'VERIFIED' // Only show verified donations for public view
@@ -43,7 +43,7 @@ export async function GET(
         skip,
         take: limit
       }),
-      prisma.donation.count({
+      prisma.donations.count({
         where: {
           campaignId: campaign.id,
           paymentStatus: 'VERIFIED'

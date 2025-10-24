@@ -311,7 +311,7 @@ export class AutomatedComplianceChecker {
 
   private static async checkDataRetention() {
     // Find data that should be deleted per retention policies
-    const expiredData = await prisma.student.findMany({
+    const expiredData = await prisma.students.findMany({
       where: {
         deletedAt: {
           lte: new Date(Date.now() - 7 * 365 * 24 * 60 * 60 * 1000) // 7 years
@@ -491,7 +491,7 @@ export class VulnerabilityScanner {
     const results: VulnerabilityResult[] = []
 
     // Check password policies
-    const weakPasswords = await prisma.user.count({
+    const weakPasswords = await prisma.users.count({
       where: {
         password: {
           // Check for common patterns (this is simplified)
@@ -511,7 +511,7 @@ export class VulnerabilityScanner {
     }
 
     // Check for missing 2FA on admin accounts
-    const adminsWithout2FA = await prisma.user.count({
+    const adminsWithout2FA = await prisma.users.count({
       where: {
         role: 'ADMIN',
         twoFactorEnabled: false

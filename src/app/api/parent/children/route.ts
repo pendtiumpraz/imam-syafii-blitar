@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     const userId = session.user.id;
 
     // Get parent account with children
-    const parentAccount = await prisma.parentAccount.findUnique({
+    const parentAccount = await prisma.parent_accounts.findUnique({
       where: { userId },
       include: {
         parentStudents: {
@@ -89,7 +89,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get current semester for calculations
-    const currentSemester = await prisma.semester.findFirst({
+    const currentSemester = await prisma.semesters.findFirst({
       where: { isActive: true }
     });
 

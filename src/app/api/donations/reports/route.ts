@@ -64,18 +64,18 @@ async function getSummaryReport() {
     recentDonations
   ] = await Promise.all([
     // Total donations count
-    prisma.donation.count({
+    prisma.donations.count({
       where: { paymentStatus: 'VERIFIED' }
     }),
     
     // Total amount
-    prisma.donation.aggregate({
+    prisma.donations.aggregate({
       where: { paymentStatus: 'VERIFIED' },
       _sum: { amount: true }
     }),
     
     // Monthly amount
-    prisma.donation.aggregate({
+    prisma.donations.aggregate({
       where: {
         paymentStatus: 'VERIFIED',
         createdAt: { gte: startOfMonth }
@@ -84,7 +84,7 @@ async function getSummaryReport() {
     }),
     
     // Yearly amount
-    prisma.donation.aggregate({
+    prisma.donations.aggregate({
       where: {
         paymentStatus: 'VERIFIED',
         createdAt: { gte: startOfYear }
@@ -94,9 +94,9 @@ async function getSummaryReport() {
     
     // Campaign statistics
     Promise.all([
-      prisma.donationCampaign.count({ where: { status: 'ACTIVE' } }),
-      prisma.donationCampaign.count({ where: { status: 'COMPLETED' } }),
-      prisma.donationCampaign.count()
+      prisma.donations_campaigns.count({ where: { status: 'ACTIVE' } }),
+      prisma.donations_campaigns.count({ where: { status: 'COMPLETED' } }),
+      prisma.donations_campaigns.count()
     ]).then(([active, completed, total]) => ({
       active,
       completed,
@@ -104,13 +104,13 @@ async function getSummaryReport() {
     })),
     
     // Category breakdown
-    prisma.donation.groupBy({
+    prisma.donations.groupBy({
       by: ['categoryId'],
       where: { paymentStatus: 'VERIFIED' },
       _sum: { amount: true },
       _count: true
     }).then(async (results) => {
-      const categories = await prisma.donationCategory.findMany({
+      const categories = await prisma.donations_categories.findMany({
         where: {
           id: { in: results.map(r => r.categoryId) }
         }
@@ -136,7 +136,7 @@ async function getSummaryReport() {
         const month = new Date(currentYear, currentMonth - i, 1)
         const nextMonth = new Date(currentYear, currentMonth - i + 1, 1)
         
-        return prisma.donation.aggregate({
+        return prisma.donations.aggregate({
           where: {
             paymentStatus: 'VERIFIED',
             createdAt: {
@@ -150,7 +150,7 @@ async function getSummaryReport() {
     ).then(amounts => amounts.reverse()),
     
     // Top campaigns
-    prisma.donationCampaign.findMany({
+    prisma.donations_campaigns.findMany({
       include: {
         _count: {
           select: {
@@ -174,7 +174,7 @@ async function getSummaryReport() {
     ),
     
     // Recent donations
-    prisma.donation.findMany({
+    prisma.donations.findMany({
       where: { paymentStatus: 'VERIFIED' },
       include: {
         campaign: {
@@ -217,7 +217,7 @@ async function getDonationsReport(startDate?: string | null, endDate?: string | 
   }
 
   const [donations, summary] = await Promise.all([
-    prisma.donation.findMany({
+    prisma.donations.findMany({
       where,
       include: {
         campaign: { select: { title: true, slug: true } },
@@ -225,7 +225,7 @@ async function getDonationsReport(startDate?: string | null, endDate?: string | 
       },
       orderBy: { createdAt: 'desc' }
     }),
-    prisma.donation.aggregate({
+    prisma.donations.aggregate({
       where,
       _sum: { amount: true },
       _count: true,
@@ -247,7 +247,7 @@ async function getDonationsReport(startDate?: string | null, endDate?: string | 
 }
 
 async function getCampaignsReport() {
-  const campaigns = await prisma.donationCampaign.findMany({
+  const campaigns = await prisma.donations_campaigns.findMany({
     include: {
       category: { select: { name: true } },
       creator: { select: { name: true } },
@@ -292,7 +292,7 @@ async function getCategoriesReport(startDate?: string | null, endDate?: string |
     if (endDate) where.createdAt.lte = new Date(endDate)
   }
 
-  const categoryStats = await prisma.donation.groupBy({
+  const categoryStats = await prisma.donations.groupBy({
     by: ['categoryId'],
     where,
     _sum: { amount: true },
@@ -300,7 +300,7 @@ async function getCategoriesReport(startDate?: string | null, endDate?: string |
     _avg: { amount: true }
   })
 
-  const categories = await prisma.donationCategory.findMany({
+  const categories = await prisma.donations_categories.findMany({
     where: {
       id: { in: categoryStats.map(s => s.categoryId) }
     }

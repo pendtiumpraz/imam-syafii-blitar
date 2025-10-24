@@ -106,7 +106,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   try {
     // Dynamic routes - Donation Campaigns
-    const campaigns = await prisma.donation_campaigns.findMany({
+    const campaigns = await prisma.donations_campaigns.findMany({
       where: {
         status: 'ACTIVE',
         isDeleted: false,

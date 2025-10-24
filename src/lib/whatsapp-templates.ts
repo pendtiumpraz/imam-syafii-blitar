@@ -450,7 +450,7 @@ _Pondok Pesantren Imam Syafi'i_`;
     return message;
   },
 
-  hafalanProgress: (data: {
+  hafalan_progress: (data: {
     parentName: string;
     studentName: string;
     surah: string;

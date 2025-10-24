@@ -44,13 +44,13 @@ const querySchema = z.object({
 
 // Helper function to generate product code if not provided
 async function generateProductCode(categoryId: string): Promise<string> {
-  const category = await prisma.productCategory.findUnique({
+  const category = await prisma.product_categories.findUnique({
     where: { id: categoryId },
     select: { name: true },
   })
   
   const categoryPrefix = category?.name.substring(0, 3).toUpperCase() || 'PRD'
-  const count = await prisma.product.count({
+  const count = await prisma.products.count({
     where: {
       code: {
         startsWith: categoryPrefix,
@@ -89,7 +89,7 @@ export async function GET(request: NextRequest) {
     if (query.location) where.location = query.location
     if (query.isActive !== undefined) where.isActive = query.isActive
     if (query.lowStock) {
-      where.stock = { lt: prisma.product.fields.minStock }
+      where.stock = { lt: prisma.products.fields.minStock }
     }
     if (query.search) {
       where.OR = [
@@ -101,7 +101,7 @@ export async function GET(request: NextRequest) {
     }
 
     const [products, total, categories, lowStockCount] = await Promise.all([
-      prisma.product.findMany({
+      prisma.products.findMany({
         where,
         include: {
           category: true,
@@ -123,18 +123,18 @@ export async function GET(request: NextRequest) {
         skip,
         take: query.limit,
       }),
-      prisma.product.count({ where }),
+      prisma.products.count({ where }),
       // Get categories for filter options
-      prisma.productCategory.findMany({
+      prisma.product_categories.findMany({
         where: { isActive: true },
         select: { id: true, name: true },
         orderBy: { name: 'asc' },
       }),
       // Get low stock count for dashboard
-      prisma.product.count({
+      prisma.products.count({
         where: {
           isActive: true,
-          stock: { lt: prisma.product.fields.minStock },
+          stock: { lt: prisma.products.fields.minStock },
         },
       }),
     ])
@@ -192,7 +192,7 @@ export async function POST(request: NextRequest) {
     const data = createProductSchema.parse(body)
 
     // Check if product code already exists
-    const existingProduct = await prisma.product.findUnique({
+    const existingProduct = await prisma.products.findUnique({
       where: { code: data.code },
     })
 
@@ -204,7 +204,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify category exists
-    const category = await prisma.productCategory.findFirst({
+    const category = await prisma.product_categories.findFirst({
       where: {
         id: data.categoryId,
         isActive: true,

@@ -47,17 +47,17 @@ export async function GET(request: NextRequest) {
     }
 
     // Get basic counts
-    const totalStudents = await prisma.student.count({ where: studentWhere });
+    const totalStudents = await prisma.students.count({ where: studentWhere });
     
-    const studentsWithProgress = await prisma.student.findMany({
+    const studentsWithProgress = await prisma.students.findMany({
       where: studentWhere,
       include: {
-        hafalanProgress: true
+        hafalan_progress: true
       }
     });
 
     // Activity statistics
-    const totalSessions = await prisma.hafalanSession.count({
+    const totalSessions = await prisma.hafalan_sessions.count({
       where: {
         sessionDate: { gte: startDate },
         ...(classId || level ? {
@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    const totalRecords = await prisma.hafalanRecord.count({
+    const totalRecords = await prisma.hafalan_records.count({
       where: {
         date: { gte: startDate },
         ...(classId || level ? {
@@ -75,7 +75,7 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    const activeStudents = await prisma.hafalanRecord.groupBy({
+    const activeStudents = await prisma.hafalan_records.groupBy({
       by: ['studentId'],
       where: {
         date: { gte: startDate },
@@ -86,7 +86,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Quality distribution
-    const qualityStats = await prisma.hafalanRecord.groupBy({
+    const qualityStats = await prisma.hafalan_records.groupBy({
       by: ['quality'],
       _count: { quality: true },
       where: {
@@ -98,7 +98,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Status distribution
-    const statusStats = await prisma.hafalanRecord.groupBy({
+    const statusStats = await prisma.hafalan_records.groupBy({
       by: ['status'],
       _count: { status: true },
       where: {
@@ -126,7 +126,7 @@ export async function GET(request: NextRequest) {
       }));
 
     // Most memorized surahs
-    const surahStats = await prisma.hafalanRecord.groupBy({
+    const surahStats = await prisma.hafalan_records.groupBy({
       by: ['surahNumber'],
       _count: { surahNumber: true },
       where: {
@@ -142,7 +142,7 @@ export async function GET(request: NextRequest) {
 
     // Get surah names for the stats
     const surahNumbers = surahStats.map(s => s.surahNumber);
-    const surahDetails = await prisma.quranSurah.findMany({
+    const surahDetails = await prisma.quran_surahs.findMany({
       where: { number: { in: surahNumbers } },
       select: { number: true, name: true, nameArabic: true }
     });
@@ -167,7 +167,7 @@ export async function GET(request: NextRequest) {
       const dayEnd = new Date(date);
       dayEnd.setHours(23, 59, 59, 999);
 
-      const sessionCount = await prisma.hafalanSession.count({
+      const sessionCount = await prisma.hafalan_sessions.count({
         where: {
           sessionDate: { gte: dayStart, lte: dayEnd },
           ...(classId || level ? {
@@ -176,7 +176,7 @@ export async function GET(request: NextRequest) {
         }
       });
 
-      const recordCount = await prisma.hafalanRecord.count({
+      const recordCount = await prisma.hafalan_records.count({
         where: {
           date: { gte: dayStart, lte: dayEnd },
           ...(classId || level ? {
@@ -221,7 +221,7 @@ export async function GET(request: NextRequest) {
     };
 
     // Recent achievements
-    const recentAchievements = await prisma.hafalanAchievement.findMany({
+    const recentAchievements = await prisma.hafalan_achievements.findMany({
       where: {
         earnedAt: { gte: startDate },
         ...(classId || level ? {

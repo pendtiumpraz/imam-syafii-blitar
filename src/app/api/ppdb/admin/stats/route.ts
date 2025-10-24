@@ -25,28 +25,28 @@ export async function GET(request: NextRequest) {
       recentStats
     ] = await Promise.all([
       // Total registrations
-      prisma.registration.count(),
+      prisma.registrations.count(),
       
       // Group by status
-      prisma.registration.groupBy({
+      prisma.registrations.groupBy({
         by: ['status'],
         _count: { status: true }
       }),
       
       // Group by level
-      prisma.registration.groupBy({
+      prisma.registrations.groupBy({
         by: ['level'],
         _count: { level: true }
       }),
       
       // Group by payment status
-      prisma.registration.groupBy({
+      prisma.registrations.groupBy({
         by: ['paymentStatus'],
         _count: { paymentStatus: true }
       }),
       
       // Group by test result
-      prisma.registration.groupBy({
+      prisma.registrations.groupBy({
         by: ['testResult'],
         _count: { testResult: true },
         where: {
@@ -135,7 +135,7 @@ async function getMonthlyRegistrations() {
   const sixMonthsAgo = new Date()
   sixMonthsAgo.setMonth(currentDate.getMonth() - 6)
 
-  const monthlyData = await prisma.registration.groupBy({
+  const monthlyData = await prisma.registrations.groupBy({
     by: ['createdAt'],
     _count: { id: true },
     where: {
@@ -179,35 +179,35 @@ async function getRecentStats() {
     testsLast7Days
   ] = await Promise.all([
     // New registrations last 7 days
-    prisma.registration.count({
+    prisma.registrations.count({
       where: {
         createdAt: { gte: last7Days }
       }
     }),
     
     // New registrations last 30 days
-    prisma.registration.count({
+    prisma.registrations.count({
       where: {
         createdAt: { gte: last30Days }
       }
     }),
     
     // Verifications last 7 days
-    prisma.registration.count({
+    prisma.registrations.count({
       where: {
         verifiedAt: { gte: last7Days }
       }
     }),
     
     // Payments last 7 days
-    prisma.registration.count({
+    prisma.registrations.count({
       where: {
         paymentDate: { gte: last7Days }
       }
     }),
     
     // Tests scheduled/taken last 7 days
-    prisma.registration.count({
+    prisma.registrations.count({
       where: {
         testSchedule: { gte: last7Days }
       }

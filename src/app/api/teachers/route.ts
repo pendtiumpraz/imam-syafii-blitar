@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
     }
 
     const [teachers, total] = await Promise.all([
-      prisma.teacher.findMany({
+      prisma.teachers.findMany({
         where: whereConditions,
         orderBy: [
           { status: 'asc' },
@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
         skip,
         take: limit,
       }),
-      prisma.teacher.count({ where: whereConditions })
+      prisma.teachers.count({ where: whereConditions })
     ]);
 
     // Parse JSON fields
@@ -150,7 +150,7 @@ export async function POST(request: NextRequest) {
 
     // Check if NIP already exists
     if (nip) {
-      const existingTeacher = await prisma.teacher.findUnique({
+      const existingTeacher = await prisma.teachers.findUnique({
         where: { nip }
       });
       if (existingTeacher) {
@@ -161,7 +161,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const teacher = await prisma.teacher.create({
+    const teacher = await prisma.teachers.create({
       data: {
         nip: nip || null,
         name,
@@ -252,7 +252,7 @@ export async function PUT(request: NextRequest) {
       updateData.experience = parseInt(updateData.experience);
     }
 
-    const teacher = await prisma.teacher.update({
+    const teacher = await prisma.teachers.update({
       where: { id },
       data: updateData
     });
@@ -293,7 +293,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    await softDelete(prisma.teacher, { id }, session.user.id);
+    await softDelete(prisma.teachers, { id }, session.user.id);
 
     return NextResponse.json({
       message: 'Teacher soft deleted successfully'

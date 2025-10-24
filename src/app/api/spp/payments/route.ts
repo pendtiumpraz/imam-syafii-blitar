@@ -7,7 +7,7 @@ import { softDelete } from '@/lib/soft-delete';
 
 // Helper function to generate payment number
 async function generatePaymentNumber(year: number, month: number): Promise<string> {
-  const count = await prisma.sPPPayment.count({
+  const count = await prisma.spp_payments.count({
     where: {
       createdAt: {
         gte: new Date(year, month - 1, 1),
@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit;
     
     const [payments, totalCount] = await Promise.all([
-      prisma.sPPPayment.findMany({
+      prisma.spp_payments.findMany({
         where: whereConditions,
         skip,
         take: limit,
@@ -94,11 +94,11 @@ export async function GET(request: NextRequest) {
         },
         orderBy: { paymentDate: 'desc' }
       }),
-      prisma.sPPPayment.count({ where: whereConditions })
+      prisma.spp_payments.count({ where: whereConditions })
     ]);
     
     // Calculate summary
-    const summary = await prisma.sPPPayment.aggregate({
+    const summary = await prisma.spp_payments.aggregate({
       where: {
         ...whereConditions,
         status: 'VERIFIED'
@@ -162,7 +162,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Get billing details
-    const billing = await prisma.sPPBilling.findUnique({
+    const billing = await prisma.spp_billings.findUnique({
       where: { id: billingId }
     });
     
@@ -192,7 +192,7 @@ export async function POST(request: NextRequest) {
     );
     
     // Create payment record
-    const payment = await prisma.sPPPayment.create({
+    const payment = await prisma.spp_payments.create({
       data: {
         paymentNo,
         billingId,
@@ -217,7 +217,7 @@ export async function POST(request: NextRequest) {
       const newPaidAmount = billing.paidAmount.plus(paymentAmount);
       const newStatus = newPaidAmount.equals(billing.totalAmount) ? 'PAID' : 'PARTIAL';
       
-      await prisma.sPPBilling.update({
+      await prisma.spp_billings.update({
         where: { id: billingId },
         data: {
           paidAmount: newPaidAmount,
@@ -257,7 +257,7 @@ export async function PUT(request: NextRequest) {
     }
     
     // Get payment details
-    const payment = await prisma.sPPPayment.findUnique({
+    const payment = await prisma.spp_payments.findUnique({
       where: { id },
       include: { billing: true }
     });
@@ -279,7 +279,7 @@ export async function PUT(request: NextRequest) {
       }
       
       // Verify payment
-      const updatedPayment = await prisma.sPPPayment.update({
+      const updatedPayment = await prisma.spp_payments.update({
         where: { id },
         data: {
           status: 'VERIFIED',
@@ -294,7 +294,7 @@ export async function PUT(request: NextRequest) {
       const newPaidAmount = payment.billing.paidAmount.plus(payment.amount);
       const newStatus = newPaidAmount.equals(payment.billing.totalAmount) ? 'PAID' : 'PARTIAL';
       
-      await prisma.sPPBilling.update({
+      await prisma.spp_billings.update({
         where: { id: payment.billingId },
         data: {
           paidAmount: newPaidAmount,
@@ -317,7 +317,7 @@ export async function PUT(request: NextRequest) {
         );
       }
       
-      const updatedPayment = await prisma.sPPPayment.update({
+      const updatedPayment = await prisma.spp_payments.update({
         where: { id },
         data: {
           status: 'REJECTED',
@@ -338,7 +338,7 @@ export async function PUT(request: NextRequest) {
       );
     }
     
-    const updatedPayment = await prisma.sPPPayment.update({
+    const updatedPayment = await prisma.spp_payments.update({
       where: { id },
       data: updateData
     });
@@ -371,7 +371,7 @@ export async function DELETE(request: NextRequest) {
     }
     
     // Get payment details
-    const payment = await prisma.sPPPayment.findUnique({
+    const payment = await prisma.spp_payments.findUnique({
       where: { id },
       include: { billing: true }
     });
@@ -388,7 +388,7 @@ export async function DELETE(request: NextRequest) {
       const newPaidAmount = payment.billing.paidAmount.minus(payment.amount);
       const newStatus = newPaidAmount.equals(0) ? 'UNPAID' : 'PARTIAL';
       
-      await prisma.sPPBilling.update({
+      await prisma.spp_billings.update({
         where: { id: payment.billingId },
         data: {
           paidAmount: newPaidAmount,
@@ -399,7 +399,7 @@ export async function DELETE(request: NextRequest) {
     }
     
     // Soft delete payment
-    await softDelete(prisma.sPPPayment, { id }, session.user.id);
+    await softDelete(prisma.spp_payments, { id }, session.user.id);
 
     return NextResponse.json({ message: 'Payment soft deleted successfully' });
   } catch (error) {

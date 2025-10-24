@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
 
     if (hierarchical) {
       // Return hierarchical structure
-      const categories = await prisma.productCategory.findMany({
+      const categories = await prisma.product_categories.findMany({
         where: { ...where, parentId: null },
         include: {
           children: {
@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ categories })
     } else {
       // Return flat list
-      const categories = await prisma.productCategory.findMany({
+      const categories = await prisma.product_categories.findMany({
         where,
         include: {
           parent: {
@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
     const data = createCategorySchema.parse(body)
 
     // Check if category name already exists
-    const existingCategory = await prisma.productCategory.findFirst({
+    const existingCategory = await prisma.product_categories.findFirst({
       where: { 
         name: data.name,
         parentId: data.parentId || null,
@@ -123,7 +123,7 @@ export async function POST(request: NextRequest) {
 
     // Verify parent exists if specified
     if (data.parentId) {
-      const parent = await prisma.productCategory.findFirst({
+      const parent = await prisma.product_categories.findFirst({
         where: {
           id: data.parentId,
           isActive: true,
@@ -138,7 +138,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const category = await prisma.productCategory.create({
+    const category = await prisma.product_categories.create({
       data,
       include: {
         parent: {
@@ -200,7 +200,7 @@ export async function PUT(request: NextRequest) {
     const data = updateCategorySchema.parse(updateData)
 
     // Check if category exists
-    const existingCategory = await prisma.productCategory.findUnique({
+    const existingCategory = await prisma.product_categories.findUnique({
       where: { id },
     })
 
@@ -213,7 +213,7 @@ export async function PUT(request: NextRequest) {
 
     // Check if name is being updated and already exists elsewhere
     if (data.name && data.name !== existingCategory.name) {
-      const nameExists = await prisma.productCategory.findFirst({
+      const nameExists = await prisma.product_categories.findFirst({
         where: {
           name: data.name,
           parentId: data.parentId !== undefined ? data.parentId : existingCategory.parentId,
@@ -238,7 +238,7 @@ export async function PUT(request: NextRequest) {
         )
       }
 
-      const parent = await prisma.productCategory.findFirst({
+      const parent = await prisma.product_categories.findFirst({
         where: {
           id: data.parentId,
           isActive: true,
@@ -253,7 +253,7 @@ export async function PUT(request: NextRequest) {
       }
     }
 
-    const category = await prisma.productCategory.update({
+    const category = await prisma.product_categories.update({
       where: { id },
       data,
       include: {
@@ -311,7 +311,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Check if category exists
-    const category = await prisma.productCategory.findUnique({
+    const category = await prisma.product_categories.findUnique({
       where: { id },
       include: {
         products: { where: { isActive: true } },
@@ -330,7 +330,7 @@ export async function DELETE(request: NextRequest) {
     if (category.products.length > 0 || category.children.length > 0) {
       // Soft delete if has products or children
       const updatedCategory = await softDelete(
-        prisma.productCategory,
+        prisma.product_categories,
         { id },
         session.user.id
       )
@@ -341,7 +341,7 @@ export async function DELETE(request: NextRequest) {
       })
     } else {
       // Hard delete if no products or children
-      await forceDelete(prisma.productCategory, { id })
+      await forceDelete(prisma.product_categories, { id })
 
       return NextResponse.json({
         message: 'Category deleted successfully',

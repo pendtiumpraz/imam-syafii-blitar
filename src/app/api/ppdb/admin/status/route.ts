@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get current registration
-    const registration = await prisma.registration.findUnique({
+    const registration = await prisma.registrations.findUnique({
       where: { id: registrationId }
     })
 
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Update registration
-    const updatedRegistration = await prisma.registration.update({
+    const updatedRegistration = await prisma.registrations.update({
       where: { id: registrationId },
       data: updateData,
       include: {
@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
 // Helper function to create student record from registration
 async function createStudentFromRegistration(registrationId: string, adminId: string) {
   try {
-    const registration = await prisma.registration.findUnique({
+    const registration = await prisma.registrations.findUnique({
       where: { id: registrationId }
     })
 
@@ -134,7 +134,7 @@ async function createStudentFromRegistration(registrationId: string, adminId: st
     }
 
     // Check if student already exists
-    const existingStudent = await prisma.student.findUnique({
+    const existingStudent = await prisma.students.findUnique({
       where: { registrationId }
     })
 
@@ -144,7 +144,7 @@ async function createStudentFromRegistration(registrationId: string, adminId: st
 
     // Generate NIS
     const currentYear = new Date().getFullYear().toString()
-    const existingStudents = await prisma.student.count({
+    const existingStudents = await prisma.students.count({
       where: {
         enrollmentYear: currentYear,
         institutionType: registration.level
@@ -154,7 +154,7 @@ async function createStudentFromRegistration(registrationId: string, adminId: st
     const nis = `${registration.level}${currentYear.slice(-2)}${nisSeq}`
 
     // Create student record
-    const student = await prisma.student.create({
+    const student = await prisma.students.create({
       data: {
         nisn: registration.nisn,
         nis: nis,

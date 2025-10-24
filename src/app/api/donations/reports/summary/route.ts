@@ -31,14 +31,14 @@ export async function GET(request: NextRequest) {
       recentDonations
     ] = await Promise.all([
       // Total statistics
-      prisma.donation.aggregate({
+      prisma.donations.aggregate({
         where: { paymentStatus: 'VERIFIED' },
         _sum: { amount: true },
         _count: true
       }),
       
       // Monthly statistics
-      prisma.donation.aggregate({
+      prisma.donations.aggregate({
         where: {
           paymentStatus: 'VERIFIED',
           createdAt: { gte: startOfMonth }
@@ -49,9 +49,9 @@ export async function GET(request: NextRequest) {
       
       // Campaign statistics
       Promise.all([
-        prisma.donationCampaign.count({ where: { status: 'ACTIVE' } }),
-        prisma.donationCampaign.count({ where: { status: 'COMPLETED' } }),
-        prisma.donationCampaign.count()
+        prisma.donations_campaigns.count({ where: { status: 'ACTIVE' } }),
+        prisma.donations_campaigns.count({ where: { status: 'COMPLETED' } }),
+        prisma.donations_campaigns.count()
       ]).then(([active, completed, total]) => ({
         active,
         completed,
@@ -59,13 +59,13 @@ export async function GET(request: NextRequest) {
       })),
       
       // Category breakdown
-      prisma.donation.groupBy({
+      prisma.donations.groupBy({
         by: ['categoryId'],
         where: { paymentStatus: 'VERIFIED' },
         _sum: { amount: true },
         _count: true
       }).then(async (results) => {
-        const categories = await prisma.donationCategory.findMany({
+        const categories = await prisma.donations_categories.findMany({
           where: {
             id: { in: results.map(r => r.categoryId) }
           }
@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
           const month = new Date(currentYear, currentMonth - i, 1)
           const nextMonth = new Date(currentYear, currentMonth - i + 1, 1)
           
-          return prisma.donation.aggregate({
+          return prisma.donations.aggregate({
             where: {
               paymentStatus: 'VERIFIED',
               createdAt: {
@@ -105,7 +105,7 @@ export async function GET(request: NextRequest) {
       ).then(amounts => amounts.reverse()),
       
       // Top campaigns
-      prisma.donationCampaign.findMany({
+      prisma.donations_campaigns.findMany({
         include: {
           _count: {
             select: {
@@ -133,7 +133,7 @@ export async function GET(request: NextRequest) {
       ),
       
       // Recent donations (last 10)
-      prisma.donation.findMany({
+      prisma.donations.findMany({
         where: { paymentStatus: 'VERIFIED' },
         include: {
           campaign: {

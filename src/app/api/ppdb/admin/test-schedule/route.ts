@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get current registration
-    const registration = await prisma.registration.findUnique({
+    const registration = await prisma.registrations.findUnique({
       where: { id: registrationId }
     })
 
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Update test schedule
-    const updatedRegistration = await prisma.registration.update({
+    const updatedRegistration = await prisma.registrations.update({
       where: { id: registrationId },
       data: {
         testSchedule: new Date(testSchedule),
@@ -123,7 +123,7 @@ async function handleBatchScheduling(batchData: any, adminId: string) {
 
   try {
     // Get registrations to update
-    const registrations = await prisma.registration.findMany({
+    const registrations = await prisma.registrations.findMany({
       where: {
         id: { in: registrationIds },
         status: 'VERIFIED',
@@ -139,7 +139,7 @@ async function handleBatchScheduling(batchData: any, adminId: string) {
     }
 
     // Update all registrations
-    const updateResult = await prisma.registration.updateMany({
+    const updateResult = await prisma.registrations.updateMany({
       where: {
         id: { in: registrations.map(r => r.id) }
       },
@@ -219,7 +219,7 @@ export async function GET(request: NextRequest) {
     if (level) where.level = level
 
     // Get scheduled tests
-    const scheduledTests = await prisma.registration.findMany({
+    const scheduledTests = await prisma.registrations.findMany({
       where,
       select: {
         id: true,

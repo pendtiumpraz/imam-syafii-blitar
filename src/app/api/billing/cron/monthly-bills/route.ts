@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     const dueDate = new Date(year, currentDate.getMonth() + 1, 15);
 
     // Get all active recurring bill types
-    const recurringBillTypes = await prisma.billType.findMany({
+    const recurringBillTypes = await prisma.bill_types.findMany({
       where: {
         isActive: true,
         isRecurring: true,
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
     for (const billType of recurringBillTypes) {
       try {
         // Check if bills for this period already exist
-        const existingBills = await prisma.bill.count({
+        const existingBills = await prisma.bills.count({
           where: {
             billTypeId: billType.id,
             period: period,
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Get all active students
-        const students = await prisma.student.findMany({
+        const students = await prisma.students.findMany({
           where: {
             status: 'ACTIVE',
           },
@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
                 siblingWhere.OR.push({ motherPhone: student.motherPhone });
               }
 
-              const siblingCount = await prisma.student.count({
+              const siblingCount = await prisma.students.count({
                 where: siblingWhere,
               });
 
@@ -161,7 +161,7 @@ export async function POST(request: NextRequest) {
         for (let i = 0; i < billsToCreate.length; i += batchSize) {
           const batch = billsToCreate.slice(i, i + batchSize);
           
-          const createdBills = await prisma.bill.createMany({
+          const createdBills = await prisma.bills.createMany({
             data: batch,
           });
 
@@ -184,7 +184,7 @@ export async function POST(request: NextRequest) {
           }));
 
           // Get the created bills to get their IDs for history entries
-          const createdBillsWithIds = await prisma.bill.findMany({
+          const createdBillsWithIds = await prisma.bills.findMany({
             where: {
               billTypeId: billType.id,
               period,
@@ -206,7 +206,7 @@ export async function POST(request: NextRequest) {
           }).filter(entry => entry.billId); // Only include entries with valid bill IDs
 
           if (historyEntriesWithBillIds.length > 0) {
-            await prisma.paymentHistory.createMany({
+            await prisma.payment_history.createMany({
               data: historyEntriesWithBillIds,
             });
           }
@@ -252,7 +252,7 @@ async function generateBillNumber(prisma: any, period: string, billTypeName: str
   const billTypeCode = billTypeName.substring(0, 3).toUpperCase();
   const prefix = `${billTypeCode}-${year}${month}`;
   
-  const lastBill = await prisma.bill.findFirst({
+  const lastBill = await prisma.bills.findFirst({
     where: {
       billNo: {
         startsWith: prefix,

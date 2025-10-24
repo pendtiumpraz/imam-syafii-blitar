@@ -58,9 +58,9 @@ export async function GET(request: NextRequest) {
       totalVideos,
     ] = await Promise.all([
       // Students
-      prisma.student.count(),
-      prisma.student.count({ where: { status: 'ACTIVE' } }),
-      prisma.student.count({
+      prisma.students.count(),
+      prisma.students.count({ where: { status: 'ACTIVE' } }),
+      prisma.students.count({
         where: {
           createdAt: { gte: currentMonth },
           status: 'ACTIVE'
@@ -68,10 +68,10 @@ export async function GET(request: NextRequest) {
       }),
       
       // Teachers
-      prisma.teacher.count(),
+      prisma.teachers.count(),
       
       // Financial - Income
-      prisma.transaction.aggregate({
+      prisma.transactions.aggregate({
         where: {
           type: 'INCOME',
           date: { gte: currentMonth },
@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
       }),
       
       // Financial - Expenses
-      prisma.transaction.aggregate({
+      prisma.transactions.aggregate({
         where: {
           type: 'EXPENSE',
           date: { gte: currentMonth },
@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
       }),
       
       // Financial - Donations
-      prisma.donation.aggregate({
+      prisma.donations.aggregate({
         where: {
           paymentStatus: 'VERIFIED',
           createdAt: { gte: currentMonth }
@@ -100,7 +100,7 @@ export async function GET(request: NextRequest) {
       }),
       
       // Financial - Outstanding Bills
-      prisma.sPPBilling.aggregate({
+      prisma.spp_billings.aggregate({
         where: {
           status: { in: ['UNPAID', 'PARTIAL', 'OVERDUE'] }
         },
@@ -108,22 +108,22 @@ export async function GET(request: NextRequest) {
       }),
       
       // Academic
-      prisma.class.count({ where: { isActive: true } }),
-      prisma.subject.count({ where: { isActive: true } }),
+      prisma.classes.count({ where: { isActive: true } }),
+      prisma.subjects.count({ where: { isActive: true } }),
       
       // Activities
-      prisma.activity.count(),
-      prisma.activity.count({
+      prisma.activities.count(),
+      prisma.activities.count({
         where: { createdAt: { gte: currentMonth } }
       }),
       
       // Hafalan
-      prisma.hafalanSession.count({
+      prisma.hafalan_sessions.count({
         where: { createdAt: { gte: currentMonth } }
       }),
       
       // Business Units
-      prisma.businessUnit.findMany({
+      prisma.business_units.findMany({
         where: { isActive: true },
         include: {
           _count: {
@@ -133,7 +133,7 @@ export async function GET(request: NextRequest) {
       }),
       
       // Business Reports for current month
-      prisma.businessUnitReport.findMany({
+      prisma.business_unit_reports.findMany({
         where: {
           year: now.getFullYear(),
           month: now.getMonth() + 1
@@ -142,7 +142,7 @@ export async function GET(request: NextRequest) {
       }),
       
       // PPDB
-      prisma.pPDBRegistration.count({
+      prisma.ppdb_registrations.count({
         where: {
           academicYear: `${now.getFullYear()}/${now.getFullYear() + 1}`,
           status: { not: 'DRAFT' }
@@ -150,7 +150,7 @@ export async function GET(request: NextRequest) {
       }),
       
       // SPP
-      prisma.sPPBilling.findMany({
+      prisma.spp_billings.findMany({
         where: {
           year: now.getFullYear(),
           month: now.getMonth() + 1
@@ -163,8 +163,8 @@ export async function GET(request: NextRequest) {
       }),
       
       // Library
-      prisma.ebook.count({ where: { isPublic: true } }),
-      prisma.video.count({ where: { isPublic: true } }),
+      prisma.ebooks.count({ where: { isPublic: true } }),
+      prisma.videos.count({ where: { isPublic: true } }),
     ]);
 
     // Calculate derived statistics
@@ -196,13 +196,13 @@ export async function GET(request: NextRequest) {
 
     // Growth calculations
     const [lastMonthStudents, lastMonthIncome] = await Promise.all([
-      prisma.student.count({
+      prisma.students.count({
         where: {
           createdAt: { gte: lastMonth, lt: currentMonth },
           status: 'ACTIVE'
         }
       }),
-      prisma.transaction.aggregate({
+      prisma.transactions.aggregate({
         where: {
           type: 'INCOME',
           date: { gte: lastMonth, lt: currentMonth },

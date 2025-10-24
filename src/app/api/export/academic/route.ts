@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
         };
       }
 
-      const attendance = await prisma.attendance.findMany({
+      const attendance = await prisma.attendances.findMany({
         where,
         include: {
           student: true,
@@ -120,7 +120,7 @@ export async function GET(request: NextRequest) {
         };
       }
 
-      const grades = await prisma.grade.findMany({
+      const grades = await prisma.grades.findMany({
         where,
         include: {
           student: true,

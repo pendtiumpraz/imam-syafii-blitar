@@ -10,14 +10,14 @@ datasource db {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model academic_years {
-  id          String    @id
+  id          String    @id @default(cuid())
   name        String
   startDate   DateTime
   endDate     DateTime
   isActive    Boolean   @default(false)
   description String?
   createdAt   DateTime  @default(now())
-  updatedAt   DateTime
+  updatedAt   DateTime @updatedAt
   deletedAt   DateTime?
   isDeleted   Boolean   @default(false)
   deletedBy   String?
@@ -30,7 +30,7 @@ model academic_years {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model activities {
-  id          String    @id
+  id          String    @id @default(cuid())
   title       String
   description String
   type        String
@@ -40,7 +40,7 @@ model activities {
   status      String    @default("planned")
   createdBy   String
   createdAt   DateTime  @default(now())
-  updatedAt   DateTime
+  updatedAt   DateTime @updatedAt
   deletedAt   DateTime?
   deletedBy   String?
   isDeleted   Boolean   @default(false)
@@ -54,7 +54,7 @@ model activities {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model alumni {
-  id                 String    @id
+  id                 String    @id @default(cuid())
   nisn               String?
   nis                String?
   fullName           String
@@ -98,7 +98,7 @@ model alumni {
   lastContactDate    DateTime?
   createdBy          String
   createdAt          DateTime  @default(now())
-  updatedAt          DateTime
+  updatedAt          DateTime @updatedAt
   deletedAt          DateTime?
   isDeleted          Boolean   @default(false)
   deletedBy          String?
@@ -115,7 +115,7 @@ model alumni {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model announcements {
-  id             String    @id
+  id             String    @id @default(cuid())
   title          String
   content        String
   summary        String?
@@ -137,7 +137,7 @@ model announcements {
   approvedAt     DateTime?
   publishedAt    DateTime?
   createdAt      DateTime  @default(now())
-  updatedAt      DateTime
+  updatedAt      DateTime @updatedAt
   deletedAt      DateTime?
   isDeleted      Boolean   @default(false)
   deletedBy      String?
@@ -150,12 +150,12 @@ model announcements {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model answers {
-  id         String    @id
+  id         String    @id @default(cuid())
   questionId String
   ustadzId   String
   answer     String
   createdAt  DateTime  @default(now())
-  updatedAt  DateTime
+  updatedAt  DateTime @updatedAt
   deletedAt  DateTime?
   isDeleted  Boolean   @default(false)
   deletedBy  String?
@@ -167,7 +167,7 @@ model answers {
 }
 
 model attendances {
-  id         String    @id
+  id         String    @id @default(cuid())
   studentId  String
   classId    String
   semesterId String
@@ -178,14 +178,14 @@ model attendances {
   markedBy   String
   markedAt   DateTime  @default(now())
   createdAt  DateTime  @default(now())
-  updatedAt  DateTime
+  updatedAt  DateTime @updatedAt
   deletedAt  DateTime?
   isDeleted  Boolean   @default(false)
   deletedBy  String?
 }
 
 model audit_trails {
-  id        String    @id
+  id        String    @id @default(cuid())
   tableName String
   recordId  String
   action    String
@@ -205,7 +205,7 @@ model audit_trails {
 }
 
 model bill_payments {
-  id                 String    @id
+  id                 String    @id @default(cuid())
   paymentNo          String
   billId             String
   amount             Decimal
@@ -226,7 +226,7 @@ model bill_payments {
   ipAddress          String?
   userAgent          String?
   createdAt          DateTime  @default(now())
-  updatedAt          DateTime
+  updatedAt          DateTime @updatedAt
   deletedAt          DateTime?
   isDeleted          Boolean   @default(false)
   deletedBy          String?
@@ -234,7 +234,7 @@ model bill_payments {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model bill_types {
-  id                       String    @id
+  id                       String    @id @default(cuid())
   name                     String
   category                 String
   description              String?
@@ -253,7 +253,7 @@ model bill_types {
   isActive                 Boolean   @default(true)
   sortOrder                Int       @default(0)
   createdAt                DateTime  @default(now())
-  updatedAt                DateTime
+  updatedAt                DateTime @updatedAt
   deleted_at               DateTime? @db.Timestamp(6)
   is_deleted               Boolean?  @default(false)
   deleted_by               String?   @db.VarChar(255)
@@ -262,7 +262,7 @@ model bill_types {
 }
 
 model billing_reports {
-  id           String    @id
+  id           String    @id @default(cuid())
   name         String
   type         String
   parameters   String    @default("{}")
@@ -279,23 +279,23 @@ model billing_reports {
   completedAt  DateTime?
   errorMessage String?
   createdAt    DateTime  @default(now())
-  updatedAt    DateTime
+  updatedAt    DateTime @updatedAt
 }
 
 model billing_settings {
-  id          String   @id
+  id          String   @id @default(cuid())
   key         String
   value       String
   category    String   @default("GENERAL")
   description String?
   dataType    String   @default("STRING")
   createdAt   DateTime @default(now())
-  updatedAt   DateTime
+  updatedAt   DateTime @updatedAt
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model bills {
-  id               String    @id
+  id               String    @id @default(cuid())
   billNo           String
   studentId        String
   billTypeId       String
@@ -323,7 +323,7 @@ model bills {
   cancelledBy      String?
   cancelReason     String?
   createdAt        DateTime  @default(now())
-  updatedAt        DateTime
+  updatedAt        DateTime @updatedAt
   deletedAt        DateTime?
   isDeleted        Boolean   @default(false)
   deletedBy        String?
@@ -335,7 +335,7 @@ model bills {
 }
 
 model budget_items {
-  id           String   @id
+  id           String   @id @default(cuid())
   budgetId     String
   categoryId   String
   budgetAmount Float
@@ -344,14 +344,14 @@ model budget_items {
   percentage   Float    @default(0)
   notes        String?
   createdAt    DateTime @default(now())
-  updatedAt    DateTime
+  updatedAt    DateTime @updatedAt
 
   @@unique([budgetId, categoryId])
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model budgets {
-  id          String    @id
+  id          String    @id @default(cuid())
   name        String
   type        String    @default("ANNUAL")
   startDate   DateTime
@@ -363,7 +363,7 @@ model budgets {
   approvedBy  String?
   approvedAt  DateTime?
   createdAt   DateTime  @default(now())
-  updatedAt   DateTime
+  updatedAt   DateTime @updatedAt
   deletedAt   DateTime?
   isDeleted   Boolean   @default(false)
   deletedBy   String?
@@ -378,7 +378,7 @@ model budgets {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model business_transactions {
-  id            String    @id
+  id            String    @id @default(cuid())
   transactionNo String
   unitId        String
   date          DateTime
@@ -393,7 +393,7 @@ model business_transactions {
   receiptNo     String?
   recordedBy    String
   createdAt     DateTime  @default(now())
-  updatedAt     DateTime
+  updatedAt     DateTime @updatedAt
   deleted_at    DateTime? @db.Timestamp(6)
   is_deleted    Boolean?  @default(false)
   deleted_by    String?   @db.VarChar(255)
@@ -402,7 +402,7 @@ model business_transactions {
 }
 
 model business_unit_reports {
-  id                String    @id
+  id                String    @id @default(cuid())
   unitId            String
   year              Int
   month             Int
@@ -435,12 +435,12 @@ model business_unit_reports {
   notes             String?
   highlights        String?
   createdAt         DateTime  @default(now())
-  updatedAt         DateTime
+  updatedAt         DateTime @updatedAt
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model business_units {
-  id          String    @id
+  id          String    @id @default(cuid())
   code        String
   name        String
   description String?
@@ -451,7 +451,7 @@ model business_units {
   isActive    Boolean   @default(true)
   startDate   DateTime  @default(now())
   createdAt   DateTime  @default(now())
-  updatedAt   DateTime
+  updatedAt   DateTime @updatedAt
   deleted_at  DateTime? @db.Timestamp(6)
   is_deleted  Boolean?  @default(false)
   deleted_by  String?   @db.VarChar(255)
@@ -460,21 +460,21 @@ model business_units {
 }
 
 model campaign_updates {
-  id         String   @id
+  id         String   @id @default(cuid())
   campaignId String
   title      String
   content    String
   images     String   @default("[]")
   isPublic   Boolean  @default(true)
   createdAt  DateTime @default(now())
-  updatedAt  DateTime
+  updatedAt  DateTime @updatedAt
 
   @@index([campaignId, createdAt])
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model classes {
-  id             String    @id
+  id             String    @id @default(cuid())
   name           String
   grade          String
   section        String?
@@ -487,7 +487,7 @@ model classes {
   description    String?
   isActive       Boolean   @default(true)
   createdAt      DateTime  @default(now())
-  updatedAt      DateTime
+  updatedAt      DateTime @updatedAt
   deletedAt      DateTime?
   isDeleted      Boolean   @default(false)
   deletedBy      String?
@@ -500,7 +500,7 @@ model classes {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model courses {
-  id          String    @id
+  id          String    @id @default(cuid())
   name        String
   description String
   level       String
@@ -512,7 +512,7 @@ model courses {
   status      String    @default("active")
   createdBy   String
   createdAt   DateTime  @default(now())
-  updatedAt   DateTime
+  updatedAt   DateTime @updatedAt
   deletedAt   DateTime?
   deletedBy   String?
   isDeleted   Boolean   @default(false)
@@ -525,7 +525,7 @@ model courses {
 }
 
 model curriculum_subjects {
-  id           String   @id
+  id           String   @id @default(cuid())
   curriculumId String
   subjectId    String
   grade        String
@@ -539,7 +539,7 @@ model curriculum_subjects {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model curriculums {
-  id          String    @id
+  id          String    @id @default(cuid())
   name        String
   code        String
   level       String
@@ -548,7 +548,7 @@ model curriculums {
   validFrom   DateTime
   validUntil  DateTime?
   createdAt   DateTime  @default(now())
-  updatedAt   DateTime
+  updatedAt   DateTime @updatedAt
   deletedAt   DateTime?
   isDeleted   Boolean   @default(false)
   deletedBy   String?
@@ -561,7 +561,7 @@ model curriculums {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model donation_campaigns {
-  id             String    @id
+  id             String    @id @default(cuid())
   title          String
   slug           String    @unique
   description    String
@@ -583,7 +583,7 @@ model donation_campaigns {
   approvedBy     String?
   approvedAt     DateTime?
   createdAt      DateTime  @default(now())
-  updatedAt      DateTime
+  updatedAt      DateTime @updatedAt
   deletedAt      DateTime?
   isDeleted      Boolean   @default(false)
   deletedBy      String?
@@ -600,7 +600,7 @@ model donation_campaigns {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model donation_categories {
-  id          String    @id
+  id          String    @id @default(cuid())
   name        String    @unique
   description String?
   icon        String?
@@ -608,7 +608,7 @@ model donation_categories {
   isActive    Boolean   @default(true)
   sortOrder   Int       @default(0)
   createdAt   DateTime  @default(now())
-  updatedAt   DateTime
+  updatedAt   DateTime @updatedAt
   deleted_at  DateTime? @db.Timestamp(6)
   is_deleted  Boolean?  @default(false)
   deleted_by  String?   @db.VarChar(255)
@@ -618,7 +618,7 @@ model donation_categories {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model donations {
-  id             String    @id
+  id             String    @id @default(cuid())
   donationNo     String    @unique
   campaignId     String?
   categoryId     String
@@ -647,7 +647,7 @@ model donations {
   userAgent      String?
   referrer       String?
   createdAt      DateTime  @default(now())
-  updatedAt      DateTime
+  updatedAt      DateTime @updatedAt
   deletedAt      DateTime?
   isDeleted      Boolean   @default(false)
   deletedBy      String?
@@ -664,7 +664,7 @@ model donations {
 }
 
 model donor_profiles {
-  id                  String    @id
+  id                  String    @id @default(cuid())
   email               String    @unique
   name                String
   phone               String?
@@ -678,7 +678,7 @@ model donor_profiles {
   verificationToken   String?
   verifiedAt          DateTime?
   createdAt           DateTime  @default(now())
-  updatedAt           DateTime
+  updatedAt           DateTime @updatedAt
 
   @@index([email])
   @@index([isVerified])
@@ -686,7 +686,7 @@ model donor_profiles {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model ebooks {
-  id            String    @id
+  id            String    @id @default(cuid())
   title         String
   author        String
   description   String
@@ -707,7 +707,7 @@ model ebooks {
   isPublic      Boolean   @default(true)
   createdBy     String
   createdAt     DateTime  @default(now())
-  updatedAt     DateTime
+  updatedAt     DateTime @updatedAt
   deletedAt     DateTime?
   deletedBy     String?
   isDeleted     Boolean   @default(false)
@@ -720,7 +720,7 @@ model ebooks {
 }
 
 model exam_results {
-  id        String    @id
+  id        String    @id @default(cuid())
   examId    String
   studentId String
   score     Decimal
@@ -731,7 +731,7 @@ model exam_results {
   enteredBy String?
   enteredAt DateTime?
   createdAt DateTime  @default(now())
-  updatedAt DateTime
+  updatedAt DateTime @updatedAt
   deletedAt DateTime?
   isDeleted Boolean   @default(false)
   deletedBy String?
@@ -739,7 +739,7 @@ model exam_results {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model exams {
-  id           String    @id
+  id           String    @id @default(cuid())
   name         String
   code         String?
   type         String
@@ -760,7 +760,7 @@ model exams {
   status       String    @default("SCHEDULED")
   isPublished  Boolean   @default(false)
   createdAt    DateTime  @default(now())
-  updatedAt    DateTime
+  updatedAt    DateTime @updatedAt
   deletedAt    DateTime?
   isDeleted    Boolean   @default(false)
   deletedBy    String?
@@ -773,7 +773,7 @@ model exams {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model financial_accounts {
-  id          String    @id
+  id          String    @id @default(cuid())
   code        String    @unique
   name        String
   type        String
@@ -783,7 +783,7 @@ model financial_accounts {
   balance     Float     @default(0)
   description String?
   createdAt   DateTime  @default(now())
-  updatedAt   DateTime
+  updatedAt   DateTime @updatedAt
   deletedAt   DateTime?
   isDeleted   Boolean   @default(false)
   deletedBy   String?
@@ -798,7 +798,7 @@ model financial_accounts {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model financial_categories {
-  id          String    @id
+  id          String    @id @default(cuid())
   name        String
   type        String
   code        String?
@@ -809,7 +809,7 @@ model financial_categories {
   description String?
   parentId    String?
   createdAt   DateTime  @default(now())
-  updatedAt   DateTime
+  updatedAt   DateTime @updatedAt
   deletedAt   DateTime?
   isDeleted   Boolean   @default(false)
   deletedBy   String?
@@ -824,7 +824,7 @@ model financial_categories {
 }
 
 model financial_reports {
-  id        String    @id
+  id        String    @id @default(cuid())
   name      String
   type      String
   period    String
@@ -836,7 +836,7 @@ model financial_reports {
   status    String    @default("GENERATED")
   createdBy String
   createdAt DateTime  @default(now())
-  updatedAt DateTime
+  updatedAt DateTime @updatedAt
   deletedAt DateTime?
   isDeleted Boolean   @default(false)
   deletedBy String?
@@ -847,7 +847,7 @@ model financial_reports {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model grades {
-  id            String    @id
+  id            String    @id @default(cuid())
   studentId     String
   subjectId     String
   semesterId    String
@@ -869,7 +869,7 @@ model grades {
   enteredBy     String?
   enteredAt     DateTime?
   createdAt     DateTime  @default(now())
-  updatedAt     DateTime
+  updatedAt     DateTime @updatedAt
   deletedAt     DateTime?
   isDeleted     Boolean   @default(false)
   deletedBy     String?
@@ -881,7 +881,7 @@ model grades {
 }
 
 model hafalan_achievements {
-  id          String    @id
+  id          String    @id @default(cuid())
   studentId   String
   type        String
   title       String
@@ -902,7 +902,7 @@ model hafalan_achievements {
 }
 
 model hafalan_progress {
-  id               String    @id
+  id               String    @id @default(cuid())
   studentId        String
   totalSurah       Int       @default(0)
   totalAyat        Int       @default(0)
@@ -924,7 +924,7 @@ model hafalan_progress {
   avgFluency       Decimal   @default(0)
   avgTajweed       Decimal   @default(0)
   createdAt        DateTime  @default(now())
-  updatedAt        DateTime
+  updatedAt        DateTime @updatedAt
   deletedAt        DateTime?
   isDeleted        Boolean   @default(false)
   deletedBy        String?
@@ -932,7 +932,7 @@ model hafalan_progress {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model hafalan_records {
-  id             String    @id
+  id             String    @id @default(cuid())
   studentId      String
   surahNumber    Int
   startAyat      Int       @default(1)
@@ -952,7 +952,7 @@ model hafalan_records {
   previousRecord String?
   nextTarget     String?
   createdAt      DateTime  @default(now())
-  updatedAt      DateTime
+  updatedAt      DateTime @updatedAt
   deletedAt      DateTime?
   isDeleted      Boolean   @default(false)
   deletedBy      String?
@@ -964,7 +964,7 @@ model hafalan_records {
 }
 
 model hafalan_sessions {
-  id             String    @id
+  id             String    @id @default(cuid())
   studentId      String
   teacherId      String
   sessionDate    DateTime  @default(now())
@@ -989,7 +989,7 @@ model hafalan_sessions {
   parentFeedback String?
   notes          String?
   createdAt      DateTime  @default(now())
-  updatedAt      DateTime
+  updatedAt      DateTime @updatedAt
   deletedAt      DateTime?
   isDeleted      Boolean   @default(false)
   deletedBy      String?
@@ -997,7 +997,7 @@ model hafalan_sessions {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model hafalan_targets {
-  id             String    @id
+  id             String    @id @default(cuid())
   studentId      String
   targetSurah    Int
   startAyat      Int       @default(1)
@@ -1017,7 +1017,7 @@ model hafalan_targets {
   approvedBy     String?
   notes          String?
   createdAt      DateTime  @default(now())
-  updatedAt      DateTime
+  updatedAt      DateTime @updatedAt
   deleted_at     DateTime? @db.Timestamp(6)
   is_deleted     Boolean?  @default(false)
   deleted_by     String?   @db.VarChar(255)
@@ -1026,7 +1026,7 @@ model hafalan_targets {
 }
 
 model inventory {
-  id          String    @id
+  id          String    @id @default(cuid())
   productId   String
   quantity    Int
   location    String
@@ -1039,7 +1039,7 @@ model inventory {
 }
 
 model inventory_transactions {
-  id          String   @id
+  id          String   @id @default(cuid())
   productId   String
   type        String
   quantity    Int
@@ -1057,7 +1057,7 @@ model inventory_transactions {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model journal_entries {
-  id            String    @id
+  id            String    @id @default(cuid())
   entryNo       String    @unique
   transactionId String?   @unique
   description   String
@@ -1073,7 +1073,7 @@ model journal_entries {
   reversedBy    String?
   reversedAt    DateTime?
   createdAt     DateTime  @default(now())
-  updatedAt     DateTime
+  updatedAt     DateTime @updatedAt
   deletedAt     DateTime?
   isDeleted     Boolean   @default(false)
   deletedBy     String?
@@ -1087,7 +1087,7 @@ model journal_entries {
 }
 
 model journal_entry_lines {
-  id           String   @id
+  id           String   @id @default(cuid())
   journalId    String
   accountId    String
   debitAmount  Float    @default(0)
@@ -1100,7 +1100,7 @@ model journal_entry_lines {
 }
 
 model line_admins {
-  id          String   @id
+  id          String   @id @default(cuid())
   lineUserId  String   @unique
   userId      String?  @unique
   permissions String[] @default(["BASIC"])
@@ -1109,7 +1109,7 @@ model line_admins {
 }
 
 model line_settings {
-  id                  String   @id
+  id                  String   @id @default(cuid())
   enabled             Boolean  @default(false)
   channelId           String?
   channelSecret       String?
@@ -1130,11 +1130,11 @@ model line_settings {
   unknownMessage      String   @default("Maaf, pesan tidak dikenali. Ketik 'menu' untuk bantuan.")
   errorMessage        String   @default("Maaf, terjadi kesalahan. Silakan coba lagi.")
   createdAt           DateTime @default(now())
-  updatedAt           DateTime
+  updatedAt           DateTime @updatedAt
 }
 
 model line_user_sessions {
-  id           String    @id
+  id           String    @id @default(cuid())
   userId       String    @unique
   mode         String    @default("PUBLIC")
   isAdmin      Boolean   @default(false)
@@ -1152,12 +1152,12 @@ model line_user_sessions {
   retryCount   Int       @default(0)
   lockedUntil  DateTime?
   createdAt    DateTime  @default(now())
-  updatedAt    DateTime
+  updatedAt    DateTime @updatedAt
   expiresAt    DateTime?
 }
 
 model line_users {
-  id            String   @id
+  id            String   @id @default(cuid())
   userId        String   @unique
   displayName   String?
   pictureUrl    String?
@@ -1168,12 +1168,12 @@ model line_users {
   lastActive    DateTime @default(now())
   messageCount  Int      @default(0)
   createdAt     DateTime @default(now())
-  updatedAt     DateTime
+  updatedAt     DateTime @updatedAt
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model messages {
-  id              String    @id
+  id              String    @id @default(cuid())
   senderId        String
   receiverId      String
   subject         String
@@ -1191,7 +1191,7 @@ model messages {
   scheduledFor    DateTime?
   sentAt          DateTime  @default(now())
   createdAt       DateTime  @default(now())
-  updatedAt       DateTime
+  updatedAt       DateTime @updatedAt
   deletedAt       DateTime?
   isDeleted       Boolean   @default(false)
   deletedBy       String?
@@ -1203,7 +1203,7 @@ model messages {
 }
 
 model notifications {
-  id           String    @id
+  id           String    @id @default(cuid())
   userId       String
   type         String
   title        String
@@ -1223,12 +1223,12 @@ model notifications {
   scheduledFor DateTime?
   expiresAt    DateTime?
   createdAt    DateTime  @default(now())
-  updatedAt    DateTime
+  updatedAt    DateTime @updatedAt
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model ota_programs {
-  id              String    @id
+  id              String    @id @default(cuid())
   studentId       String
   monthlyTarget   Decimal
   currentMonth    String
@@ -1242,7 +1242,7 @@ model ota_programs {
   showProgress    Boolean   @default(true)
   adminNotes      String?
   createdAt       DateTime  @default(now())
-  updatedAt       DateTime
+  updatedAt       DateTime @updatedAt
   deleted_at      DateTime? @db.Timestamp(6)
   is_deleted      Boolean?  @default(false)
   deleted_by      String?   @db.VarChar(255)
@@ -1251,7 +1251,7 @@ model ota_programs {
 }
 
 model ota_reports {
-  id                 String    @id
+  id                 String    @id @default(cuid())
   month              String
   year               String
   reportType         String
@@ -1279,12 +1279,12 @@ model ota_reports {
   reportFileUrl      String?
   proofFileUrl       String?
   createdAt          DateTime  @default(now())
-  updatedAt          DateTime
+  updatedAt          DateTime @updatedAt
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model ota_sponsors {
-  id                 String    @id
+  id                 String    @id @default(cuid())
   programId          String
   donorName          String
   donorEmail         String?
@@ -1307,7 +1307,7 @@ model ota_sponsors {
   donorMessage       String?
   adminNotes         String?
   createdAt          DateTime  @default(now())
-  updatedAt          DateTime
+  updatedAt          DateTime @updatedAt
   deleted_at         DateTime? @db.Timestamp(6)
   is_deleted         Boolean?  @default(false)
   deleted_by         String?   @db.VarChar(255)
@@ -1316,7 +1316,7 @@ model ota_sponsors {
 }
 
 model parent_accounts {
-  id                   String    @id
+  id                   String    @id @default(cuid())
   userId               String
   phoneNumber          String?
   whatsapp             String?
@@ -1326,14 +1326,14 @@ model parent_accounts {
   timezone             String    @default("Asia/Jakarta")
   isActive             Boolean   @default(true)
   createdAt            DateTime  @default(now())
-  updatedAt            DateTime
+  updatedAt            DateTime @updatedAt
   deletedAt            DateTime?
   isDeleted            Boolean   @default(false)
   deletedBy            String?
 }
 
 model parent_students {
-  id                 String   @id
+  id                 String   @id @default(cuid())
   parentId           String
   studentId          String
   relationship       String
@@ -1343,11 +1343,11 @@ model parent_students {
   canViewPayments    Boolean  @default(true)
   canReceiveMessages Boolean  @default(true)
   createdAt          DateTime @default(now())
-  updatedAt          DateTime
+  updatedAt          DateTime @updatedAt
 }
 
 model payment_history {
-  id             String   @id
+  id             String   @id @default(cuid())
   billId         String
   paymentId      String?
   studentId      String
@@ -1362,7 +1362,7 @@ model payment_history {
 }
 
 model payment_reminders {
-  id               String    @id
+  id               String    @id @default(cuid())
   billId           String
   studentId        String
   type             String
@@ -1384,12 +1384,12 @@ model payment_reminders {
   templateUsed     String?
   metadata         String    @default("{}")
   createdAt        DateTime  @default(now())
-  updatedAt        DateTime
+  updatedAt        DateTime @updatedAt
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model payments {
-  id                 String    @id
+  id                 String    @id @default(cuid())
   paymentNo          String    @unique
   billId             String?
   registrationId     String?
@@ -1418,7 +1418,7 @@ model payments {
   approvalCode       String?
   paidAt             DateTime?
   createdAt          DateTime  @default(now())
-  updatedAt          DateTime
+  updatedAt          DateTime @updatedAt
   deletedAt          DateTime?
   isDeleted          Boolean   @default(false)
   deletedBy          String?
@@ -1435,7 +1435,7 @@ model payments {
 }
 
 model ppdb_activities {
-  id             String   @id
+  id             String   @id @default(cuid())
   registrationId String
   activity       String
   description    String
@@ -1446,7 +1446,7 @@ model ppdb_activities {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model ppdb_registrations {
-  id                String    @id
+  id                String    @id @default(cuid())
   registrationNo    String
   level             String
   academicYear      String
@@ -1525,7 +1525,7 @@ model ppdb_registrations {
   reviewedBy        String?
   reviewedAt        DateTime?
   createdAt         DateTime  @default(now())
-  updatedAt         DateTime
+  updatedAt         DateTime @updatedAt
   deletedAt         DateTime?
   isDeleted         Boolean   @default(false)
   deletedBy         String?
@@ -1537,7 +1537,7 @@ model ppdb_registrations {
 }
 
 model ppdb_settings {
-  id                    String   @id
+  id                    String   @id @default(cuid())
   academicYear          String
   openDate              DateTime
   closeDate             DateTime
@@ -1559,12 +1559,12 @@ model ppdb_settings {
   lastRegistrationNo    Int      @default(0)
   isActive              Boolean  @default(true)
   createdAt             DateTime @default(now())
-  updatedAt             DateTime
+  updatedAt             DateTime @updatedAt
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model product_categories {
-  id          String    @id
+  id          String    @id @default(cuid())
   name        String    @unique
   description String?
   icon        String?
@@ -1573,7 +1573,7 @@ model product_categories {
   parentId    String?
   sortOrder   Int       @default(0)
   createdAt   DateTime  @default(now())
-  updatedAt   DateTime
+  updatedAt   DateTime @updatedAt
   deleted_at  DateTime? @db.Timestamp(6)
   is_deleted  Boolean?  @default(false)
   deleted_by  String?   @db.VarChar(255)
@@ -1584,7 +1584,7 @@ model product_categories {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model products {
-  id          String    @id
+  id          String    @id @default(cuid())
   name        String
   code        String    @unique
   description String?
@@ -1602,7 +1602,7 @@ model products {
   tags        String    @default("[]")
   notes       String?
   createdAt   DateTime  @default(now())
-  updatedAt   DateTime
+  updatedAt   DateTime @updatedAt
   deletedAt   DateTime?
   isDeleted   Boolean   @default(false)
   deletedBy   String?
@@ -1619,7 +1619,7 @@ model products {
 }
 
 model purchase_order_items {
-  id              String   @id
+  id              String   @id @default(cuid())
   purchaseOrderId String
   productId       String
   quantity        Int
@@ -1633,7 +1633,7 @@ model purchase_order_items {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model purchase_orders {
-  id             String    @id
+  id             String    @id @default(cuid())
   orderNo        String
   supplierId     String
   status         String    @default("DRAFT")
@@ -1650,7 +1650,7 @@ model purchase_orders {
   notes          String?
   terms          String?
   createdAt      DateTime  @default(now())
-  updatedAt      DateTime
+  updatedAt      DateTime @updatedAt
   createdBy      String
   deleted_at     DateTime? @db.Timestamp(6)
   is_deleted     Boolean?  @default(false)
@@ -1660,28 +1660,28 @@ model purchase_orders {
 }
 
 model push_subscriptions {
-  id        String   @id
+  id        String   @id @default(cuid())
   userId    String
   endpoint  String
   p256dh    String
   auth      String
   userAgent String?
   createdAt DateTime @default(now())
-  updatedAt DateTime
+  updatedAt DateTime @updatedAt
 
   @@unique([userId, endpoint])
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model questions {
-  id          String    @id
+  id          String    @id @default(cuid())
   question    String
   category    String
   askerName   String?
   isAnonymous Boolean   @default(false)
   status      String    @default("pending")
   createdAt   DateTime  @default(now())
-  updatedAt   DateTime
+  updatedAt   DateTime @updatedAt
   deletedAt   DateTime?
   isDeleted   Boolean   @default(false)
   deletedBy   String?
@@ -1694,7 +1694,7 @@ model questions {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model quran_surahs {
-  id                  String    @id
+  id                  String    @id @default(cuid())
   number              Int
   name                String
   nameArabic          String
@@ -1709,7 +1709,7 @@ model quran_surahs {
   isActive            Boolean   @default(true)
   sortOrder           Int       @default(0)
   createdAt           DateTime  @default(now())
-  updatedAt           DateTime
+  updatedAt           DateTime @updatedAt
   deleted_at          DateTime? @db.Timestamp(6)
   is_deleted          Boolean?  @default(false)
   deleted_by          String?   @db.VarChar(255)
@@ -1719,7 +1719,7 @@ model quran_surahs {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model registrations {
-  id               String    @id
+  id               String    @id @default(cuid())
   registrationNo   String    @unique
   fullName         String
   nickname         String?
@@ -1785,7 +1785,7 @@ model registrations {
   verifiedAt       DateTime?
   rejectionReason  String?
   createdAt        DateTime  @default(now())
-  updatedAt        DateTime
+  updatedAt        DateTime @updatedAt
   submittedAt      DateTime?
   deletedAt        DateTime?
   isDeleted        Boolean   @default(false)
@@ -1803,7 +1803,7 @@ model registrations {
 }
 
 model report_cards {
-  id                   String    @id
+  id                   String    @id @default(cuid())
   studentId            String
   semesterId           String
   classId              String
@@ -1832,14 +1832,14 @@ model report_cards {
   pdfUrl               String?
   status               String    @default("DRAFT")
   createdAt            DateTime  @default(now())
-  updatedAt            DateTime
+  updatedAt            DateTime @updatedAt
   deletedAt            DateTime?
   isDeleted            Boolean   @default(false)
   deletedBy            String?
 }
 
 model sale_items {
-  id             String   @id
+  id             String   @id @default(cuid())
   saleId         String
   productId      String
   quantity       Int
@@ -1853,7 +1853,7 @@ model sale_items {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model sales {
-  id               String    @id
+  id               String    @id @default(cuid())
   saleNo           String
   customerName     String?
   customerPhone    String?
@@ -1872,7 +1872,7 @@ model sales {
   status           String    @default("COMPLETED")
   notes            String?
   createdAt        DateTime  @default(now())
-  updatedAt        DateTime
+  updatedAt        DateTime @updatedAt
   deleted_at       DateTime? @db.Timestamp(6)
   is_deleted       Boolean?  @default(false)
   deleted_by       String?   @db.VarChar(255)
@@ -1882,7 +1882,7 @@ model sales {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model schedules {
-  id         String    @id
+  id         String    @id @default(cuid())
   classId    String
   subjectId  String
   teacherId  String
@@ -1894,7 +1894,7 @@ model schedules {
   isActive   Boolean   @default(true)
   notes      String?
   createdAt  DateTime  @default(now())
-  updatedAt  DateTime
+  updatedAt  DateTime @updatedAt
   deletedAt  DateTime?
   isDeleted  Boolean   @default(false)
   deletedBy  String?
@@ -1906,7 +1906,7 @@ model schedules {
 }
 
 model security_audit_logs {
-  id        String    @id
+  id        String    @id @default(cuid())
   userId    String
   event     String
   metadata  Json?
@@ -1920,7 +1920,7 @@ model security_audit_logs {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model semesters {
-  id              String    @id
+  id              String    @id @default(cuid())
   academicYearId  String
   name            String
   shortName       String?
@@ -1930,7 +1930,7 @@ model semesters {
   gradingDeadline DateTime?
   reportDeadline  DateTime?
   createdAt       DateTime  @default(now())
-  updatedAt       DateTime
+  updatedAt       DateTime @updatedAt
   deletedAt       DateTime?
   isDeleted       Boolean   @default(false)
   deletedBy       String?
@@ -1943,7 +1943,7 @@ model semesters {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model setoran_schedules {
-  id              String    @id
+  id              String    @id @default(cuid())
   studentId       String
   teacherId       String
   dayOfWeek       String
@@ -1961,7 +1961,7 @@ model setoran_schedules {
   notifyParent    Boolean   @default(true)
   notes           String?
   createdAt       DateTime  @default(now())
-  updatedAt       DateTime
+  updatedAt       DateTime @updatedAt
   deleted_at      DateTime? @db.Timestamp(6)
   is_deleted      Boolean?  @default(false)
   deleted_by      String?   @db.VarChar(255)
@@ -1970,14 +1970,14 @@ model setoran_schedules {
 }
 
 model settings {
-  id    String @id
+  id    String @id @default(cuid())
   key   String @unique
   value String
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model spp_billings {
-  id             String    @id
+  id             String    @id @default(cuid())
   billNo         String
   studentId      String
   classId        String
@@ -2011,7 +2011,7 @@ model spp_billings {
   cancelledBy    String?
   cancelReason   String?
   createdAt      DateTime  @default(now())
-  updatedAt      DateTime
+  updatedAt      DateTime @updatedAt
   deletedAt      DateTime?
   isDeleted      Boolean   @default(false)
   deletedBy      String?
@@ -2023,7 +2023,7 @@ model spp_billings {
 }
 
 model spp_payments {
-  id            String    @id
+  id            String    @id @default(cuid())
   paymentNo     String
   billingId     String
   amount        Decimal
@@ -2044,14 +2044,14 @@ model spp_payments {
   notes         String?
   recordedBy    String
   createdAt     DateTime  @default(now())
-  updatedAt     DateTime
+  updatedAt     DateTime @updatedAt
   deletedAt     DateTime?
   isDeleted     Boolean   @default(false)
   deletedBy     String?
 }
 
 model spp_reminders {
-  id           String    @id
+  id           String    @id @default(cuid())
   billingId    String
   type         String
   recipient    String
@@ -2064,11 +2064,11 @@ model spp_reminders {
   attempts     Int       @default(0)
   maxAttempts  Int       @default(3)
   createdAt    DateTime  @default(now())
-  updatedAt    DateTime
+  updatedAt    DateTime @updatedAt
 }
 
 model spp_reports {
-  id          String   @id
+  id          String   @id @default(cuid())
   reportType  String
   period      String
   filters     String   @default("{}")
@@ -2082,7 +2082,7 @@ model spp_reports {
 }
 
 model spp_settings {
-  id               String   @id
+  id               String   @id @default(cuid())
   level            String
   monthlyFee       Decimal
   enrollmentFee    Decimal?
@@ -2106,11 +2106,11 @@ model spp_settings {
   reminderTemplate String?
   isActive         Boolean  @default(true)
   createdAt        DateTime @default(now())
-  updatedAt        DateTime
+  updatedAt        DateTime @updatedAt
 }
 
 model student_classes {
-  id             String    @id
+  id             String    @id @default(cuid())
   studentId      String
   classId        String
   academicYearId String
@@ -2119,12 +2119,12 @@ model student_classes {
   joinDate       DateTime  @default(now())
   leaveDate      DateTime?
   createdAt      DateTime  @default(now())
-  updatedAt      DateTime
+  updatedAt      DateTime @updatedAt
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model students {
-  id               String    @id
+  id               String    @id @default(cuid())
   nisn             String?   @unique
   nis              String    @unique
   fullName         String
@@ -2170,7 +2170,7 @@ model students {
   graduationDate   DateTime?
   createdBy        String
   createdAt        DateTime  @default(now())
-  updatedAt        DateTime
+  updatedAt        DateTime @updatedAt
   registrationId   String?   @unique
   isOrphan         Boolean   @default(false)
   monthlyNeeds     Decimal?
@@ -2191,7 +2191,7 @@ model students {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model subjects {
-  id          String    @id
+  id          String    @id @default(cuid())
   code        String
   name        String
   nameArabic  String?
@@ -2205,7 +2205,7 @@ model subjects {
   isActive    Boolean   @default(true)
   sortOrder   Int       @default(0)
   createdAt   DateTime  @default(now())
-  updatedAt   DateTime
+  updatedAt   DateTime @updatedAt
   deletedAt   DateTime?
   isDeleted   Boolean   @default(false)
   deletedBy   String?
@@ -2218,7 +2218,7 @@ model subjects {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model suppliers {
-  id           String    @id
+  id           String    @id @default(cuid())
   name         String
   code         String?   @unique
   contact      String?
@@ -2233,7 +2233,7 @@ model suppliers {
   rating       Int       @default(5)
   notes        String?
   createdAt    DateTime  @default(now())
-  updatedAt    DateTime
+  updatedAt    DateTime @updatedAt
   deletedAt    DateTime?
   isDeleted    Boolean   @default(false)
   deletedBy    String?
@@ -2245,19 +2245,19 @@ model suppliers {
 }
 
 model teacher_subjects {
-  id         String   @id
+  id         String   @id @default(cuid())
   teacherId  String
   subjectId  String
   classId    String
   semesterId String
   isActive   Boolean  @default(true)
   createdAt  DateTime @default(now())
-  updatedAt  DateTime
+  updatedAt  DateTime @updatedAt
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model teachers {
-  id             String    @id
+  id             String    @id @default(cuid())
   nip            String?   @unique
   name           String
   title          String?
@@ -2284,7 +2284,7 @@ model teachers {
   achievements   String    @default("[]")
   isUstadz       Boolean   @default(true)
   createdAt      DateTime  @default(now())
-  updatedAt      DateTime
+  updatedAt      DateTime @updatedAt
   createdBy      String?
   deletedAt      DateTime?
   isDeleted      Boolean   @default(false)
@@ -2301,14 +2301,14 @@ model teachers {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model transactions {
-  id            String    @id
+  id            String    @id @default(cuid())
   type          String
   amount        Float
   description   String
   date          DateTime
   createdBy     String
   createdAt     DateTime  @default(now())
-  updatedAt     DateTime
+  updatedAt     DateTime @updatedAt
   approvedAt    DateTime?
   approvedBy    String?
   attachments   String    @default("[]")
@@ -2331,7 +2331,7 @@ model transactions {
 }
 
 model two_factor_verifications {
-  id                    String    @id
+  id                    String    @id @default(cuid())
   userId                String
   smsOtp                String?
   smsOtpExpiresAt       DateTime?
@@ -2342,12 +2342,12 @@ model two_factor_verifications {
   backupAttempts        Int       @default(0)
   backupAttemptsResetAt DateTime?
   createdAt             DateTime  @default(now())
-  updatedAt             DateTime
+  updatedAt             DateTime @updatedAt
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model users {
-  id               String         @id
+  id               String         @id @default(cuid())
   username         String         @unique
   email            String         @unique
   password         String
@@ -2355,7 +2355,7 @@ model users {
   role             String         @default("STAFF")
   isActive         Boolean        @default(true)
   createdAt        DateTime       @default(now())
-  updatedAt        DateTime
+  updatedAt        DateTime @updatedAt
   backupCodes      String[]       @default([])
   deletedAt        DateTime?
   deletedBy        String?
@@ -2378,7 +2378,7 @@ model users {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model videos {
-  id          String    @id
+  id          String    @id @default(cuid())
   title       String
   description String
   url         String
@@ -2391,7 +2391,7 @@ model videos {
   isPublic    Boolean   @default(true)
   createdBy   String
   createdAt   DateTime  @default(now())
-  updatedAt   DateTime
+  updatedAt   DateTime @updatedAt
   deletedAt   DateTime?
   deletedBy   String?
   isDeleted   Boolean   @default(false)
@@ -2404,7 +2404,7 @@ model videos {
 }
 
 model zakat_calculations {
-  id              String   @id
+  id              String   @id @default(cuid())
   calculationType String
   inputs          String
   zakatAmount     Decimal

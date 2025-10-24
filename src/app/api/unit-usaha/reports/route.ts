@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
       whereConditions.unitId = unitId;
     } else if (unitCode) {
       // Get unit by code first
-      const unit = await prisma.businessUnit.findUnique({
+      const unit = await prisma.business_units.findUnique({
         where: { code: unitCode }
       });
       if (unit) {
@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
       whereConditions.status = status;
     }
 
-    const reports = await prisma.businessUnitReport.findMany({
+    const reports = await prisma.business_unit_reports.findMany({
       where: whereConditions,
       include: {
         unit: true
@@ -142,7 +142,7 @@ export async function POST(request: NextRequest) {
     // Get unit if code provided
     let actualUnitId = unitId;
     if (!actualUnitId && unitCode) {
-      const unit = await prisma.businessUnit.findUnique({
+      const unit = await prisma.business_units.findUnique({
         where: { code: unitCode }
       });
       if (!unit) {
@@ -155,7 +155,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if report already exists
-    const existing = await prisma.businessUnitReport.findUnique({
+    const existing = await prisma.business_unit_reports.findUnique({
       where: {
         unitId_year_month: {
           unitId: actualUnitId,
@@ -195,7 +195,7 @@ export async function POST(request: NextRequest) {
 
     const period = `${year}-${String(month).padStart(2, '0')}`;
 
-    const report = await prisma.businessUnitReport.create({
+    const report = await prisma.business_unit_reports.create({
       data: {
         unitId: actualUnitId,
         year: parseInt(year),
@@ -259,7 +259,7 @@ export async function PUT(request: NextRequest) {
 
     // Handle status actions
     if (action === 'submit') {
-      const report = await prisma.businessUnitReport.update({
+      const report = await prisma.business_unit_reports.update({
         where: { id },
         data: {
           status: 'SUBMITTED',
@@ -276,7 +276,7 @@ export async function PUT(request: NextRequest) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
       }
       
-      const report = await prisma.businessUnitReport.update({
+      const report = await prisma.business_unit_reports.update({
         where: { id },
         data: {
           status: 'APPROVED',
@@ -291,7 +291,7 @@ export async function PUT(request: NextRequest) {
     // Regular update
     if (updateData.revenue !== undefined || updateData.expenses !== undefined) {
       // Recalculate profit metrics
-      const current = await prisma.businessUnitReport.findUnique({
+      const current = await prisma.business_unit_reports.findUnique({
         where: { id }
       });
       
@@ -325,7 +325,7 @@ export async function PUT(request: NextRequest) {
       updateData.profitMargin = profitMargin;
     }
 
-    const report = await prisma.businessUnitReport.update({
+    const report = await prisma.business_unit_reports.update({
       where: { id },
       data: updateData,
       include: { unit: true }

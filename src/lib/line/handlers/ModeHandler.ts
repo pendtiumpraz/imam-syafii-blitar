@@ -261,7 +261,7 @@ export async function handleModePostback(event: LineEvent) {
  */
 async function checkAdminAccess(lineUserId: string): Promise<boolean> {
   // Check in database
-  const admin = await prisma.lineAdmin.findUnique({
+  const admin = await prisma.line_admins.findUnique({
     where: { lineUserId },
     select: { isActive: true }
   })
@@ -358,7 +358,7 @@ async function showAdminSettings(replyToken: string) {
 }
 
 async function listAllStudents(replyToken: string) {
-  const students = await prisma.student.findMany({
+  const students = await prisma.students.findMany({
     take: 10,
     orderBy: { createdAt: 'desc' },
     select: {

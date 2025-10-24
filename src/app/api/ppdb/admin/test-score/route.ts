@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get current registration
-    const registration = await prisma.registration.findUnique({
+    const registration = await prisma.registrations.findUnique({
       where: { id: registrationId }
     })
 
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
       updatedAt: new Date()
     }
 
-    const updatedRegistration = await prisma.registration.update({
+    const updatedRegistration = await prisma.registrations.update({
       where: { id: registrationId },
       data: updateData,
       include: {
@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
 
     // If student passed and payment is verified, update status to REGISTERED
     if (calculatedResult === 'PASSED' && registration.paymentStatus === 'VERIFIED') {
-      await prisma.registration.update({
+      await prisma.registrations.update({
         where: { id: registrationId },
         data: {
           status: 'REGISTERED',
@@ -153,7 +153,7 @@ export async function GET(request: NextRequest) {
     const level = searchParams.get('level')
 
     // Get all registrations with test scores for ranking
-    const registrations = await prisma.registration.findMany({
+    const registrations = await prisma.registrations.findMany({
       where: {
         testScore: { not: null },
         testResult: 'PASSED',
@@ -183,7 +183,7 @@ export async function GET(request: NextRequest) {
     const updates = withScores.map(async (reg, index) => {
       const newRanking = index + 1
       if (reg.ranking !== newRanking) {
-        await prisma.registration.update({
+        await prisma.registrations.update({
           where: { id: reg.id },
           data: { ranking: newRanking }
         })
@@ -224,7 +224,7 @@ function getPassingScore(level: string): number {
 // Helper function to create student record from registration
 async function createStudentFromRegistration(registrationId: string, adminId: string) {
   try {
-    const registration = await prisma.registration.findUnique({
+    const registration = await prisma.registrations.findUnique({
       where: { id: registrationId }
     })
 
@@ -233,7 +233,7 @@ async function createStudentFromRegistration(registrationId: string, adminId: st
     }
 
     // Check if student already exists
-    const existingStudent = await prisma.student.findUnique({
+    const existingStudent = await prisma.students.findUnique({
       where: { registrationId }
     })
 
@@ -243,7 +243,7 @@ async function createStudentFromRegistration(registrationId: string, adminId: st
 
     // Generate NIS
     const currentYear = new Date().getFullYear().toString()
-    const existingStudents = await prisma.student.count({
+    const existingStudents = await prisma.students.count({
       where: {
         enrollmentYear: currentYear,
         institutionType: registration.level
@@ -253,7 +253,7 @@ async function createStudentFromRegistration(registrationId: string, adminId: st
     const nis = `${registration.level}${currentYear.slice(-2)}${nisSeq}`
 
     // Create student record
-    const student = await prisma.student.create({
+    const student = await prisma.students.create({
       data: {
         nisn: registration.nisn,
         nis: nis,

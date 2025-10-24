@@ -19,7 +19,7 @@ export async function POST(
     const { id } = params
 
     // Find donation
-    const donation = await prisma.donation.findUnique({
+    const donation = await prisma.donations.findUnique({
       where: { id },
       include: {
         campaign: true,

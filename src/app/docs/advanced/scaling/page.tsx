@@ -368,7 +368,7 @@ export class AuthService {
       // Rate limiting check
       await this.checkRateLimit(req.ip, 'login')
       
-      const user = await this.prisma.user.findUnique({
+      const user = await this.prisma.users.findUnique({
         where: { email },
         select: {
           id: true,
@@ -543,7 +543,7 @@ export class StudentService {
       if (status) where.status = status
 
       const [students, totalCount] = await Promise.all([
-        this.prisma.student.findMany({
+        this.prisma.students.findMany({
           where,
           include: {
             class: {
@@ -557,7 +557,7 @@ export class StudentService {
           skip: offset,
           take: Number(limit)
         }),
-        this.prisma.student.count({ where })
+        this.prisma.students.count({ where })
       ])
 
       result = {
@@ -597,7 +597,7 @@ export class StudentService {
       }
 
       // Check for duplicate student ID
-      const existingStudent = await this.prisma.student.findUnique({
+      const existingStudent = await this.prisma.students.findUnique({
         where: { studentId: studentData.studentId }
       })
 
@@ -607,7 +607,7 @@ export class StudentService {
         })
       }
 
-      const student = await this.prisma.student.create({
+      const student = await this.prisma.students.create({
         data: studentData,
         include: {
           class: {

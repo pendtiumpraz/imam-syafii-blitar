@@ -4,12 +4,12 @@ import { getStudentCarousel } from '../templates/fancy-menus'
 import { getSiswaDetail } from '../templates/menus'
 
 async function getOrCreateSystemUser() {
-  const systemUser = await prisma.user.findFirst({
+  const systemUser = await prisma.users.findFirst({
     where: { username: 'line-bot' }
   })
   
   if (!systemUser) {
-    return await prisma.user.create({
+    return await prisma.users.create({
       data: {
         username: 'line-bot',
         email: 'line-bot@system.local',
@@ -29,7 +29,7 @@ export const handleSiswaCommand = {
       // Get or create system user for bot operations
       const systemUser = await getOrCreateSystemUser()
       
-      const student = await prisma.student.create({
+      const student = await prisma.students.create({
         data: {
           fullName: data.name,
           nis: data.nis,
@@ -67,7 +67,7 @@ export const handleSiswaCommand = {
 
   async list(userId: string, replyToken: string) {
     try {
-      const students = await prisma.student.findMany({
+      const students = await prisma.students.findMany({
         take: 10,
         orderBy: { createdAt: 'desc' },
         select: {
@@ -115,7 +115,7 @@ export const handleSiswaCommand = {
 
   async search(query: string, userId: string, replyToken: string) {
     try {
-      const students = await prisma.student.findMany({
+      const students = await prisma.students.findMany({
         where: {
           OR: [
             { fullName: { contains: query, mode: 'insensitive' } },
@@ -168,7 +168,7 @@ export const handleSiswaCommand = {
 
   async getByNIS(nis: string, userId: string, replyToken: string) {
     try {
-      const student = await prisma.student.findUnique({
+      const student = await prisma.students.findUnique({
         where: { nis },
         select: {
           id: true,
@@ -209,7 +209,7 @@ export const handleSiswaCommand = {
 
   async getDetail(id: string, userId: string, replyToken: string) {
     try {
-      const student = await prisma.student.findUnique({
+      const student = await prisma.students.findUnique({
         where: { id },
         select: {
           id: true,
@@ -244,7 +244,7 @@ export const handleSiswaCommand = {
 
   async confirmDelete(id: string, userId: string, replyToken: string) {
     try {
-      const student = await prisma.student.findUnique({
+      const student = await prisma.students.findUnique({
         where: { id },
         select: { fullName: true, nis: true }
       })
@@ -339,7 +339,7 @@ export const handleSiswaCommand = {
 
   async delete(id: string, userId: string, replyToken: string) {
     try {
-      const student = await prisma.student.delete({
+      const student = await prisma.students.delete({
         where: { id }
       })
 
@@ -361,7 +361,7 @@ export const handleSiswaCommand = {
 
   async startEdit(id: string, userId: string, replyToken: string) {
     try {
-      const student = await prisma.student.findUnique({
+      const student = await prisma.students.findUnique({
         where: { id },
         select: {
           id: true,

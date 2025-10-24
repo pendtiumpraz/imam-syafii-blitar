@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
     await updateStudentProgress(studentId);
 
     // Get session with related data
-    const sessionWithData = await prisma.hafalanSession.findUnique({
+    const sessionWithData = await prisma.hafalan_sessions.findUnique({
       where: { id: result.session.id },
       include: {
         student: {
@@ -124,7 +124,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Get records with surah data
-    const recordsWithData = await prisma.hafalanRecord.findMany({
+    const recordsWithData = await prisma.hafalan_records.findMany({
       where: {
         id: { in: result.records.map(r => r.id) }
       },
@@ -184,7 +184,7 @@ export async function GET(request: NextRequest) {
       if (dateTo) where.sessionDate.lte = new Date(dateTo);
     }
 
-    const sessions = await prisma.hafalanSession.findMany({
+    const sessions = await prisma.hafalan_sessions.findMany({
       where,
       orderBy: { sessionDate: 'desc' },
       take: parseInt(limit),
@@ -213,7 +213,7 @@ export async function GET(request: NextRequest) {
       content: JSON.parse(session.content)
     }));
 
-    const total = await prisma.hafalanSession.count({ where });
+    const total = await prisma.hafalan_sessions.count({ where });
 
     return NextResponse.json({
       sessions: sessionsWithParsedContent,
@@ -236,7 +236,7 @@ export async function GET(request: NextRequest) {
 
 // Helper function to update student progress (same as in record route)
 async function updateStudentProgress(studentId: string) {
-  const records = await prisma.hafalanRecord.findMany({
+  const records = await prisma.hafalan_records.findMany({
     where: {
       studentId,
       status: { in: ['LANCAR', 'MUTQIN'] }
@@ -303,7 +303,7 @@ async function updateStudentProgress(studentId: string) {
 
   const avgQuality = records.length > 0 ? qualitySum / records.length : 0;
 
-  await prisma.hafalanProgress.upsert({
+  await prisma.hafalan_progress.upsert({
     where: { studentId },
     create: {
       studentId,

@@ -137,7 +137,7 @@ export async function PUT(
     };
 
     // In a real implementation, you would update the database here
-    // await prisma.activity.update({
+    // await prisma.activities.update({
     //   where: { id: params.id },
     //   data: updatedActivity,
     // });
@@ -184,7 +184,7 @@ export async function DELETE(
     }
 
     // In a real implementation, you would delete from the database here
-    // await prisma.activity.delete({
+    // await prisma.activities.delete({
     //   where: { id: params.id },
     // });
 

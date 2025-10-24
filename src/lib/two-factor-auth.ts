@@ -113,7 +113,7 @@ export class TwoFactorAuthService {
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
 
       // Store OTP in database
-      await prisma.twoFactorVerification.upsert({
+      await prisma.two_factor_verifications.upsert({
         where: { userId },
         update: {
           smsOtp: otp,
@@ -156,7 +156,7 @@ export class TwoFactorAuthService {
    */
   static async verifySMSOTP(userId: string, otp: string): Promise<{ isValid: boolean; message: string }> {
     try {
-      const verification = await prisma.twoFactorVerification.findUnique({
+      const verification = await prisma.two_factor_verifications.findUnique({
         where: { userId }
       })
 
@@ -166,7 +166,7 @@ export class TwoFactorAuthService {
 
       // Check if OTP is expired
       if (new Date() > verification.smsOtpExpiresAt) {
-        await prisma.twoFactorVerification.update({
+        await prisma.two_factor_verifications.update({
           where: { userId },
           data: {
             smsOtp: null,
@@ -184,7 +184,7 @@ export class TwoFactorAuthService {
       // Verify OTP
       if (verification.smsOtp === otp) {
         // Clear OTP after successful verification
-        await prisma.twoFactorVerification.update({
+        await prisma.two_factor_verifications.update({
           where: { userId },
           data: {
             smsOtp: null,
@@ -202,7 +202,7 @@ export class TwoFactorAuthService {
         return { isValid: true, message: 'OTP verified successfully' }
       } else {
         // Increment attempts
-        await prisma.twoFactorVerification.update({
+        await prisma.two_factor_verifications.update({
           where: { userId },
           data: {
             smsAttempts: verification.smsAttempts + 1
@@ -238,7 +238,7 @@ export class TwoFactorAuthService {
       const hashedBackupCodes = this.hashBackupCodes(backupCodes)
 
       // Update user in database
-      await prisma.user.update({
+      await prisma.users.update({
         where: { id: userId },
         data: {
           twoFactorEnabled: true,
@@ -275,7 +275,7 @@ export class TwoFactorAuthService {
   static async disable2FA(userId: string, password: string): Promise<{ success: boolean; message: string }> {
     try {
       // Verify password first
-      const user = await prisma.user.findUnique({ where: { id: userId } })
+      const user = await prisma.users.findUnique({ where: { id: userId } })
       if (!user) {
         return { success: false, message: 'User not found' }
       }
@@ -287,7 +287,7 @@ export class TwoFactorAuthService {
       }
 
       // Disable 2FA
-      await prisma.user.update({
+      await prisma.users.update({
         where: { id: userId },
         data: {
           twoFactorEnabled: false,
@@ -298,7 +298,7 @@ export class TwoFactorAuthService {
       })
 
       // Clean up verification records
-      await prisma.twoFactorVerification.deleteMany({
+      await prisma.two_factor_verifications.deleteMany({
         where: { userId }
       })
 
@@ -323,7 +323,7 @@ export class TwoFactorAuthService {
       const backupCodes = this.generateBackupCodes()
       const hashedBackupCodes = this.hashBackupCodes(backupCodes)
 
-      await prisma.user.update({
+      await prisma.users.update({
         where: { id: userId },
         data: {
           backupCodes: hashedBackupCodes,
@@ -352,7 +352,7 @@ export class TwoFactorAuthService {
    */
   static async verify2FA(userId: string, token: string, isBackupCode = false): Promise<{ isValid: boolean; message: string; backupCodeUsed?: boolean }> {
     try {
-      const user = await prisma.user.findUnique({
+      const user = await prisma.users.findUnique({
         where: { id: userId },
         select: {
           twoFactorSecret: true,
@@ -373,7 +373,7 @@ export class TwoFactorAuthService {
           const updatedBackupCodes = [...user.backupCodes]
           updatedBackupCodes.splice(index, 1)
           
-          await prisma.user.update({
+          await prisma.users.update({
             where: { id: userId },
             data: { backupCodes: updatedBackupCodes }
           })
@@ -435,7 +435,7 @@ export class TwoFactorAuthService {
    */
   static async is2FAEnabled(userId: string): Promise<boolean> {
     try {
-      const user = await prisma.user.findUnique({
+      const user = await prisma.users.findUnique({
         where: { id: userId },
         select: { twoFactorEnabled: true }
       })
@@ -451,7 +451,7 @@ export class TwoFactorAuthService {
    */
   static async get2FAStatus(userId: string) {
     try {
-      const user = await prisma.user.findUnique({
+      const user = await prisma.users.findUnique({
         where: { id: userId },
         select: {
           twoFactorEnabled: true,
@@ -481,7 +481,7 @@ export class TwoFactorAuthService {
    */
   static async checkRateLimit(userId: string, action: string): Promise<{ allowed: boolean; remainingAttempts: number; resetTime?: Date }> {
     try {
-      const verification = await prisma.twoFactorVerification.findUnique({
+      const verification = await prisma.two_factor_verifications.findUnique({
         where: { userId }
       })
 
@@ -521,7 +521,7 @@ export class TwoFactorAuthService {
         updateData[`${action}Attempts`] = 0
         updateData[`${action}AttemptsResetAt`] = resetTime
         
-        await prisma.twoFactorVerification.update({
+        await prisma.two_factor_verifications.update({
           where: { userId },
           data: updateData
         })
@@ -554,7 +554,7 @@ export class TwoFactorAuthService {
       updateData[`${action}Attempts`] = { increment: 1 }
       updateData[`${action}AttemptsResetAt`] = resetTime
 
-      await prisma.twoFactorVerification.upsert({
+      await prisma.two_factor_verifications.upsert({
         where: { userId },
         update: updateData,
         create: {

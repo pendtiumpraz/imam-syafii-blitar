@@ -34,7 +34,7 @@ export const addStudentFlow: FlowDefinition = {
           return '❌ NIS harus 8 digit angka. Contoh: 20240001'
         }
         // Check if NIS already exists
-        const existing = await prisma.student.findUnique({
+        const existing = await prisma.students.findUnique({
           where: { nis: input }
         })
         if (existing) {
@@ -191,12 +191,12 @@ export const addStudentFlow: FlowDefinition = {
   ],
   onComplete: async (data: any, userId: string) => {
     // Get or create system user for LINE bot
-    let systemUser = await prisma.user.findFirst({
+    let systemUser = await prisma.users.findFirst({
       where: { username: 'line-bot' }
     })
     
     if (!systemUser) {
-      systemUser = await prisma.user.create({
+      systemUser = await prisma.users.create({
         data: {
           username: 'line-bot',
           email: 'line-bot@system.local',
@@ -213,7 +213,7 @@ export const addStudentFlow: FlowDefinition = {
     }
 
     // Create student record
-    const student = await prisma.student.create({
+    const student = await prisma.students.create({
       data: {
         fullName: data.fullName,
         nis: data.nis,
@@ -262,7 +262,7 @@ export const searchStudentFlow: FlowDefinition = {
     }
   ],
   onComplete: async (data: any, userId: string) => {
-    const students = await prisma.student.findMany({
+    const students = await prisma.students.findMany({
       where: {
         OR: [
           { fullName: { contains: data.query, mode: 'insensitive' } },
@@ -302,7 +302,7 @@ export const editStudentFlow: FlowDefinition = {
       prompt: '🔍 Masukkan NIS siswa yang akan diedit:',
       inputType: 'text',
       validation: async (input: string) => {
-        const student = await prisma.student.findUnique({
+        const student = await prisma.students.findUnique({
           where: { nis: input }
         })
         if (!student) {
@@ -311,7 +311,7 @@ export const editStudentFlow: FlowDefinition = {
         return true
       },
       transform: async (input: string) => {
-        const student = await prisma.student.findUnique({
+        const student = await prisma.students.findUnique({
           where: { nis: input }
         })
         return student?.id
@@ -371,7 +371,7 @@ export const editStudentFlow: FlowDefinition = {
         break
     }
 
-    await prisma.student.update({
+    await prisma.students.update({
       where: { id: data.studentId },
       data: updateData
     })
@@ -392,7 +392,7 @@ export const deleteStudentFlow: FlowDefinition = {
       prompt: '🔍 Masukkan NIS siswa yang akan dihapus:',
       inputType: 'text',
       validation: async (input: string) => {
-        const student = await prisma.student.findUnique({
+        const student = await prisma.students.findUnique({
           where: { nis: input },
           select: { fullName: true }
         })
@@ -413,7 +413,7 @@ export const deleteStudentFlow: FlowDefinition = {
       throw new Error('Pembatalan oleh pengguna')
     }
 
-    await prisma.student.delete({
+    await prisma.students.delete({
       where: { nis: data.nis }
     })
   }

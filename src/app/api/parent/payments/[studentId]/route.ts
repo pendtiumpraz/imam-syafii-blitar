@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma';
 
 // Helper function to verify parent access to student
 async function verifyParentAccess(userId: string, studentId: string) {
-  const parentStudent = await prisma.parentStudent.findFirst({
+  const parentStudent = await prisma.parent_students.findFirst({
     where: {
       studentId,
       parent: {
@@ -74,7 +74,7 @@ export async function GET(
     }
 
     // Get payments
-    const payments = await prisma.payment.findMany({
+    const payments = await prisma.payments.findMany({
       where: whereConditions,
       orderBy: {
         createdAt: 'desc'
@@ -83,7 +83,7 @@ export async function GET(
     });
 
     // Calculate statistics
-    const currentYearPayments = await prisma.payment.findMany({
+    const currentYearPayments = await prisma.payments.findMany({
       where: {
         studentId,
         createdAt: {
@@ -165,7 +165,7 @@ export async function GET(
     }, {} as any);
 
     // Get upcoming payment deadlines (next 30 days)
-    const upcomingDeadlines = await prisma.payment.findMany({
+    const upcomingDeadlines = await prisma.payments.findMany({
       where: {
         studentId,
         status: 'PENDING',
@@ -249,7 +249,7 @@ export async function GET(
 
 // Helper function to get available years
 async function getAvailableYears(studentId: string) {
-  const payments = await prisma.payment.findMany({
+  const payments = await prisma.payments.findMany({
     where: { studentId },
     select: { createdAt: true },
     orderBy: { createdAt: 'desc' }

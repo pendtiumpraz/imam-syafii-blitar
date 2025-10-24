@@ -87,11 +87,14 @@ async function seedOTAData() {
         }
       ]
 
-      for (const studentData of orphanStudents) {
+      for (let i = 0; i < orphanStudents.length; i++) {
+        const studentData = orphanStudents[i];
         await prisma.students.create({
           data: {
+            id: `seed-orphan-${String(i + 1).padStart(3, '0')}`,
             ...studentData,
             createdBy: 'system', // We'll need to get a valid user ID in real implementation
+            updatedAt: new Date(),
           }
         })
       }
@@ -103,7 +106,7 @@ async function seedOTAData() {
     const orphanStudents = await prisma.students.findMany({
       where: { 
         isOrphan: true,
-        otaProgram: null // Students without existing programs
+        ota_program: null // Students without existing programs
       }
     })
 
@@ -111,7 +114,7 @@ async function seedOTAData() {
 
     for (const student of orphanStudents) {
       // Create OTA program
-      const program = await prisma.oTAProgram.create({
+      const program = await prisma.ota_programs.create({
         data: {
           studentId: student.id,
           monthlyTarget: student.monthlyNeeds || 500000,
@@ -136,7 +139,7 @@ async function seedOTAData() {
         const amount = [50000, 100000, 150000, 200000, 250000][Math.floor(Math.random() * 5)]
         const isPaid = Math.random() > 0.3 // 70% chance of being paid
 
-        await prisma.oTASponsor.create({
+        await prisma.ota_sponsors.create({
           data: {
             programId: program.id,
             donorName: `Real Name ${i + 1}`, // Admin sees real name
@@ -156,7 +159,7 @@ async function seedOTAData() {
       }
 
       // Update program progress based on sponsors
-      const totalCollected = await prisma.oTASponsor.aggregate({
+      const totalCollected = await prisma.ota_sponsors.aggregate({
         where: {
           programId: program.id,
           isPaid: true,
@@ -166,7 +169,7 @@ async function seedOTAData() {
         }
       })
 
-      const monthlyCollected = await prisma.oTASponsor.aggregate({
+      const monthlyCollected = await prisma.ota_sponsors.aggregate({
         where: {
           programId: program.id,
           month: currentMonth,
@@ -177,7 +180,7 @@ async function seedOTAData() {
         }
       })
 
-      await prisma.oTAProgram.update({
+      await prisma.ota_programs.update({
         where: { id: program.id },
         data: {
           totalCollected: totalCollected._sum.amount || 0,
@@ -193,7 +196,7 @@ async function seedOTAData() {
     const studentsNeedingHafalan = await prisma.students.findMany({
       where: {
         isOrphan: true,
-        hafalanProgress: null
+        hafalan_progress: null
       },
       take: 3
     })
@@ -202,7 +205,7 @@ async function seedOTAData() {
       const totalSurah = Math.floor(Math.random() * 15) + 1 // 1-15 surah
       const level = totalSurah > 10 ? 'LANJUT' : totalSurah > 5 ? 'MENENGAH' : 'PEMULA'
 
-      await prisma.hafalanProgress.create({
+      await prisma.hafalan_progress.create({
         data: {
           studentId: student.id,
           totalSurah: totalSurah,
@@ -228,8 +231,8 @@ async function seedOTAData() {
     console.log('🎉 OTA seeding completed successfully!')
 
     // Print summary
-    const totalPrograms = await prisma.oTAProgram.count()
-    const totalSponsors = await prisma.oTASponsor.count()
+    const totalPrograms = await prisma.ota_programs.count()
+    const totalSponsors = await prisma.ota_sponsors.count()
     const totalOrphans = await prisma.students.count({ where: { isOrphan: true } })
 
     console.log('\n📊 OTA System Summary:')
@@ -238,7 +241,7 @@ async function seedOTAData() {
     console.log(`   • Total Sponsors: ${totalSponsors}`)
 
     // Calculate total targets and collected
-    const programStats = await prisma.oTAProgram.aggregate({
+    const programStats = await prisma.ota_programs.aggregate({
       _sum: {
         monthlyTarget: true,
         totalCollected: true,

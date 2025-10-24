@@ -49,7 +49,7 @@ const createHafalanSessionSchema = z.object({
 // Helper function to update student progress after session
 async function updateStudentProgress(studentId: string) {
   // Get all MUTQIN and LANCAR records
-  const records = await prisma.hafalanRecord.findMany({
+  const records = await prisma.hafalan_records.findMany({
     where: { 
       studentId,
       status: { in: ['LANCAR', 'MUTQIN'] }
@@ -113,12 +113,12 @@ async function updateStudentProgress(studentId: string) {
   }
 
   // Get session count
-  const sessionCount = await prisma.hafalanSession.count({
+  const sessionCount = await prisma.hafalan_sessions.count({
     where: { studentId }
   });
 
   // Update or create progress
-  await prisma.hafalanProgress.upsert({
+  await prisma.hafalan_progress.upsert({
     where: { studentId },
     create: {
       studentId,
@@ -153,7 +153,7 @@ async function checkAchievements(studentId: string, sessionData: any, teacherId:
   const achievements = [];
   
   // Check for session-based achievements
-  const sessionCount = await prisma.hafalanSession.count({
+  const sessionCount = await prisma.hafalan_sessions.count({
     where: { studentId }
   });
 
@@ -217,7 +217,7 @@ async function checkAchievements(studentId: string, sessionData: any, teacherId:
   // Create achievements
   for (const achievement of achievements) {
     try {
-      await prisma.hafalanAchievement.create({ data: achievement });
+      await prisma.hafalan_achievements.create({ data: achievement });
     } catch (error) {
       // Achievement might already exist, continue
       console.log('Achievement already exists or error creating:', error);
@@ -258,7 +258,7 @@ export async function GET(request: NextRequest) {
     }
 
     const [sessions, total] = await Promise.all([
-      prisma.hafalanSession.findMany({
+      prisma.hafalan_sessions.findMany({
         where,
         include: {
           student: {
@@ -282,7 +282,7 @@ export async function GET(request: NextRequest) {
         skip,
         take: limit
       }),
-      prisma.hafalanSession.count({ where })
+      prisma.hafalan_sessions.count({ where })
     ]);
 
     // Parse content JSON for each session
@@ -326,7 +326,7 @@ export async function POST(request: NextRequest) {
     const validated = createHafalanSessionSchema.parse(body);
 
     // Validate student exists
-    const student = await prisma.student.findUnique({
+    const student = await prisma.students.findUnique({
       where: { id: validated.studentId }
     });
 
@@ -336,7 +336,7 @@ export async function POST(request: NextRequest) {
 
     // Validate surah numbers and ayat ranges
     const surahNumbers = validated.content.map(c => c.surahNumber);
-    const surahs = await prisma.quranSurah.findMany({
+    const surahs = await prisma.quran_surahs.findMany({
       where: { number: { in: surahNumbers } }
     });
 
@@ -373,7 +373,7 @@ export async function POST(request: NextRequest) {
     );
 
     // Create hafalan session
-    const hafalanSession = await prisma.hafalanSession.create({
+    const hafalanSession = await prisma.hafalan_sessions.create({
       data: {
         studentId: validated.studentId,
         teacherId: session.user?.id || '',
@@ -421,7 +421,7 @@ export async function POST(request: NextRequest) {
 
     // Create individual hafalan records for each content item
     for (const content of validated.content) {
-      await prisma.hafalanRecord.create({
+      await prisma.hafalan_records.create({
         data: {
           studentId: validated.studentId,
           surahNumber: content.surahNumber,
@@ -487,7 +487,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Check if session exists and user has permission
-    const existingSession = await prisma.hafalanSession.findUnique({
+    const existingSession = await prisma.hafalan_sessions.findUnique({
       where: { id }
     });
 
@@ -501,7 +501,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Update session
-    const updatedSession = await prisma.hafalanSession.update({
+    const updatedSession = await prisma.hafalan_sessions.update({
       where: { id },
       data: {
         ...updateData,
@@ -559,7 +559,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Check if session exists and user has permission
-    const existingSession = await prisma.hafalanSession.findUnique({
+    const existingSession = await prisma.hafalan_sessions.findUnique({
       where: { id: sessionId }
     });
 
@@ -572,7 +572,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
     }
 
-    await softDelete(prisma.hafalanSession, { id: sessionId }, session.user.id);
+    await softDelete(prisma.hafalan_sessions, { id: sessionId }, session.user.id);
 
     // Update student progress after deletion
     await updateStudentProgress(existingSession.studentId);

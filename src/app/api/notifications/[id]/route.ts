@@ -19,7 +19,7 @@ export async function PATCH(
     const body = await request.json();
 
     // Verify notification belongs to user
-    const notification = await prisma.notification.findUnique({
+    const notification = await prisma.notifications.findUnique({
       where: { id: notificationId },
     });
 
@@ -57,7 +57,7 @@ export async function DELETE(
     const notificationId = params.id;
 
     // Verify notification belongs to user
-    const notification = await prisma.notification.findUnique({
+    const notification = await prisma.notifications.findUnique({
       where: { id: notificationId },
     });
 
@@ -66,7 +66,7 @@ export async function DELETE(
     }
 
     // Soft delete notification
-    await softDelete(prisma.notification, { id: notificationId }, session.user.id);
+    await softDelete(prisma.notifications, { id: notificationId }, session.user.id);
 
     return NextResponse.json({ success: true });
   } catch (error) {

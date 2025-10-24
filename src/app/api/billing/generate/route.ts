@@ -23,7 +23,7 @@ async function generateBillNumber(prisma: any, period: string): Promise<string> 
   const [year, monthOrQuarter] = period.split('-');
   const prefix = `BILL-${year}-${monthOrQuarter}`;
   
-  const lastBill = await prisma.bill.findFirst({
+  const lastBill = await prisma.bills.findFirst({
     where: {
       billNo: {
         startsWith: prefix,
@@ -51,7 +51,7 @@ async function calculateSiblingDiscount(
   discountPercent: number
 ): Promise<{ discount: number; siblingCount: number }> {
   // Find siblings (students with same parent phone numbers)
-  const student = await prisma.student.findUnique({
+  const student = await prisma.students.findUnique({
     where: { id: studentId },
     select: {
       fatherPhone: true,
@@ -78,7 +78,7 @@ async function calculateSiblingDiscount(
     siblingWhere.OR.push({ motherPhone: student.motherPhone });
   }
 
-  const siblingCount = await prisma.student.count({
+  const siblingCount = await prisma.students.count({
     where: siblingWhere,
   });
 
@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
     const validated = generateBillsSchema.parse(body);
 
     // Get bill type
-    const billType = await prisma.billType.findUnique({
+    const billType = await prisma.bill_types.findUnique({
       where: { id: validated.billTypeId },
     });
 
@@ -144,7 +144,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get students
-    const students = await prisma.student.findMany({
+    const students = await prisma.students.findMany({
       where: studentWhere,
       select: {
         id: true,
@@ -165,7 +165,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check for existing bills for this period
-    const existingBills = await prisma.bill.findMany({
+    const existingBills = await prisma.bills.findMany({
       where: {
         billTypeId: validated.billTypeId,
         period: validated.period,

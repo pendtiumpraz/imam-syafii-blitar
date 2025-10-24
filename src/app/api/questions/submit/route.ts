@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Save to database
-    const question = await prisma.question.create({
+    const question = await prisma.questions.create({
       data: questionData
     })
     

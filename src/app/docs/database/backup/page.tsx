@@ -1939,7 +1939,7 @@ class BackupAccessControl {
   ): Promise<{ authorized: boolean, reason?: string }> {
     
     // Check user authorization
-    const user = await prisma.user.findUnique({
+    const user = await prisma.users.findUnique({
       where: { id: userId },
       include: { roles: true }
     })
@@ -2010,7 +2010,7 @@ class BackupAccessControl {
   private async checkRecentAuthentication(userId: string): Promise<boolean> {
     const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000)
     
-    const recentAuth = await prisma.userSession.findFirst({
+    const recentAuth = await prisma.usersSession.findFirst({
       where: {
         userId,
         lastActivity: {
@@ -2071,7 +2071,7 @@ class BackupAccessControl {
   }
 
   async requireTwoFactorForBackupOps(userId: string): Promise<boolean> {
-    const user = await prisma.user.findUnique({
+    const user = await prisma.users.findUnique({
       where: { id: userId },
       select: { twoFactorEnabled: true }
     })

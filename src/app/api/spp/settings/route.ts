@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     
     if (level) {
       // Get specific level settings
-      let settings = await prisma.sPPSettings.findUnique({
+      let settings = await prisma.spp_settings.findUnique({
         where: { level }
       });
       
@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
         
         const levelFees = defaultFees[level as keyof typeof defaultFees] || defaultFees.SD;
         
-        settings = await prisma.sPPSettings.create({
+        settings = await prisma.spp_settings.create({
           data: {
             level,
             monthlyFee: new Decimal(levelFees.monthly),
@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(settings);
     } else {
       // Get all settings
-      const settings = await prisma.sPPSettings.findMany({
+      const settings = await prisma.spp_settings.findMany({
         orderBy: { level: 'asc' }
       });
       
@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
         
         for (const level of missingLevels) {
           const levelFees = defaultFees[level as keyof typeof defaultFees];
-          const newSettings = await prisma.sPPSettings.create({
+          const newSettings = await prisma.spp_settings.create({
             data: {
               level,
               monthlyFee: new Decimal(levelFees.monthly),
@@ -146,7 +146,7 @@ export async function PUT(request: NextRequest) {
       updateData.reminderChannels = JSON.stringify(updateData.reminderChannels);
     }
     
-    const settings = await prisma.sPPSettings.upsert({
+    const settings = await prisma.spp_settings.upsert({
       where: { level },
       update: updateData,
       create: {

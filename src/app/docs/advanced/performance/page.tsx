@@ -205,12 +205,12 @@ export class QueryOptimizer {
     }
 
     const [students, totalCount] = await Promise.all([
-      this.prisma.student.findMany({
+      this.prisma.students.findMany({
         ...baseQuery,
         skip: offset,
         take: params.limit,
       }),
-      this.prisma.student.count({
+      this.prisma.students.count({
         where: baseQuery.where
       })
     ])
@@ -242,7 +242,7 @@ export class QueryOptimizer {
       batches.map(batch => 
         this.prisma.$transaction(
           batch.map(update => 
-            this.prisma.student.update({
+            this.prisma.students.update({
               where: { id: update.id },
               data: update.data
             })

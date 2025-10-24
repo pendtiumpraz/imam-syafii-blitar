@@ -40,7 +40,7 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const billType = await prisma.billType.findUnique({
+    const billType = await prisma.bill_types.findUnique({
       where: { id: params.id },
       include: {
         _count: {
@@ -87,7 +87,7 @@ export async function PUT(
     const validated = updateBillTypeSchema.parse(body);
 
     // Check if bill type exists
-    const existing = await prisma.billType.findUnique({
+    const existing = await prisma.bill_types.findUnique({
       where: { id: params.id },
     });
 
@@ -100,7 +100,7 @@ export async function PUT(
 
     // Check if name already exists (if changing name)
     if (validated.name && validated.name !== existing.name) {
-      const nameExists = await prisma.billType.findUnique({
+      const nameExists = await prisma.bill_types.findUnique({
         where: { name: validated.name },
       });
 
@@ -117,7 +117,7 @@ export async function PUT(
       updateData.priceByGrade = JSON.stringify(validated.priceByGrade);
     }
 
-    const billType = await prisma.billType.update({
+    const billType = await prisma.bill_types.update({
       where: { id: params.id },
       data: updateData,
     });
@@ -160,7 +160,7 @@ export async function DELETE(
     }
 
     // Check if bill type exists
-    const billType = await prisma.billType.findUnique({
+    const billType = await prisma.bill_types.findUnique({
       where: { id: params.id },
       include: {
         _count: {
@@ -185,7 +185,7 @@ export async function DELETE(
     }
 
     // Soft delete the bill type
-    await softDelete(prisma.billType, { id: params.id }, session.user.id);
+    await softDelete(prisma.bill_types, { id: params.id }, session.user.id);
 
     return NextResponse.json({ message: 'Bill type deleted successfully' });
   } catch (error) {

@@ -14,19 +14,19 @@ export async function POST(request: NextRequest) {
     
     // Generate unique registration number
     let registrationNo = generateRegistrationNo();
-    let exists = await prisma.registration.findUnique({
+    let exists = await prisma.registrations.findUnique({
       where: { registrationNo }
     });
     
     while (exists) {
       registrationNo = generateRegistrationNo();
-      exists = await prisma.registration.findUnique({
+      exists = await prisma.registrations.findUnique({
         where: { registrationNo }
       });
     }
     
     // Create registration
-    const registration = await prisma.registration.create({
+    const registration = await prisma.registrations.create({
       data: {
         registrationNo,
         ...body,
@@ -92,7 +92,7 @@ export async function GET(request: NextRequest) {
     
     // Get registrations with pagination
     const [registrations, total] = await Promise.all([
-      prisma.registration.findMany({
+      prisma.registrations.findMany({
         where,
         skip,
         take: limit,
@@ -103,7 +103,7 @@ export async function GET(request: NextRequest) {
           }
         }
       }),
-      prisma.registration.count({ where })
+      prisma.registrations.count({ where })
     ]);
     
     // Parse JSON fields

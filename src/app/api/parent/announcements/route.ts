@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(searchParams.get('offset') || '0');
 
     // Get parent account
-    const parentAccount = await prisma.parentAccount.findFirst({
+    const parentAccount = await prisma.parent_accounts.findFirst({
       where: { userId: session.user.id },
       include: {
         parentStudents: {
@@ -83,12 +83,12 @@ export async function GET(request: NextRequest) {
     }
 
     // Get total count
-    const totalCount = await prisma.announcement.count({
+    const totalCount = await prisma.announcements.count({
       where: whereConditions
     });
 
     // Get announcements
-    const announcements = await prisma.announcement.findMany({
+    const announcements = await prisma.announcements.findMany({
       where: whereConditions,
       orderBy: [
         { isPinned: 'desc' },
@@ -127,7 +127,7 @@ export async function GET(request: NextRequest) {
     }));
 
     // Get pinned announcements
-    const pinnedAnnouncements = offset === 0 ? await prisma.announcement.findMany({
+    const pinnedAnnouncements = offset === 0 ? await prisma.announcements.findMany({
       where: {
         ...whereConditions,
         isPinned: true
@@ -226,7 +226,7 @@ async function getAnnouncementsByCategory(baseWhere: any) {
   const categories = ['GENERAL', 'ACADEMIC', 'EVENT', 'PAYMENT', 'EMERGENCY'];
   const results = await Promise.all(
     categories.map(async (category) => {
-      const count = await prisma.announcement.count({
+      const count = await prisma.announcements.count({
         where: {
           ...baseWhere,
           category
@@ -243,7 +243,7 @@ async function getAnnouncementsByPriority(baseWhere: any) {
   const priorities = ['LOW', 'NORMAL', 'HIGH', 'URGENT'];
   const results = await Promise.all(
     priorities.map(async (priority) => {
-      const count = await prisma.announcement.count({
+      const count = await prisma.announcements.count({
         where: {
           ...baseWhere,
           priority
@@ -274,7 +274,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Increment view count
-    await prisma.announcement.update({
+    await prisma.announcements.update({
       where: { id: announcementId },
       data: {
         viewCount: {

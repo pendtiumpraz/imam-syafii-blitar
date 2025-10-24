@@ -14,7 +14,7 @@ export default async function TanyaUstadzPage() {
   }
 
   // Check if user is ustadz or admin
-  const user = await prisma.user.findUnique({
+  const user = await prisma.users.findUnique({
     where: { id: session.user.id },
     select: { id: true, role: true, isUstadz: true, name: true }
   });

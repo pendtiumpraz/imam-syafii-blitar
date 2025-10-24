@@ -99,7 +99,7 @@ export async function GET(request: NextRequest) {
     }
 
     const [students, total] = await Promise.all([
-      prisma.student.findMany({
+      prisma.students.findMany({
         where,
         include: {
           creator: {
@@ -115,7 +115,7 @@ export async function GET(request: NextRequest) {
         skip: paginationParams.offset,
         take: paginationParams.limit,
       }),
-      prisma.student.count({ where }),
+      prisma.students.count({ where }),
     ]);
 
     const result = createPaginationResult(students, total, paginationParams);
@@ -148,7 +148,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const validated = createStudentSchema.parse(body);
 
-    const student = await prisma.student.create({
+    const student = await prisma.students.create({
       data: {
         ...validated,
         birthDate: new Date(validated.birthDate),

@@ -31,19 +31,19 @@ interface RouteParams {
 
 // Helper function to recalculate budget actuals
 async function recalculateBudgetActuals(budgetId: string) {
-  const budget = await prisma.budget.findUnique({
+  const budget = await prisma.budgets.findUnique({
     where: { id: budgetId },
     select: { startDate: true, endDate: true },
   })
 
   if (!budget) return
 
-  const budgetItems = await prisma.budgetItem.findMany({
+  const budgetItems = await prisma.budget_items.findMany({
     where: { budgetId },
   })
 
   // Get actual transactions for the budget period
-  const actualTransactions = await prisma.transaction.groupBy({
+  const actualTransactions = await prisma.transactions.groupBy({
     by: ['categoryId'],
     _sum: {
       amount: true,
@@ -71,7 +71,7 @@ async function recalculateBudgetActuals(budgetId: string) {
     const variance = actualAmount - item.budgetAmount
     const percentage = item.budgetAmount > 0 ? (actualAmount / item.budgetAmount) * 100 : 0
 
-    return prisma.budgetItem.update({
+    return prisma.budget_items.update({
       where: { id: item.id },
       data: {
         actualAmount,
@@ -92,7 +92,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const budget = await prisma.budget.findUnique({
+    const budget = await prisma.budgets.findUnique({
       where: { id: params.id },
       include: {
         creator: {
@@ -145,7 +145,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       await recalculateBudgetActuals(params.id)
       
       // Fetch updated budget items
-      const updatedItems = await prisma.budgetItem.findMany({
+      const updatedItems = await prisma.budget_items.findMany({
         where: { budgetId: params.id },
         include: {
           category: {
@@ -189,7 +189,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     const data = updateBudgetSchema.parse(body)
 
     // Check if budget exists
-    const existingBudget = await prisma.budget.findUnique({
+    const existingBudget = await prisma.budgets.findUnique({
       where: { id: params.id },
       include: {
         items: true,
@@ -219,7 +219,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     // Check for overlapping active budgets if status is being set to active
     if (data.status === 'ACTIVE' || (existingBudget.status === 'ACTIVE' && (data.startDate || data.endDate))) {
-      const overlappingBudget = await prisma.budget.findFirst({
+      const overlappingBudget = await prisma.budgets.findFirst({
         where: {
           id: { not: params.id },
           type: data.type || existingBudget.type,
@@ -393,7 +393,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     // Check if budget exists
-    const budget = await prisma.budget.findUnique({
+    const budget = await prisma.budgets.findUnique({
       where: { id: params.id },
       include: {
         _count: {
@@ -428,7 +428,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     // Soft delete budget
-    await softDelete(prisma.budget, { id: params.id }, session.user.id)
+    await softDelete(prisma.budgets, { id: params.id }, session.user.id)
 
     return NextResponse.json({
       message: 'Budget soft deleted successfully',

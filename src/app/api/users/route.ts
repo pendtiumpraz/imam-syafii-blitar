@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
     }
 
     const [users, total] = await Promise.all([
-      prisma.user.findMany({
+      prisma.users.findMany({
         where,
         skip,
         take: limit,
@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
           updatedAt: true,
         },
       }),
-      prisma.user.count({ where }),
+      prisma.users.count({ where }),
     ])
 
     return NextResponse.json({
@@ -122,7 +122,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if username or email already exists
-    const existingUser = await prisma.user.findFirst({
+    const existingUser = await prisma.users.findFirst({
       where: {
         OR: [
           { username },
@@ -142,7 +142,7 @@ export async function POST(request: NextRequest) {
     const hashedPassword = await bcrypt.hash(password, 12)
 
     // Create user
-    const user = await prisma.user.create({
+    const user = await prisma.users.create({
       data: {
         username,
         email,
@@ -198,7 +198,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Check if user exists
-    const existingUser = await prisma.user.findUnique({
+    const existingUser = await prisma.users.findUnique({
       where: { id }
     })
 
@@ -211,7 +211,7 @@ export async function PUT(request: NextRequest) {
 
     // Check if username or email is being changed and already exists
     if (username !== existingUser.username || email !== existingUser.email) {
-      const conflictingUser = await prisma.user.findFirst({
+      const conflictingUser = await prisma.users.findFirst({
         where: {
           AND: [
             { id: { not: id } },
@@ -248,7 +248,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Update user
-    const user = await prisma.user.update({
+    const user = await prisma.users.update({
       where: { id },
       data: updateData,
       select: {
@@ -306,7 +306,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Check if user exists
-    const existingUser = await prisma.user.findUnique({
+    const existingUser = await prisma.users.findUnique({
       where: { id }
     })
 
@@ -318,7 +318,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Soft delete user
-    await softDelete(prisma.user, { id }, session.user.id)
+    await softDelete(prisma.users, { id }, session.user.id)
 
     return NextResponse.json({ message: 'User soft deleted successfully' })
   } catch (error) {

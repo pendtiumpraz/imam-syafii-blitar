@@ -18,7 +18,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const report = await prisma.financialReport.findUnique({
+    const report = await prisma.financial_reports.findUnique({
       where: { id: params.id },
       include: {
         creator: {
@@ -73,7 +73,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     // Check if report exists
-    const report = await prisma.financialReport.findUnique({
+    const report = await prisma.financial_reports.findUnique({
       where: { id: params.id },
     })
 
@@ -85,7 +85,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     // Soft delete the report
-    await softDelete(prisma.financialReport, { id: params.id }, session.user.id)
+    await softDelete(prisma.financial_reports, { id: params.id }, session.user.id)
 
     return NextResponse.json({
       message: 'Report soft deleted successfully',

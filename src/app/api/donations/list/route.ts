@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
 
     // Get donations with relations
     const [donations, total] = await Promise.all([
-      prisma.donation.findMany({
+      prisma.donations.findMany({
         where,
         include: {
           category: true,
@@ -80,7 +80,7 @@ export async function GET(request: NextRequest) {
         skip,
         take: limit
       }),
-      prisma.donation.count({ where })
+      prisma.donations.count({ where })
     ])
 
     // Parse amount fields and sanitize sensitive data for non-admin users

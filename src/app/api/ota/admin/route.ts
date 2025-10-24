@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
     }
 
     const [programs, total] = await Promise.all([
-      prisma.oTAProgram.findMany({
+      prisma.ota_programs.findMany({
         where: whereConditions,
         include: {
           student: {
@@ -78,7 +78,7 @@ export async function GET(request: NextRequest) {
               status: true,
               photo: true,
               achievements: true,
-              hafalanProgress: {
+              hafalan_progress: {
                 select: {
                   totalSurah: true,
                   totalAyat: true,
@@ -116,7 +116,7 @@ export async function GET(request: NextRequest) {
         skip,
         take: limit,
       }),
-      prisma.oTAProgram.count({ where: whereConditions })
+      prisma.ota_programs.count({ where: whereConditions })
     ]);
 
     return NextResponse.json({
@@ -160,9 +160,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if student exists and is an orphan
-    const student = await prisma.student.findUnique({
+    const student = await prisma.students.findUnique({
       where: { id: studentId },
-      include: { otaProgram: true }
+      include: { ota_program: true }
     });
 
     if (!student) {
@@ -190,7 +190,7 @@ export async function POST(request: NextRequest) {
     const currentMonth = new Date().toISOString().substring(0, 7);
     
     const [program] = await Promise.all([
-      prisma.oTAProgram.create({
+      prisma.ota_programs.create({
         data: {
           studentId,
           monthlyTarget: parseFloat(monthlyTarget),
@@ -213,7 +213,7 @@ export async function POST(request: NextRequest) {
         }
       }),
       // Update student with OTA profile and monthly needs
-      prisma.student.update({
+      prisma.students.update({
         where: { id: studentId },
         data: {
           otaProfile: otaProfile || `Bantuan untuk ${student.fullName.split(' ')[0]} - siswa yatim yang berprestasi`,
@@ -253,7 +253,7 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const program = await prisma.oTAProgram.findUnique({
+    const program = await prisma.ota_programs.findUnique({
       where: { id },
       include: { student: true }
     });
@@ -283,7 +283,7 @@ export async function PUT(request: NextRequest) {
       updateData.adminNotes = adminNotes;
     }
 
-    const updatedProgram = await prisma.oTAProgram.update({
+    const updatedProgram = await prisma.ota_programs.update({
       where: { id },
       data: updateData,
       include: {
@@ -312,7 +312,7 @@ export async function PUT(request: NextRequest) {
         studentUpdateData.monthlyNeeds = parseFloat(monthlyTarget);
       }
 
-      await prisma.student.update({
+      await prisma.students.update({
         where: { id: program.studentId },
         data: studentUpdateData
       });
@@ -349,7 +349,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const program = await prisma.oTAProgram.findUnique({
+    const program = await prisma.ota_programs.findUnique({
       where: { id },
       include: { sponsors: { where: { isPaid: true } } }
     });
@@ -371,7 +371,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    await softDelete(prisma.oTAProgram, { id }, session.user.id);
+    await softDelete(prisma.ota_programs, { id }, session.user.id);
 
     return NextResponse.json({
       message: 'OTA program soft deleted successfully'

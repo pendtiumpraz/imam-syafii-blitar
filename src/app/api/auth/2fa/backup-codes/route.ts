@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify user password first
-    const user = await prisma.user.findUnique({
+    const user = await prisma.users.findUnique({
       where: { id: session.user.id }
     })
 

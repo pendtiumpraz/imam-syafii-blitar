@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
 
     const [programs, total, overallStats] = await Promise.all([
       // Get active OTA programs with anonymized student info
-      prisma.oTAProgram.findMany({
+      prisma.ota_programs.findMany({
         where: whereConditions,
         include: {
           student: {
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
               otaProfile: true,
               photo: true,
               achievements: true,
-              hafalanProgress: {
+              hafalan_progress: {
                 select: {
                   totalSurah: true,
                   totalAyat: true,
@@ -85,9 +85,9 @@ export async function GET(request: NextRequest) {
         take: limit,
       }),
       // Get total count
-      prisma.oTAProgram.count({ where: whereConditions }),
+      prisma.ota_programs.count({ where: whereConditions }),
       // Get overall program statistics
-      prisma.oTAProgram.aggregate({
+      prisma.ota_programs.aggregate({
         where: { isActive: true },
         _sum: {
           monthlyTarget: true,
@@ -116,7 +116,7 @@ export async function GET(request: NextRequest) {
         otaProfile: program.student.otaProfile || 'Bantuan untuk siswa yatim berprestasi',
         photo: program.student.photo ? maskPhotoUrl(program.student.photo) : null,
         achievements: program.student.achievements ? JSON.parse(program.student.achievements).slice(0, 3) : [],
-        hafalanProgress: program.student.hafalanProgress ? {
+        hafalan_progress: program.student.hafalanProgress ? {
           totalSurah: program.student.hafalanProgress.totalSurah,
           totalAyat: program.student.hafalanProgress.totalAyat,
           totalJuz: program.student.hafalanProgress.totalJuz,
@@ -195,7 +195,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if program exists and is active
-    const program = await prisma.oTAProgram.findUnique({
+    const program = await prisma.ota_programs.findUnique({
       where: { id: programId },
       include: { 
         student: {
@@ -227,7 +227,7 @@ export async function POST(request: NextRequest) {
     const currentMonth = new Date().toISOString().substring(0, 7);
 
     // Create sponsor donation (pending verification)
-    const sponsor = await prisma.oTASponsor.create({
+    const sponsor = await prisma.ota_sponsors.create({
       data: {
         programId,
         donorName: isAnonymous ? 'Anonim' : donorName,

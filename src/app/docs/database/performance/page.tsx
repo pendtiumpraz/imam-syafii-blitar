@@ -385,16 +385,16 @@ WHERE s.class_id = $1;`}
                     <h3 className="font-semibold text-lg">Prisma Query Optimization</h3>
                     <button
                       onClick={() => copyToClipboard(`// Bad: N+1 query problem
-const students = await prisma.student.findMany()
+const students = await prisma.students.findMany()
 for (const student of students) {
-  const payments = await prisma.payment.findMany({
+  const payments = await prisma.payments.findMany({
     where: { studentId: student.id }
   })
   // Process payments...
 }
 
 // Good: Use include to join data
-const students = await prisma.student.findMany({
+const students = await prisma.students.findMany({
   include: {
     payments: {
       where: { status: 'paid' },
@@ -411,7 +411,7 @@ const students = await prisma.student.findMany({
 })
 
 // Good: Use aggregation
-const paymentSummary = await prisma.payment.groupBy({
+const paymentSummary = await prisma.payments.groupBy({
   by: ['studentId'],
   where: {
     status: 'paid',
@@ -425,7 +425,7 @@ const paymentSummary = await prisma.payment.groupBy({
 })
 
 // Good: Use pagination with cursor
-const students = await prisma.student.findMany({
+const students = await prisma.students.findMany({
   take: 20,
   skip: cursor ? 1 : 0,
   cursor: cursor ? { id: cursor } : undefined,
@@ -439,14 +439,14 @@ const students = await prisma.student.findMany({
 // Good: Optimize for common dashboard queries
 const dashboardData = await prisma.$transaction([
   // Get student count by class
-  prisma.student.groupBy({
+  prisma.students.groupBy({
     by: ['classId'],
     where: { status: 'active' },
     _count: { id: true }
   }),
   
   // Get payment summary for current month
-  prisma.payment.aggregate({
+  prisma.payments.aggregate({
     where: {
       createdAt: {
         gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1)
@@ -457,7 +457,7 @@ const dashboardData = await prisma.$transaction([
   }),
   
   // Get overdue payments count
-  prisma.payment.count({
+  prisma.payments.count({
     where: {
       status: 'pending',
       dueDate: { lt: new Date() }
@@ -476,16 +476,16 @@ const dashboardData = await prisma.$transaction([
                   <div className="bg-gray-900 rounded-lg p-4 overflow-x-auto">
                     <pre className="text-sm text-gray-300">
 {`// Bad: N+1 query problem
-const students = await prisma.student.findMany()
+const students = await prisma.students.findMany()
 for (const student of students) {
-  const payments = await prisma.payment.findMany({
+  const payments = await prisma.payments.findMany({
     where: { studentId: student.id }
   })
   // Process payments...
 }
 
 // Good: Use include to join data
-const students = await prisma.student.findMany({
+const students = await prisma.students.findMany({
   include: {
     payments: {
       where: { status: 'paid' },
@@ -502,7 +502,7 @@ const students = await prisma.student.findMany({
 })
 
 // Good: Use aggregation
-const paymentSummary = await prisma.payment.groupBy({
+const paymentSummary = await prisma.payments.groupBy({
   by: ['studentId'],
   where: {
     status: 'paid',
@@ -516,7 +516,7 @@ const paymentSummary = await prisma.payment.groupBy({
 })
 
 // Good: Use pagination with cursor
-const students = await prisma.student.findMany({
+const students = await prisma.students.findMany({
   take: 20,
   skip: cursor ? 1 : 0,
   cursor: cursor ? { id: cursor } : undefined,
@@ -530,14 +530,14 @@ const students = await prisma.student.findMany({
 // Good: Optimize for common dashboard queries
 const dashboardData = await prisma.$transaction([
   // Get student count by class
-  prisma.student.groupBy({
+  prisma.students.groupBy({
     by: ['classId'],
     where: { status: 'active' },
     _count: { id: true }
   }),
   
   // Get payment summary for current month
-  prisma.payment.aggregate({
+  prisma.payments.aggregate({
     where: {
       createdAt: {
         gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1)
@@ -548,7 +548,7 @@ const dashboardData = await prisma.$transaction([
   }),
   
   // Get overdue payments count
-  prisma.payment.count({
+  prisma.payments.count({
     where: {
       status: 'pending',
       dueDate: { lt: new Date() }

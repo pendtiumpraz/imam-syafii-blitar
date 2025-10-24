@@ -240,7 +240,7 @@ npx prisma db pull`
         {
           title: 'Check for existing data',
           code: `// Before creating, check if exists
-const existingUser = await prisma.user.findUnique({
+const existingUser = await prisma.users.findUnique({
   where: { email: userData.email }
 });
 
@@ -251,7 +251,7 @@ if (existingUser) {
         {
           title: 'Use upsert instead',
           code: `// Create or update
-const user = await prisma.user.upsert({
+const user = await prisma.users.upsert({
   where: { email: userData.email },
   update: { name: userData.name },
   create: userData

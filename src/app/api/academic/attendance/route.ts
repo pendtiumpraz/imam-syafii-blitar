@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit;
 
     const [attendances, totalCount] = await Promise.all([
-      prisma.attendance.findMany({
+      prisma.attendances.findMany({
         where: whereConditions,
         skip,
         take: limit,
@@ -107,7 +107,7 @@ export async function GET(request: NextRequest) {
         { student: { fullName: 'asc' } },
       ],
     }),
-    prisma.attendance.count({ where: whereConditions })
+    prisma.attendances.count({ where: whereConditions })
   ]);
 
     const response: any = {
@@ -127,7 +127,7 @@ export async function GET(request: NextRequest) {
       const statsWhere = { ...whereConditions };
       delete statsWhere.date; // Remove date filter for overall stats
       
-      const stats = await prisma.attendance.groupBy({
+      const stats = await prisma.attendances.groupBy({
         by: ['status'],
         where: statsWhere,
         _count: { status: true }
@@ -188,7 +188,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const attendance = await prisma.attendance.create({
+    const attendance = await prisma.attendances.create({
       data: {
         studentId,
         classId,
@@ -291,7 +291,7 @@ export async function PUT(request: NextRequest) {
       }
     }
 
-    const attendance = await prisma.attendance.update({
+    const attendance = await prisma.attendances.update({
       where: { id },
       data: {
         status,
@@ -387,7 +387,7 @@ export async function PATCH(request: NextRequest) {
 
     for (const attendance of attendances) {
       try {
-        const result = await prisma.attendance.upsert({
+        const result = await prisma.attendances.upsert({
           where: {
             studentId_classId_date: {
               studentId: attendance.studentId,
@@ -465,7 +465,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Check if attendance exists
-    const attendance = await prisma.attendance.findUnique({
+    const attendance = await prisma.attendances.findUnique({
       where: { id },
     });
 
@@ -477,7 +477,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Soft delete the attendance
-    await softDelete(prisma.attendance, { id }, session.user?.id);
+    await softDelete(prisma.attendances, { id }, session.user?.id);
 
     return NextResponse.json({ message: 'Attendance deleted successfully' });
   } catch (error) {

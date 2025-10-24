@@ -32,7 +32,7 @@ export const authOptions: NextAuthOptions = {
 
           // Use findFirst instead of findUnique to avoid middleware conflicts
           // The soft delete middleware modifies findUnique queries in a way that breaks unique constraints
-          const user = await prisma.user.findFirst({
+          const user = await prisma.users.findFirst({
             where: {
               username: credentials.username
             }

@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get current registration
-    const registration = await prisma.registration.findUnique({
+    const registration = await prisma.registrations.findUnique({
       where: { id: registrationId }
     })
 
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Update notes
-    const updatedRegistration = await prisma.registration.update({
+    const updatedRegistration = await prisma.registrations.update({
       where: { id: registrationId },
       data: {
         notes: notes || null,

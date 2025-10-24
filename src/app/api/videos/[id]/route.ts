@@ -22,7 +22,7 @@ export async function PUT(
     const body = await request.json()
     const { id } = params
 
-    const video = await prisma.video.update({
+    const video = await prisma.videos.update({
       where: { id },
       data: {
         title: body.title,
@@ -79,7 +79,7 @@ export async function DELETE(
     const { id } = params
 
     // Check if video exists
-    const video = await prisma.video.findUnique({
+    const video = await prisma.videos.findUnique({
       where: { id },
     })
 
@@ -91,7 +91,7 @@ export async function DELETE(
     }
 
     // Soft delete the video
-    await softDelete(prisma.video, { id }, session.user?.id)
+    await softDelete(prisma.videos, { id }, session.user?.id)
 
     return NextResponse.json({ success: true })
   } catch (error) {
@@ -111,7 +111,7 @@ export async function PATCH(
   try {
     const { id } = params
 
-    const video = await prisma.video.update({
+    const video = await prisma.videos.update({
       where: { id },
       data: {
         views: {

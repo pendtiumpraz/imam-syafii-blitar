@@ -130,7 +130,7 @@ async function handlePaymentProof(userId: string, imageUrl: string, replyToken: 
   const { data } = session
   
   // Save payment proof
-  await prisma.payment.update({
+  await prisma.payments.update({
     where: { id: data.paymentId },
     data: {
       proofUrl: imageUrl,

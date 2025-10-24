@@ -9,14 +9,14 @@ export class SessionManager {
    */
   static async getSession(userId: string): Promise<LineUserSession> {
     // Try to get existing session
-    let session = await prisma.lineUserSession.findUnique({
+    let session = await prisma.line_user_sessions.findUnique({
       where: { userId }
     })
 
     // Check if session expired
     if (session && session.expiresAt && session.expiresAt < new Date()) {
       // Delete expired session
-      await prisma.lineUserSession.delete({
+      await prisma.line_user_sessions.delete({
         where: { id: session.id }
       })
       session = null
@@ -24,7 +24,7 @@ export class SessionManager {
 
     // Create new session if needed
     if (!session) {
-      session = await prisma.lineUserSession.create({
+      session = await prisma.line_user_sessions.create({
         data: {
           userId,
           mode: 'PUBLIC',
@@ -55,7 +55,7 @@ export class SessionManager {
     }
     
     // Update with new expiry
-    return await prisma.lineUserSession.update({
+    return await prisma.line_user_sessions.update({
       where: { userId },
       data: {
         ...cleanData,
@@ -167,7 +167,7 @@ export class SessionManager {
    * Clear session
    */
   static async clearSession(userId: string): Promise<void> {
-    await prisma.lineUserSession.deleteMany({
+    await prisma.line_user_sessions.deleteMany({
       where: { userId }
     })
   }
@@ -176,7 +176,7 @@ export class SessionManager {
    * Clean expired sessions (run periodically)
    */
   static async cleanExpiredSessions(): Promise<number> {
-    const result = await prisma.lineUserSession.deleteMany({
+    const result = await prisma.line_user_sessions.deleteMany({
       where: {
         expiresAt: {
           lt: new Date()

@@ -64,10 +64,10 @@ export async function GET(request: NextRequest) {
     const skip = (query.page - 1) * query.limit
     
     // Get total count for pagination
-    const totalCount = await prisma.question.count({ where })
+    const totalCount = await prisma.questions.count({ where })
     
     // Fetch questions with answers
-    const questions = await prisma.question.findMany({
+    const questions = await prisma.questions.findMany({
       where,
       include: {
         answer: {

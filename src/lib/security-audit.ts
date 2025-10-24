@@ -38,7 +38,7 @@ export class SecurityAuditService {
         timestamp: new Date(),
       }
 
-      await prisma.securityAuditLog.create({
+      await prisma.security_audit_logs.create({
         data: eventData
       })
 
@@ -60,7 +60,7 @@ export class SecurityAuditService {
     offset = 0
   ) {
     try {
-      const events = await prisma.securityAuditLog.findMany({
+      const events = await prisma.security_audit_logs.findMany({
         where: { userId },
         orderBy: { timestamp: 'desc' },
         take: limit,
@@ -92,7 +92,7 @@ export class SecurityAuditService {
     try {
       const since = new Date(Date.now() - hoursBack * 60 * 60 * 1000)
       
-      const events = await prisma.securityAuditLog.findMany({
+      const events = await prisma.security_audit_logs.findMany({
         where: {
           ipAddress,
           timestamp: {
@@ -191,7 +191,7 @@ export class SecurityAuditService {
     try {
       const since = new Date(Date.now() - hoursBack * 60 * 60 * 1000)
       
-      const stats = await prisma.securityAuditLog.groupBy({
+      const stats = await prisma.security_audit_logs.groupBy({
         by: ['event'],
         where: {
           timestamp: {
@@ -203,7 +203,7 @@ export class SecurityAuditService {
         }
       })
 
-      const totalEvents = await prisma.securityAuditLog.count({
+      const totalEvents = await prisma.security_audit_logs.count({
         where: {
           timestamp: {
             gte: since
@@ -211,7 +211,7 @@ export class SecurityAuditService {
         }
       })
 
-      const uniqueIPs = await prisma.securityAuditLog.findMany({
+      const uniqueIPs = await prisma.security_audit_logs.findMany({
         where: {
           timestamp: {
             gte: since
@@ -223,7 +223,7 @@ export class SecurityAuditService {
         distinct: ['ipAddress']
       })
 
-      const uniqueUsers = await prisma.securityAuditLog.findMany({
+      const uniqueUsers = await prisma.security_audit_logs.findMany({
         where: {
           timestamp: {
             gte: since
@@ -273,7 +273,7 @@ export class SecurityAuditService {
     try {
       const cutoffDate = new Date(Date.now() - daysToKeep * 24 * 60 * 60 * 1000)
       
-      const result = await prisma.securityAuditLog.deleteMany({
+      const result = await prisma.security_audit_logs.deleteMany({
         where: {
           timestamp: {
             lt: cutoffDate
@@ -296,7 +296,7 @@ export class SecurityAuditService {
     try {
       const since = new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000)
       
-      const events = await prisma.securityAuditLog.findMany({
+      const events = await prisma.security_audit_logs.findMany({
         where: {
           userId,
           timestamp: {

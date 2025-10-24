@@ -28,7 +28,7 @@ const querySchema = z.object({
 // Helper functions for generating different types of reports
 async function generateIncomeStatement(startDate: Date, endDate: Date, includeDetails: boolean) {
   // Get income categories and transactions
-  const incomeCategories = await prisma.financialCategory.findMany({
+  const incomeCategories = await prisma.financial_categories.findMany({
     where: { 
       type: { in: ['INCOME', 'DONATION'] },
       isActive: true,
@@ -57,7 +57,7 @@ async function generateIncomeStatement(startDate: Date, endDate: Date, includeDe
   })
 
   // Get expense categories and transactions
-  const expenseCategories = await prisma.financialCategory.findMany({
+  const expenseCategories = await prisma.financial_categories.findMany({
     where: { 
       type: 'EXPENSE',
       isActive: true,
@@ -131,7 +131,7 @@ async function generateIncomeStatement(startDate: Date, endDate: Date, includeDe
 
 async function generateBalanceSheet(asOfDate: Date) {
   // Get all accounts with their current balances
-  const accounts = await prisma.financialAccount.findMany({
+  const accounts = await prisma.financial_accounts.findMany({
     where: { isActive: true },
     include: {
       parent: true,
@@ -178,7 +178,7 @@ async function generateBalanceSheet(asOfDate: Date) {
 
 async function generateCashFlowStatement(startDate: Date, endDate: Date, includeDetails: boolean) {
   // Get cash account
-  const cashAccount = await prisma.financialAccount.findFirst({
+  const cashAccount = await prisma.financial_accounts.findFirst({
     where: { code: '1001' }, // Main cash account
   })
 
@@ -187,7 +187,7 @@ async function generateCashFlowStatement(startDate: Date, endDate: Date, include
   }
 
   // Get journal entry lines affecting cash account
-  const journalLines = await prisma.journalEntryLine.findMany({
+  const journalLines = await prisma.journal_entry_lines.findMany({
     where: {
       accountId: cashAccount.id,
       journal: {
@@ -262,7 +262,7 @@ async function generateCashFlowStatement(startDate: Date, endDate: Date, include
 }
 
 async function generateBudgetVarianceReport(budgetId: string, includeDetails: boolean) {
-  const budget = await prisma.budget.findUnique({
+  const budget = await prisma.budgets.findUnique({
     where: { id: budgetId },
     include: {
       items: {
@@ -372,7 +372,7 @@ export async function GET(request: NextRequest) {
     }
 
     const [reports, total] = await Promise.all([
-      prisma.financialReport.findMany({
+      prisma.financial_reports.findMany({
         where,
         include: {
           creator: {
@@ -396,7 +396,7 @@ export async function GET(request: NextRequest) {
         skip,
         take: query.limit,
       }),
-      prisma.financialReport.count({ where }),
+      prisma.financial_reports.count({ where }),
     ])
 
     // Parse JSON data for each report
@@ -461,7 +461,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (data.budgetId) {
-      const budget = await prisma.budget.findUnique({
+      const budget = await prisma.budgets.findUnique({
         where: { id: data.budgetId },
       })
 
@@ -496,7 +496,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Save report to database
-    const report = await prisma.financialReport.create({
+    const report = await prisma.financial_reports.create({
       data: {
         name: data.name,
         type: data.type,

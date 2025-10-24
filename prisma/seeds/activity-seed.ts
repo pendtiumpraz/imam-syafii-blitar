@@ -141,7 +141,8 @@ async function seedActivities() {
 
   console.log(`📝 Creating ${activities.length} activities...`);
 
-  for (const activity of activities) {
+  for (let i = 0; i < activities.length; i++) {
+    const activity = activities[i];
     // Check if activity exists by title
     const existing = await prisma.activities.findFirst({
       where: { title: activity.title }
@@ -150,11 +151,18 @@ async function seedActivities() {
     if (existing) {
       await prisma.activities.update({
         where: { id: existing.id },
-        data: activity
+        data: {
+          ...activity,
+          updatedAt: new Date(),
+        }
       });
     } else {
       await prisma.activities.create({
-        data: activity
+        data: {
+          id: `seed-activity-${String(i + 1).padStart(3, '0')}`,
+          ...activity,
+          updatedAt: new Date(),
+        }
       });
     }
   }

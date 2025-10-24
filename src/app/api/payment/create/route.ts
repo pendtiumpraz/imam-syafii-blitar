@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
     let student = null
 
     if (registrationId) {
-      registration = await prisma.registration.findUnique({
+      registration = await prisma.registrations.findUnique({
         where: { id: registrationId }
       })
 
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (studentId) {
-      student = await prisma.student.findUnique({
+      student = await prisma.students.findUnique({
         where: { id: studentId }
       })
 
@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
     expiredAt.setHours(expiredAt.getHours() + 24)
 
     // Create payment record in database
-    const payment = await prisma.payment.create({
+    const payment = await prisma.payments.create({
       data: {
         paymentNo,
         registrationId,
@@ -213,7 +213,7 @@ export async function POST(request: NextRequest) {
         updateData.vaNumber = paymentResponse.other_va_number
       }
 
-      await prisma.payment.update({
+      await prisma.payments.update({
         where: { id: payment.id },
         data: updateData
       })
@@ -240,7 +240,7 @@ export async function POST(request: NextRequest) {
 
     } catch (gatewayError: any) {
       // Update payment status to failed if gateway error
-      await prisma.payment.update({
+      await prisma.payments.update({
         where: { id: payment.id },
         data: { status: 'FAILED' }
       })
@@ -297,7 +297,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get payments with related data
-    const payments = await prisma.payment.findMany({
+    const payments = await prisma.payments.findMany({
       where,
       include: {
         registration: {
@@ -347,7 +347,7 @@ async function generatePaymentNumber(): Promise<string> {
   const startOfMonth = new Date(year, new Date().getMonth(), 1)
   const endOfMonth = new Date(year, new Date().getMonth() + 1, 0)
   
-  const paymentCount = await prisma.payment.count({
+  const paymentCount = await prisma.payments.count({
     where: {
       createdAt: {
         gte: startOfMonth,

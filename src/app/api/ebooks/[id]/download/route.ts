@@ -10,7 +10,7 @@ export async function POST(
 ) {
   try {
     const { default: prisma } = await import('@/lib/prisma');
-    await prisma.ebook.update({
+    await prisma.ebooks.update({
       where: {
         id: params.id,
       },

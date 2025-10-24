@@ -289,7 +289,7 @@ export const batchLoader = new BatchLoader()
 export const commonLoaders = {
   async loadUsers(ids: string[]) {
     const { default: prisma } = await import('@/lib/prisma')
-    return prisma.user.findMany({
+    return prisma.users.findMany({
       where: { id: { in: ids } },
       select: optimizedIncludes.user.withProfile
     })
@@ -297,7 +297,7 @@ export const commonLoaders = {
 
   async loadStudents(ids: string[]) {
     const { default: prisma } = await import('@/lib/prisma')
-    return prisma.student.findMany({
+    return prisma.students.findMany({
       where: { id: { in: ids } },
       include: optimizedIncludes.student.minimal
     })
@@ -305,7 +305,7 @@ export const commonLoaders = {
 
   async loadClasses(ids: string[]) {
     const { default: prisma } = await import('@/lib/prisma')
-    return prisma.class.findMany({
+    return prisma.classes.findMany({
       where: { id: { in: ids } },
       select: {
         id: true,

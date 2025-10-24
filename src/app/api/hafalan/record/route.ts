@@ -15,7 +15,7 @@ function getQualityScore(quality: string): number {
 
 // Helper function to update student progress
 async function updateStudentProgress(studentId: string) {
-  const records = await prisma.hafalanRecord.findMany({
+  const records = await prisma.hafalan_records.findMany({
     where: {
       studentId,
       status: { in: ['LANCAR', 'MUTQIN'] }
@@ -74,7 +74,7 @@ async function updateStudentProgress(studentId: string) {
   // Update or create progress record
   const avgQuality = records.length > 0 ? qualitySum / records.length : 0;
 
-  await prisma.hafalanProgress.upsert({
+  await prisma.hafalan_progress.upsert({
     where: { studentId },
     create: {
       studentId,
@@ -130,7 +130,7 @@ export async function GET(request: NextRequest) {
       if (dateTo) where.date.lte = new Date(dateTo);
     }
 
-    const records = await prisma.hafalanRecord.findMany({
+    const records = await prisma.hafalan_records.findMany({
       where,
       orderBy: { date: 'desc' },
       take: parseInt(limit),
@@ -162,7 +162,7 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    const total = await prisma.hafalanRecord.count({ where });
+    const total = await prisma.hafalan_records.count({ where });
 
     return NextResponse.json({
       records,
@@ -227,7 +227,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if surah exists and ayat numbers are valid
-    const surah = await prisma.quranSurah.findUnique({
+    const surah = await prisma.quran_surahs.findUnique({
       where: { number: parseInt(surahNumber) }
     });
 
@@ -247,14 +247,14 @@ export async function POST(request: NextRequest) {
 
     // Verify teacher exists or create placeholder for admin
     let teacherId = session.user.id;
-    const teacher = await prisma.user.findUnique({
+    const teacher = await prisma.users.findUnique({
       where: { id: session.user.id }
     });
 
     if (!teacher) {
       console.log('User not found in User table, checking if admin...');
       // If user doesn't exist in User table, try to find or create a default teacher account
-      const defaultTeacher = await prisma.user.findFirst({
+      const defaultTeacher = await prisma.users.findFirst({
         where: { role: 'TEACHER' }
       });
 
@@ -263,7 +263,7 @@ export async function POST(request: NextRequest) {
         console.log('Using default teacher ID:', teacherId);
       } else {
         // Create a system teacher account if none exists
-        const systemTeacher = await prisma.user.create({
+        const systemTeacher = await prisma.users.create({
           data: {
             username: 'system',
             email: 'system@pondok.com',
@@ -279,7 +279,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify student exists
-    const studentExists = await prisma.student.findUnique({
+    const studentExists = await prisma.students.findUnique({
       where: { id: studentId }
     });
 
@@ -292,7 +292,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create hafalan record
-    const record = await prisma.hafalanRecord.create({
+    const record = await prisma.hafalan_records.create({
       data: {
         studentId,
         surahNumber: parseInt(surahNumber),
@@ -341,7 +341,7 @@ export async function POST(request: NextRequest) {
     await updateStudentProgress(studentId);
 
     // Update setoran date in progress
-    await prisma.hafalanProgress.updateMany({
+    await prisma.hafalan_progress.updateMany({
       where: { studentId },
       data: {
         lastSetoranDate: new Date(),
@@ -352,7 +352,7 @@ export async function POST(request: NextRequest) {
     // Check for achievements
     if (status === 'MUTQIN') {
       // Check if student completed the entire surah
-      const surahRecords = await prisma.hafalanRecord.findMany({
+      const surahRecords = await prisma.hafalan_records.findMany({
         where: {
           studentId,
           surahNumber: parseInt(surahNumber),
@@ -369,7 +369,7 @@ export async function POST(request: NextRequest) {
 
       if (completedAyats.size === surah.totalAyat) {
         // Award surah completion achievement
-        await prisma.hafalanAchievement.create({
+        await prisma.hafalan_achievements.create({
           data: {
             studentId,
             type: 'SURAH_COMPLETE',
@@ -426,7 +426,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Check if record exists and user has permission
-    const existingRecord = await prisma.hafalanRecord.findUnique({
+    const existingRecord = await prisma.hafalan_records.findUnique({
       where: { id }
     });
 
@@ -445,7 +445,7 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const record = await prisma.hafalanRecord.update({
+    const record = await prisma.hafalan_records.update({
       where: { id },
       data: updateData,
       include: {

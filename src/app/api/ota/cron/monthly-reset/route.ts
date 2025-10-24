@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     console.log(`Starting monthly OTA reset for ${currentMonth}, generating report for ${prevMonth}`);
 
     // Generate report for previous month if it doesn't exist
-    const existingReport = await prisma.oTAReport.findFirst({
+    const existingReport = await prisma.ota_reports.findFirst({
       where: {
         month: prevMonth,
         reportType: 'MONTHLY',
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
       // Generate the monthly report for previous month
       const reportData = await generateMonthlyReport(prevMonth);
       
-      report = await prisma.oTAReport.create({
+      report = await prisma.ota_reports.create({
         data: {
           month: prevMonth,
           year: prevYear,
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Reset monthly progress for all active programs
-    const activePrograms = await prisma.oTAProgram.findMany({
+    const activePrograms = await prisma.ota_programs.findMany({
       where: {
         isActive: true,
       },
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
       
       // Update program for new month
       resetOperations.push(
-        prisma.oTAProgram.update({
+        prisma.ota_programs.update({
           where: { id: program.id },
           data: {
             currentMonth: currentMonth,
@@ -176,7 +176,7 @@ async function generateMonthlyReport(month: string) {
   const [year, monthNum] = month.split('-');
   
   // Get all active OTA programs
-  const programs = await prisma.oTAProgram.findMany({
+  const programs = await prisma.ota_programs.findMany({
     where: {
       OR: [
         { isActive: true },
@@ -273,7 +273,7 @@ async function generateMonthlyReport(month: string) {
   
   // Get previous month data for comparison
   const prevMonth = getPreviousMonth(month);
-  const prevMonthSponsors = await prisma.oTASponsor.findMany({
+  const prevMonthSponsors = await prisma.ota_sponsors.findMany({
     where: {
       month: prevMonth,
       isPaid: true,
@@ -285,7 +285,7 @@ async function generateMonthlyReport(month: string) {
   const recurringDonors = allSponsors.filter(s => prevDonors.has(s.donorEmail || s.donorName)).length;
 
   // Get carry-over amount from previous month
-  const prevReport = await prisma.oTAReport.findFirst({
+  const prevReport = await prisma.ota_reports.findFirst({
     where: {
       month: prevMonth,
       reportType: 'MONTHLY',

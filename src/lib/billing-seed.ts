@@ -266,12 +266,12 @@ export async function seedBillingData(prisma: any) {
     // Seed bill types
     console.log('📋 Creating bill types...');
     for (const billType of defaultBillTypes) {
-      const existing = await prisma.billType.findUnique({
+      const existing = await prisma.bill_types.findUnique({
         where: { name: billType.name },
       });
 
       if (!existing) {
-        await prisma.billType.create({
+        await prisma.bill_types.create({
           data: {
             ...billType,
             priceByGrade: JSON.stringify(billType.priceByGrade),
@@ -286,12 +286,12 @@ export async function seedBillingData(prisma: any) {
     // Seed billing settings
     console.log('⚙️  Creating billing settings...');
     for (const setting of defaultBillingSettings) {
-      const existing = await prisma.billingSetting.findUnique({
+      const existing = await prisma.billsingSetting.findUnique({
         where: { key: setting.key },
       });
 
       if (!existing) {
-        await prisma.billingSetting.create({
+        await prisma.billsingSetting.create({
           data: setting,
         });
         console.log(`✅ Created billing setting: ${setting.key}`);

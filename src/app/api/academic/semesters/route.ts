@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
       whereConditions.isActive = true;
     }
 
-    const semesters = await prisma.semester.findMany({
+    const semesters = await prisma.semesters.findMany({
       where: whereConditions,
       include: {
         academicYear: {
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if academic year exists
-    const academicYear = await prisma.academicYear.findUnique({
+    const academicYear = await prisma.academic_years.findUnique({
       where: { id: academicYearId },
     });
 
@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
 
     // If this is being set as active, deactivate other semesters in the same academic year
     if (isActive) {
-      await prisma.semester.updateMany({
+      await prisma.semesters.updateMany({
         where: { 
           academicYearId,
           isActive: true
@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const semester = await prisma.semester.create({
+    const semester = await prisma.semesters.create({
       data: {
         academicYearId,
         name,
@@ -185,7 +185,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Get current semester to find academic year
-    const currentSemester = await prisma.semester.findUnique({
+    const currentSemester = await prisma.semesters.findUnique({
       where: { id },
       select: { academicYearId: true },
     });
@@ -199,7 +199,7 @@ export async function PUT(request: NextRequest) {
 
     // If this is being set as active, deactivate other semesters in the same academic year
     if (isActive) {
-      await prisma.semester.updateMany({
+      await prisma.semesters.updateMany({
         where: { 
           academicYearId: currentSemester.academicYearId,
           isActive: true,
@@ -209,7 +209,7 @@ export async function PUT(request: NextRequest) {
       });
     }
 
-    const semester = await prisma.semester.update({
+    const semester = await prisma.semesters.update({
       where: { id },
       data: {
         name,
@@ -282,7 +282,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Check if semester has associated data
-    const semester = await prisma.semester.findUnique({
+    const semester = await prisma.semesters.findUnique({
       where: { id },
       include: {
         _count: {
@@ -311,7 +311,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    await softDelete(prisma.semester, { id }, session.user.id);
+    await softDelete(prisma.semesters, { id }, session.user.id);
 
     return NextResponse.json({ message: 'Semester soft deleted successfully' });
   } catch (error) {

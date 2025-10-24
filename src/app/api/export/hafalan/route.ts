@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
         };
       }
 
-      const records = await prisma.hafalanRecord.findMany({
+      const records = await prisma.hafalan_records.findMany({
         where,
         include: {
           student: true,
@@ -147,7 +147,7 @@ export async function GET(request: NextRequest) {
         };
       }
 
-      const progress = await prisma.hafalanProgress.findMany({
+      const progress = await prisma.hafalan_progress.findMany({
         where,
         include: {
           student: true

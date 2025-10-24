@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     const { default: prisma } = await import('@/lib/prisma');
     
     // Find registration by registration number and whatsapp
-    const registration = await prisma.registration.findFirst({
+    const registration = await prisma.registrations.findFirst({
       where: {
         registrationNo,
         whatsapp

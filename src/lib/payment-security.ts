@@ -235,7 +235,7 @@ export async function logSecurityEvent(
 // Check if payment already exists (prevent duplicate processing)
 export async function checkDuplicatePayment(externalId: string): Promise<boolean> {
   try {
-    const existingPayment = await prisma.payment.findFirst({
+    const existingPayment = await prisma.payments.findFirst({
       where: {
         externalId,
         status: {

@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     const studentId = searchParams.get('studentId');
 
     // Get parent account with children
-    const parentAccount = await prisma.parentAccount.findUnique({
+    const parentAccount = await prisma.parent_accounts.findUnique({
       where: { userId },
       include: {
         parentStudents: {
@@ -47,12 +47,12 @@ export async function GET(request: NextRequest) {
     const hafalanData = await Promise.all(
       targetStudents.map(async (student) => {
         // Get hafalan progress summary
-        const progressSummary = await prisma.hafalanProgress.findUnique({
+        const progressSummary = await prisma.hafalan_progress.findUnique({
           where: { studentId: student.id }
         });
 
         // Get recent hafalan records (last 3 months)
-        const recentRecords = await prisma.hafalanRecord.findMany({
+        const recentRecords = await prisma.hafalan_records.findMany({
           where: {
             studentId: student.id,
             createdAt: {
@@ -83,7 +83,7 @@ export async function GET(request: NextRequest) {
         });
 
         // Get hafalan targets
-        const targets = await prisma.hafalanTarget.findMany({
+        const targets = await prisma.hafalan_targets.findMany({
           where: {
             studentId: student.id,
             status: {
@@ -111,7 +111,7 @@ export async function GET(request: NextRequest) {
         });
 
         // Get hafalan sessions (last 30 days)
-        const recentSessions = await prisma.hafalanSession.findMany({
+        const recentSessions = await prisma.hafalan_sessions.findMany({
           where: {
             studentId: student.id,
             sessionDate: {
@@ -132,7 +132,7 @@ export async function GET(request: NextRequest) {
         });
 
         // Get hafalan achievements
-        const achievements = await prisma.hafalanAchievement.findMany({
+        const achievements = await prisma.hafalan_achievements.findMany({
           where: {
             studentId: student.id,
             verifiedAt: {
@@ -176,7 +176,7 @@ export async function GET(request: NextRequest) {
         const currentTarget = targets.find(target => target.status === 'ACTIVE');
         
         // Get Quran surahs for reference
-        const allSurahs = await prisma.quranSurah.findMany({
+        const allSurahs = await prisma.quran_surahs.findMany({
           orderBy: { number: 'asc' }
         });
 

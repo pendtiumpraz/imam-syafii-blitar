@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
     if (category) where.category = category
 
     const [transactions, total] = await Promise.all([
-      prisma.transaction.findMany({
+      prisma.transactions.findMany({
         where,
         include: {
           creator: {
@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
         skip,
         take: limit,
       }),
-      prisma.transaction.count({ where }),
+      prisma.transactions.count({ where }),
     ])
 
     return NextResponse.json({
@@ -88,10 +88,10 @@ export async function POST(request: NextRequest) {
     
     // Generate transaction number
     const year = new Date().getFullYear();
-    const count = await prisma.transaction.count() + 1;
+    const count = await prisma.transactions.count() + 1;
     const transactionNo = `TRX-${year}-${count.toString().padStart(3, '0')}`;
     
-    const transaction = await prisma.transaction.create({
+    const transaction = await prisma.transactions.create({
       data: {
         type: otherData.type,
         description: otherData.description,

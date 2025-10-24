@@ -6,7 +6,7 @@ import { softDelete } from '@/lib/soft-delete';
 
 // Helper function to generate registration number
 async function generateRegistrationNumber(level: string, year: string): Promise<string> {
-  const settings = await prisma.pPDBSettings.findUnique({
+  const settings = await prisma.ppdb_settings.findUnique({
     where: { academicYear: year }
   });
   
@@ -15,7 +15,7 @@ async function generateRegistrationNumber(level: string, year: string): Promise<
   
   // Update the last registration number
   if (settings) {
-    await prisma.pPDBSettings.update({
+    await prisma.ppdb_settings.update({
       where: { academicYear: year },
       data: { lastRegistrationNo: newNo }
     });
@@ -28,13 +28,13 @@ async function generateRegistrationNumber(level: string, year: string): Promise<
 
 // Helper function to check quotas
 async function checkQuota(level: string, year: string): Promise<boolean> {
-  const settings = await prisma.pPDBSettings.findUnique({
+  const settings = await prisma.ppdb_settings.findUnique({
     where: { academicYear: year }
   });
   
   if (!settings) return false;
   
-  const registrationCount = await prisma.pPDBRegistration.count({
+  const registrationCount = await prisma.ppdb_registrations.count({
     where: {
       level,
       academicYear: year,
@@ -86,7 +86,7 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit;
     
     const [registrations, totalCount] = await Promise.all([
-      prisma.pPDBRegistration.findMany({
+      prisma.ppdb_registrations.findMany({
         where: whereConditions,
         skip,
         take: limit,
@@ -98,13 +98,13 @@ export async function GET(request: NextRequest) {
         },
         orderBy: { createdAt: 'desc' }
       }),
-      prisma.pPDBRegistration.count({ where: whereConditions })
+      prisma.ppdb_registrations.count({ where: whereConditions })
     ]);
     
     // Get quota information if academic year is specified
     let quotaInfo: Record<string, { quota: number; accepted: number; available: number }> | null = null;
     if (academicYear) {
-      const settings = await prisma.pPDBSettings.findUnique({
+      const settings = await prisma.ppdb_settings.findUnique({
         where: { academicYear }
       });
       
@@ -116,7 +116,7 @@ export async function GET(request: NextRequest) {
           const quotaField = `quota${lvl}` as keyof typeof settings;
           const quota = settings[quotaField] as number;
           
-          const accepted = await prisma.pPDBRegistration.count({
+          const accepted = await prisma.ppdb_registrations.count({
             where: {
               level: lvl,
               academicYear,
@@ -241,7 +241,7 @@ export async function POST(request: NextRequest) {
     const registrationNo = await generateRegistrationNumber(level, academicYear);
     
     // Get registration fee from settings
-    const settings = await prisma.pPDBSettings.findUnique({
+    const settings = await prisma.ppdb_settings.findUnique({
       where: { academicYear }
     });
     
@@ -249,7 +249,7 @@ export async function POST(request: NextRequest) {
     const registrationFee = settings ? (settings[feeField] as number) : 100000;
     
     // Create registration
-    const registration = await prisma.pPDBRegistration.create({
+    const registration = await prisma.ppdb_registrations.create({
       data: {
         registrationNo,
         level,
@@ -350,7 +350,7 @@ export async function PUT(request: NextRequest) {
     }
     
     // Check if registration exists
-    const existing = await prisma.pPDBRegistration.findUnique({
+    const existing = await prisma.ppdb_registrations.findUnique({
       where: { id }
     });
     
@@ -397,7 +397,7 @@ export async function PUT(request: NextRequest) {
     }
     
     // Update registration
-    const registration = await prisma.pPDBRegistration.update({
+    const registration = await prisma.ppdb_registrations.update({
       where: { id },
       data: {
         ...updateData,
@@ -441,7 +441,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    await softDelete(prisma.pPDBRegistration, { id }, session.user.id);
+    await softDelete(prisma.ppdb_registrations, { id }, session.user.id);
 
     return NextResponse.json({ message: 'PPDB registration soft deleted successfully' });
   } catch (error) {

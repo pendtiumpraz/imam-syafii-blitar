@@ -125,7 +125,7 @@ export async function GET(request: Request) {
   const timer = perfMonitor.startTimer('api-users-get')
   
   try {
-    const users = await prisma.user.findMany()
+    const users = await prisma.users.findMany()
     return Response.json({ users })
   } finally {
     timer()
@@ -339,7 +339,7 @@ GROUP BY s.id, s.full_name;`}
                   <div className="bg-gray-900 rounded-lg p-4 overflow-x-auto">
                     <pre className="text-sm text-gray-300">
 {`// 1. Use select to limit fields
-const students = await prisma.student.findMany({
+const students = await prisma.students.findMany({
   select: {
     id: true,
     fullName: true,
@@ -351,7 +351,7 @@ const students = await prisma.student.findMany({
 })
 
 // 2. Use includeand pagination properly  
-const studentsWithBills = await prisma.student.findMany({
+const studentsWithBills = await prisma.students.findMany({
   include: {
     bills: {
       where: { status: 'PENDING' },

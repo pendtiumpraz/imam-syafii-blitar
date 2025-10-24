@@ -499,7 +499,7 @@ class PaymentGateway {
       }
 
       // Update payment status in database
-      const payment = await prisma.payment.findFirst({
+      const payment = await prisma.payments.findFirst({
         where: { externalId: notification.order_id },
         include: { registration: true, student: true }
       })
@@ -531,7 +531,7 @@ class PaymentGateway {
       }
 
       // Update payment
-      await prisma.payment.update({
+      await prisma.payments.update({
         where: { id: payment.id },
         data: {
           status,
@@ -542,7 +542,7 @@ class PaymentGateway {
 
       // Update registration payment status if applicable
       if (payment.registrationId && status === 'SUCCESS') {
-        await prisma.registration.update({
+        await prisma.registrations.update({
           where: { id: payment.registrationId },
           data: {
             paymentStatus: 'PAID',

@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma';
 
 // Helper function to verify parent access to student
 async function verifyParentAccess(userId: string, studentId: string) {
-  const parentStudent = await prisma.parentStudent.findFirst({
+  const parentStudent = await prisma.parent_students.findFirst({
     where: {
       studentId,
       parent: {
@@ -86,7 +86,7 @@ export async function GET(
     }
 
     // Get grades with subject filter
-    const grades = await prisma.grade.findMany({
+    const grades = await prisma.grades.findMany({
       where: whereConditions,
       include: {
         subject: {

@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
     }
 
     const [activities, total] = await Promise.all([
-      prisma.activity.findMany({
+      prisma.activities.findMany({
         where: whereConditions,
         include: {
           creator: {
@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
         skip,
         take: limit,
       }),
-      prisma.activity.count({ where: whereConditions })
+      prisma.activities.count({ where: whereConditions })
     ]);
 
     // Parse photos JSON string to array
@@ -122,7 +122,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const activity = await prisma.activity.create({
+    const activity = await prisma.activities.create({
       data: {
         title,
         description,
@@ -187,7 +187,7 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const activity = await prisma.activity.update({
+    const activity = await prisma.activities.update({
       where: { id },
       data: {
         title,
@@ -244,7 +244,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Check if activity exists
-    const activity = await prisma.activity.findUnique({
+    const activity = await prisma.activities.findUnique({
       where: { id }
     });
 
@@ -256,7 +256,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Soft delete the activity
-    await softDelete(prisma.activity, { id }, session.user?.id);
+    await softDelete(prisma.activities, { id }, session.user?.id);
 
     return NextResponse.json({
       message: 'Activity deleted successfully'

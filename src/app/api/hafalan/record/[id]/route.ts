@@ -6,7 +6,7 @@ import { softDelete } from '@/lib/soft-delete';
 
 // Helper function to update student progress
 async function updateStudentProgress(studentId: string) {
-  const records = await prisma.hafalanRecord.findMany({
+  const records = await prisma.hafalan_records.findMany({
     where: {
       studentId,
       status: { in: ['LANCAR', 'MUTQIN'] }
@@ -57,7 +57,7 @@ async function updateStudentProgress(studentId: string) {
   const juz30Ayats = 564;
   const juz30Progress = Math.min(((juzProgress[30] || 0) / juz30Ayats) * 100, 100);
 
-  await prisma.hafalanProgress.upsert({
+  await prisma.hafalan_progress.upsert({
     where: { studentId },
     create: {
       studentId,
@@ -94,7 +94,7 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const record = await prisma.hafalanRecord.findUnique({
+    const record = await prisma.hafalan_records.findUnique({
       where: { id: params.id },
       include: {
         student: {
@@ -167,7 +167,7 @@ export async function PUT(
     } = body;
 
     // Check if record exists
-    const existingRecord = await prisma.hafalanRecord.findUnique({
+    const existingRecord = await prisma.hafalan_records.findUnique({
       where: { id: params.id }
     });
 
@@ -196,7 +196,7 @@ export async function PUT(
 
     // Check if surah exists and ayat numbers are valid
     if (surahNumber) {
-      const surah = await prisma.quranSurah.findUnique({
+      const surah = await prisma.quran_surahs.findUnique({
         where: { number: parseInt(surahNumber) }
       });
 
@@ -215,7 +215,7 @@ export async function PUT(
       }
     }
 
-    const record = await prisma.hafalanRecord.update({
+    const record = await prisma.hafalan_records.update({
       where: { id: params.id },
       data: {
         ...(studentId && { studentId }),
@@ -288,7 +288,7 @@ export async function DELETE(
     }
 
     // Check if record exists
-    const existingRecord = await prisma.hafalanRecord.findUnique({
+    const existingRecord = await prisma.hafalan_records.findUnique({
       where: { id: params.id }
     });
 
@@ -308,7 +308,7 @@ export async function DELETE(
     }
 
     // Soft delete the record
-    await softDelete(prisma.hafalanRecord, { id: params.id }, session.user.id);
+    await softDelete(prisma.hafalan_records, { id: params.id }, session.user.id);
 
     // Update student progress
     await updateStudentProgress(existingRecord.studentId);

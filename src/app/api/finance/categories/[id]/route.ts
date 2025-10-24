@@ -31,7 +31,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const category = await prisma.financialCategory.findUnique({
+    const category = await prisma.financial_categories.findUnique({
       where: { id: params.id },
       include: {
         account: true,
@@ -101,7 +101,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     const data = updateCategorySchema.parse(body)
 
     // Check if category exists
-    const existingCategory = await prisma.financialCategory.findUnique({
+    const existingCategory = await prisma.financial_categories.findUnique({
       where: { id: params.id },
     })
 
@@ -114,7 +114,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     // If name is being updated, check for duplicates
     if (data.name && data.name !== existingCategory.name) {
-      const duplicate = await prisma.financialCategory.findFirst({
+      const duplicate = await prisma.financial_categories.findFirst({
         where: {
           name: data.name,
           type: existingCategory.type,
@@ -132,7 +132,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     // If accountId is being updated, verify account exists
     if (data.accountId) {
-      const account = await prisma.financialAccount.findUnique({
+      const account = await prisma.financial_accounts.findUnique({
         where: { id: data.accountId },
       })
 
@@ -154,7 +154,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       }
 
       if (data.parentId) {
-        const parent = await prisma.financialCategory.findUnique({
+        const parent = await prisma.financial_categories.findUnique({
           where: { id: data.parentId },
         })
 
@@ -174,7 +174,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
         // Check for circular reference (prevent parent from being a descendant)
         const checkCircular = async (parentId: string, targetId: string): Promise<boolean> => {
-          const parent = await prisma.financialCategory.findUnique({
+          const parent = await prisma.financial_categories.findUnique({
             where: { id: parentId },
             select: { parentId: true },
           })
@@ -195,7 +195,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       }
     }
 
-    const category = await prisma.financialCategory.update({
+    const category = await prisma.financial_categories.update({
       where: { id: params.id },
       data,
       include: {
@@ -237,7 +237,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     // Check if category exists
-    const category = await prisma.financialCategory.findUnique({
+    const category = await prisma.financial_categories.findUnique({
       where: { id: params.id },
       include: {
         children: true,
@@ -281,7 +281,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     // Soft delete the financial category
-    await softDelete(prisma.financialCategory, { id: params.id }, session.user.id)
+    await softDelete(prisma.financial_categories, { id: params.id }, session.user.id)
 
     return NextResponse.json({ message: 'Category deleted successfully' })
 

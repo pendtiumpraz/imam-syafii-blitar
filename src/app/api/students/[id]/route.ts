@@ -59,7 +59,7 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const student = await prisma.student.findUnique({
+    const student = await prisma.students.findUnique({
       where: { id: params.id },
       include: {
         creator: {
@@ -103,7 +103,7 @@ export async function PUT(
     const validated = updateStudentSchema.parse(body);
 
     // Check if student exists
-    const existingStudent = await prisma.student.findUnique({
+    const existingStudent = await prisma.students.findUnique({
       where: { id: params.id },
     });
 
@@ -115,7 +115,7 @@ export async function PUT(
     }
 
     // Update student
-    const updatedStudent = await prisma.student.update({
+    const updatedStudent = await prisma.students.update({
       where: { id: params.id },
       data: {
         ...validated,
@@ -165,7 +165,7 @@ export async function DELETE(
     }
 
     // Check if student exists
-    const existingStudent = await prisma.student.findUnique({
+    const existingStudent = await prisma.students.findUnique({
       where: { id: params.id },
     });
 
@@ -177,7 +177,7 @@ export async function DELETE(
     }
 
     // Soft delete by updating status
-    const deletedStudent = await prisma.student.update({
+    const deletedStudent = await prisma.students.update({
       where: { id: params.id },
       data: {
         status: 'DROPPED_OUT',

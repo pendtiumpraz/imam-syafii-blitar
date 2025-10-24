@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
 
     if (reportType === 'payments') {
       // Export payment history
-      const payments = await prisma.billPayment.findMany({
+      const payments = await prisma.bill_payments.findMany({
         where: {
           bill: where
         },
@@ -127,7 +127,7 @@ export async function GET(request: NextRequest) {
       });
     } else {
       // Export bills
-      const bills = await prisma.bill.findMany({
+      const bills = await prisma.bills.findMany({
         where,
         include: {
           student: true,

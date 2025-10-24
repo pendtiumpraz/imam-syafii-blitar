@@ -15,7 +15,7 @@ let lineSettings: any = null
 
 async function getLineSettings() {
   if (!lineSettings) {
-    lineSettings = await prisma.lineSettings.findFirst()
+    lineSettings = await prisma.line_settings.findFirst()
   }
   return lineSettings
 }
@@ -136,7 +136,7 @@ async function storeUserInfo(userId: string) {
       }
     }).then(res => res.json())
 
-    await prisma.lineUser.upsert({
+    await prisma.line_users.upsert({
       where: { userId },
       update: {
         displayName: profile.displayName,

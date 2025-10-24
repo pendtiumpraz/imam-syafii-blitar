@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch activities data
-    const activities = await prisma.activity.findMany({
+    const activities = await prisma.activities.findMany({
       where,
       include: {
         creator: true

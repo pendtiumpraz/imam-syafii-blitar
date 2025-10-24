@@ -38,7 +38,7 @@ const querySchema = z.object({
 // Helper function to generate transaction number
 async function generateTransactionNumber(): Promise<string> {
   const year = new Date().getFullYear()
-  const count = await prisma.transaction.count({
+  const count = await prisma.transactions.count({
     where: {
       transactionNo: {
         startsWith: `TRX-${year}-`,
@@ -50,7 +50,7 @@ async function generateTransactionNumber(): Promise<string> {
 
 // Helper function to create journal entries for double-entry bookkeeping
 async function createJournalEntry(transaction: any, userId: string) {
-  const category = await prisma.financialCategory.findUnique({
+  const category = await prisma.financial_categories.findUnique({
     where: { id: transaction.categoryId },
     include: { account: true },
   })
@@ -61,7 +61,7 @@ async function createJournalEntry(transaction: any, userId: string) {
 
   // Generate journal entry number
   const year = new Date().getFullYear()
-  const jeCount = await prisma.journalEntry.count({
+  const jeCount = await prisma.journal_entries.count({
     where: {
       entryNo: {
         startsWith: `JE-${year}-`,
@@ -75,7 +75,7 @@ async function createJournalEntry(transaction: any, userId: string) {
   let creditAccountId: string
 
   // Get Cash/Bank account (assuming code '1001' for main cash account)
-  const cashAccount = await prisma.financialAccount.findFirst({
+  const cashAccount = await prisma.financial_accounts.findFirst({
     where: { code: '1001' },
   })
 
@@ -94,7 +94,7 @@ async function createJournalEntry(transaction: any, userId: string) {
   }
 
   // Create journal entry
-  const journalEntry = await prisma.journalEntry.create({
+  const journalEntry = await prisma.journal_entries.create({
     data: {
       entryNo,
       transactionId: transaction.id,
@@ -134,7 +134,7 @@ async function createJournalEntry(transaction: any, userId: string) {
   })
 
   // Update account balances
-  await prisma.financialAccount.update({
+  await prisma.financial_accounts.update({
     where: { id: debitAccountId },
     data: {
       balance: {
@@ -143,7 +143,7 @@ async function createJournalEntry(transaction: any, userId: string) {
     },
   })
 
-  await prisma.financialAccount.update({
+  await prisma.financial_accounts.update({
     where: { id: creditAccountId },
     data: {
       balance: {
@@ -203,7 +203,7 @@ export async function GET(request: NextRequest) {
     }
 
     const [transactions, total, summary] = await Promise.all([
-      prisma.transaction.findMany({
+      prisma.transactions.findMany({
         where,
         include: {
           category: {
@@ -234,9 +234,9 @@ export async function GET(request: NextRequest) {
         skip,
         take: query.limit,
       }),
-      prisma.transaction.count({ where }),
+      prisma.transactions.count({ where }),
       // Get summary statistics
-      prisma.transaction.groupBy({
+      prisma.transactions.groupBy({
         by: ['type', 'status'],
         _sum: {
           amount: true,
@@ -291,7 +291,7 @@ export async function POST(request: NextRequest) {
     const data = createTransactionSchema.parse(body)
 
     // Verify category exists and is active
-    const category = await prisma.financialCategory.findFirst({
+    const category = await prisma.financial_categories.findFirst({
       where: {
         id: data.categoryId,
         type: data.type,

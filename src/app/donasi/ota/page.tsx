@@ -28,7 +28,7 @@ interface Student {
   otaProfile: string
   photo: string | null
   achievements: any[]
-  hafalanProgress: HafalanProgress | null
+  hafalan_progress: HafalanProgress | null
 }
 
 interface Sponsor {

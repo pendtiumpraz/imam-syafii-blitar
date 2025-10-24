@@ -12,7 +12,7 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const question = await prisma.question.findUnique({
+    const question = await prisma.questions.findUnique({
       where: { id: params.id },
       include: {
         answer: {
@@ -76,7 +76,7 @@ export async function DELETE(
     }
     
     // Check if question exists
-    const question = await prisma.question.findUnique({
+    const question = await prisma.questions.findUnique({
       where: { id: params.id },
       include: {
         answer: true
@@ -91,7 +91,7 @@ export async function DELETE(
     }
 
     // Soft delete the question
-    await softDelete(prisma.question, { id: params.id }, session.user?.id)
+    await softDelete(prisma.questions, { id: params.id }, session.user?.id)
 
     return NextResponse.json({
       success: true,

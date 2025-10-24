@@ -181,12 +181,12 @@ export default function ParentDashboard() {
     attendance: selectedChild.attendance.percentage,
     gradeAverage: selectedChild.grades.average,
     pendingPayments: selectedChild.payments.pendingAmount,
-    hafalanProgress: selectedChild.hafalan?.totalSurah || 0
+    hafalan_progress: selectedChild.hafalan?.totalSurah || 0
   } : {
     attendance: overview.overallAttendance,
     gradeAverage: overview.overallGradeAverage,
     pendingPayments: overview.totalPendingPayments,
-    hafalanProgress: children.reduce((sum, child) => sum + (child.hafalan?.totalSurah || 0), 0)
+    hafalan_progress: children.reduce((sum, child) => sum + (child.hafalan?.totalSurah || 0), 0)
   };
 
   return (

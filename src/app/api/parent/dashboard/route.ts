@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma';
 
 // Helper function to check if user is a parent and get their children
 async function getParentChildren(userId: string) {
-  const parentAccount = await prisma.parentAccount.findUnique({
+  const parentAccount = await prisma.parent_accounts.findUnique({
     where: { userId },
     include: {
       parentStudents: {
@@ -36,7 +36,7 @@ async function getParentChildren(userId: string) {
 
 // Calculate attendance percentage for a student
 async function getAttendanceStats(studentId: string, currentSemesterId: string) {
-  const attendance = await prisma.attendance.findMany({
+  const attendance = await prisma.attendances.findMany({
     where: {
       studentId,
       semesterId: currentSemesterId
@@ -60,7 +60,7 @@ async function getAttendanceStats(studentId: string, currentSemesterId: string) 
 
 // Get average grades for a student
 async function getGradeStats(studentId: string, currentSemesterId: string) {
-  const grades = await prisma.grade.findMany({
+  const grades = await prisma.grades.findMany({
     where: {
       studentId,
       semesterId: currentSemesterId,
@@ -113,7 +113,7 @@ async function getGradeStats(studentId: string, currentSemesterId: string) {
 // Get payment status for a student
 async function getPaymentStats(studentId: string) {
   const currentYear = new Date().getFullYear();
-  const payments = await prisma.payment.findMany({
+  const payments = await prisma.payments.findMany({
     where: {
       studentId,
       createdAt: {
@@ -165,7 +165,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get current semester
-    const currentSemester = await prisma.semester.findFirst({
+    const currentSemester = await prisma.semesters.findFirst({
       where: { isActive: true },
       include: {
         academicYear: {
@@ -199,7 +199,7 @@ export async function GET(request: NextRequest) {
     );
 
     // Get recent announcements for parents
-    const recentAnnouncements = await prisma.announcement.findMany({
+    const recentAnnouncements = await prisma.announcements.findMany({
       where: {
         status: 'PUBLISHED',
         publishDate: { lte: new Date() },
@@ -237,7 +237,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Get unread messages count
-    const unreadMessagesCount = await prisma.message.count({
+    const unreadMessagesCount = await prisma.messages.count({
       where: {
         receiverId: userId,
         isRead: false,
@@ -246,7 +246,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Get unread notifications count
-    const unreadNotificationsCount = await prisma.notification.count({
+    const unreadNotificationsCount = await prisma.notifications.count({
       where: {
         userId,
         isRead: false,

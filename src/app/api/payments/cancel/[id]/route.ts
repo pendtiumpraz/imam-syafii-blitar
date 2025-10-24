@@ -33,7 +33,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const { reason, cancelledBy } = validation.data
 
     // Find payment
-    const payment = await prisma.payment.findFirst({
+    const payment = await prisma.payments.findFirst({
       where: {
         OR: [
           { id },
@@ -87,7 +87,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     // Update payment status to cancelled
-    const updatedPayment = await prisma.payment.update({
+    const updatedPayment = await prisma.payments.update({
       where: { id: payment.id },
       data: {
         status: 'CANCELLED',
@@ -100,7 +100,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     // Update registration status if applicable
     if (payment.registrationId && payment.registration) {
-      await prisma.registration.update({
+      await prisma.registrations.update({
         where: { id: payment.registrationId },
         data: {
           paymentStatus: 'UNPAID',
@@ -142,7 +142,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const { id } = params
 
     // Find payment
-    const payment = await prisma.payment.findFirst({
+    const payment = await prisma.payments.findFirst({
       where: {
         OR: [
           { id },

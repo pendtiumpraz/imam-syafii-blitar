@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
 
     // Get pending payments for verification
     const [payments, total] = await Promise.all([
-      prisma.billPayment.findMany({
+      prisma.bill_payments.findMany({
         where: {
           verificationStatus: status,
         },
@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
         skip,
         take: limit,
       }),
-      prisma.billPayment.count({
+      prisma.bill_payments.count({
         where: {
           verificationStatus: status,
         },
@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
     ]);
 
     // Get verification stats
-    const verificationStats = await prisma.billPayment.groupBy({
+    const verificationStats = await prisma.bill_payments.groupBy({
       by: ['verificationStatus'],
       _count: {
         _all: true,
@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
     const validated = bulkVerifySchema.parse(body);
 
     // Get the payments to verify
-    const payments = await prisma.billPayment.findMany({
+    const payments = await prisma.bill_payments.findMany({
       where: {
         id: { in: validated.paymentIds },
         verificationStatus: 'PENDING',

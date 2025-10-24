@@ -479,13 +479,13 @@ const prisma = new PrismaClient()
 
 async function main() {
   // Check if data exists
-  const adminCount = await prisma.user.count({
+  const adminCount = await prisma.users.count({
     where: { role: 'ADMIN' }
   })
 
   if (adminCount === 0) {
     // Seed admin user
-    await prisma.user.create({
+    await prisma.users.create({
       data: {
         username: 'admin',
         password: await hash('admin123'),

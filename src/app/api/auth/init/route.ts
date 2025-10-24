@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     
     // Check if admin user already exists
     // Use findFirst to avoid middleware conflicts
-    const existingAdmin = await prisma.user.findFirst({
+    const existingAdmin = await prisma.users.findFirst({
       where: { username: 'admin' }
     });
     
@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
     // Create admin user
     const hashedPassword = await bcrypt.hash('admin123', 10);
     
-    const adminUser = await prisma.user.create({
+    const adminUser = await prisma.users.create({
       data: {
         username: 'admin',
         email: 'admin@ponpesimamsyafii.id',
@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
     // Also create a staff user for testing
     const staffPassword = await bcrypt.hash('staff123', 10);
     
-    const staffUser = await prisma.user.create({
+    const staffUser = await prisma.users.create({
       data: {
         username: 'staff',
         email: 'staff@ponpesimamsyafii.id',
@@ -87,7 +87,7 @@ export async function GET(request: NextRequest) {
         const { default: prisma } = await import('@/lib/prisma');
         const hashedPassword = await bcrypt.hash('admin123', 10);
         
-        await prisma.user.update({
+        await prisma.users.update({
           where: { username: 'admin' },
           data: { 
             password: hashedPassword,

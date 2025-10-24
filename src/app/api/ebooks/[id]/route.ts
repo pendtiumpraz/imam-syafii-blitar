@@ -13,7 +13,7 @@ export async function GET(
 ) {
   try {
     const { default: prisma } = await import('@/lib/prisma');
-    const ebook = await prisma.ebook.findUnique({
+    const ebook = await prisma.ebooks.findUnique({
       where: {
         id: params.id,
       },
@@ -60,7 +60,7 @@ export async function PUT(
     
     const data = await request.json();
     
-    const ebook = await prisma.ebook.update({
+    const ebook = await prisma.ebooks.update({
       where: {
         id: params.id,
       },
@@ -93,7 +93,7 @@ export async function DELETE(
     }
 
     // Check if ebook exists
-    const ebook = await prisma.ebook.findUnique({
+    const ebook = await prisma.ebooks.findUnique({
       where: { id: params.id },
     });
 
@@ -105,7 +105,7 @@ export async function DELETE(
     }
 
     // Soft delete the ebook
-    await softDelete(prisma.ebook, { id: params.id }, session.user?.id);
+    await softDelete(prisma.ebooks, { id: params.id }, session.user?.id);
 
     return NextResponse.json({ success: true });
   } catch (error) {

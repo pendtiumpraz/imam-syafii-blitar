@@ -97,7 +97,7 @@ export async function GET(request: NextRequest) {
 async function processPaymentNotification(notification: PaymentNotification): Promise<void> {
   try {
     // Find payment by external ID (order ID)
-    const payment = await prisma.payment.findFirst({
+    const payment = await prisma.payments.findFirst({
       where: { 
         externalId: notification.order_id 
       },
@@ -187,7 +187,7 @@ async function processPaymentNotification(notification: PaymentNotification): Pr
     }
 
     // Update payment record
-    const updatedPayment = await prisma.payment.update({
+    const updatedPayment = await prisma.payments.update({
       where: { id: payment.id },
       data: updateData
     })
@@ -217,7 +217,7 @@ async function handleSuccessfulPayment(payment: any, notification: PaymentNotifi
   try {
     // Update registration payment status if this is a registration payment
     if (payment.registrationId) {
-      await prisma.registration.update({
+      await prisma.registrations.update({
         where: { id: payment.registrationId },
         data: {
           paymentStatus: 'PAID',
@@ -231,12 +231,12 @@ async function handleSuccessfulPayment(payment: any, notification: PaymentNotifi
 
       // If this is registration fee payment, consider moving status forward
       if (payment.paymentType === 'REGISTRATION') {
-        const registration = await prisma.registration.findUnique({
+        const registration = await prisma.registrations.findUnique({
           where: { id: payment.registrationId }
         })
 
         if (registration && registration.status === 'SUBMITTED') {
-          await prisma.registration.update({
+          await prisma.registrations.update({
             where: { id: payment.registrationId },
             data: {
               status: 'DOCUMENT_CHECK',
@@ -294,7 +294,7 @@ async function logNotification(notification: PaymentNotification, paymentId: str
     })
 
     // Store in database for audit (optional)
-    // await prisma.paymentLog.create({
+    // await prisma.paymentsLog.create({
     //   data: {
     //     paymentId,
     //     orderId: notification.order_id,
@@ -322,7 +322,7 @@ async function logNotificationError(notification: PaymentNotification, errorMess
     })
 
     // Store error in database for debugging (optional)
-    // await prisma.paymentErrorLog.create({
+    // await prisma.paymentsErrorLog.create({
     //   data: {
     //     orderId: notification.order_id,
     //     errorMessage,

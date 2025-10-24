@@ -8,7 +8,7 @@ import { replyMessage } from '../client'
 export const handleKeuanganCommand = {
   async checkSPP(nis: string, userId: string, replyToken: string) {
     try {
-      const student = await prisma.student.findUnique({
+      const student = await prisma.students.findUnique({
         where: { nis }
       })
 

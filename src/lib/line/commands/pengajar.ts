@@ -7,7 +7,7 @@ import { replyMessage } from '../client'
 export const handlePengajarCommand = {
   async list(userId: string, replyToken: string) {
     try {
-      const teachers = await prisma.teacher.findMany({
+      const teachers = await prisma.teachers.findMany({
         take: 10,
         orderBy: { createdAt: 'desc' },
         select: {
@@ -59,7 +59,7 @@ export const handlePengajarCommand = {
 
   async getDetail(id: string, userId: string, replyToken: string) {
     try {
-      const teacher = await prisma.teacher.findUnique({
+      const teacher = await prisma.teachers.findUnique({
         where: { id }
       })
 

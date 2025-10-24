@@ -126,7 +126,7 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit;
 
     const [grades, totalCount] = await Promise.all([
-      prisma.grade.findMany({
+      prisma.grades.findMany({
         where: whereConditions,
         skip,
         take: limit,
@@ -166,7 +166,7 @@ export async function GET(request: NextRequest) {
         { subject: { name: 'asc' } },
       ],
     }),
-    prisma.grade.count({ where: whereConditions })
+    prisma.grades.count({ where: whereConditions })
   ]);
 
     const response: any = {
@@ -185,7 +185,7 @@ export async function GET(request: NextRequest) {
     if (includeStats && hasPermission(session.user?.role || '', 'read')) {
       const statsWhere = { ...whereConditions };
       
-      const gradeStats = await prisma.grade.aggregate({
+      const gradeStats = await prisma.grades.aggregate({
         where: statsWhere,
         _avg: { total: true, point: true },
         _min: { total: true },
@@ -193,7 +193,7 @@ export async function GET(request: NextRequest) {
         _count: { grade: true }
       });
       
-      const gradeDistribution = await prisma.grade.groupBy({
+      const gradeDistribution = await prisma.grades.groupBy({
         by: ['grade'],
         where: { ...statsWhere, grade: { not: null } },
         _count: { grade: true }
@@ -276,7 +276,7 @@ export async function POST(request: NextRequest) {
       gradeInfo = calculateGradeAndPoint(totalScore);
     }
 
-    const grade = await prisma.grade.create({
+    const grade = await prisma.grades.create({
       data: {
         studentId,
         subjectId,
@@ -382,7 +382,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Check if grade is locked
-    const existingGrade = await prisma.grade.findUnique({
+    const existingGrade = await prisma.grades.findUnique({
       where: { id },
       select: { isLocked: true },
     });
@@ -417,7 +417,7 @@ export async function PUT(request: NextRequest) {
       gradeInfo = calculateGradeAndPoint(totalScore);
     }
 
-    const grade = await prisma.grade.update({
+    const grade = await prisma.grades.update({
       where: { id },
       data: {
         midterm: midterm ? parseFloat(midterm) : null,
@@ -508,7 +508,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Check if grade is locked
-    const grade = await prisma.grade.findUnique({
+    const grade = await prisma.grades.findUnique({
       where: { id },
       select: { isLocked: true },
     });
@@ -527,7 +527,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    await softDelete(prisma.grade, { id }, session.user.id);
+    await softDelete(prisma.grades, { id }, session.user.id);
 
     return NextResponse.json({ message: 'Grade soft deleted successfully' });
   } catch (error) {

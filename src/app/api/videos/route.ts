@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const isPublic = searchParams.get('public') === 'true'
 
-    const videos = await prisma.video.findMany({
+    const videos = await prisma.videos.findMany({
       where: {
         isPublic: isPublic ? true : undefined,
         isDeleted: false,
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json()
 
-    const video = await prisma.video.create({
+    const video = await prisma.videos.create({
       data: {
         title: body.title,
         description: body.description,

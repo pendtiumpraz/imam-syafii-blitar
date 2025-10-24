@@ -39,7 +39,7 @@ const querySchema = z.object({
 
 // Helper function to generate supplier code
 async function generateSupplierCode(): Promise<string> {
-  const count = await prisma.supplier.count()
+  const count = await prisma.suppliers.count()
   return `SUP${String(count + 1).padStart(4, '0')}`
 }
 
@@ -80,7 +80,7 @@ export async function GET(request: NextRequest) {
     }
 
     const [suppliers, total, stats] = await Promise.all([
-      prisma.supplier.findMany({
+      prisma.suppliers.findMany({
         where,
         include: {
           purchaseOrders: {
@@ -105,16 +105,16 @@ export async function GET(request: NextRequest) {
         skip,
         take: query.limit,
       }),
-      prisma.supplier.count({ where }),
+      prisma.suppliers.count({ where }),
       // Get summary statistics
       Promise.all([
-        prisma.supplier.count({ where: { isActive: true } }),
-        prisma.supplier.count({ where: { isActive: false } }),
-        prisma.supplier.aggregate({
+        prisma.suppliers.count({ where: { isActive: true } }),
+        prisma.suppliers.count({ where: { isActive: false } }),
+        prisma.suppliers.aggregate({
           _avg: { rating: true },
           _count: { rating: true },
         }),
-        prisma.purchaseOrder.aggregate({
+        prisma.purchase_orders.aggregate({
           _sum: { totalAmount: true },
           _count: true,
           where: {
@@ -200,7 +200,7 @@ export async function POST(request: NextRequest) {
 
     // Check if supplier code already exists
     if (data.code) {
-      const existingSupplier = await prisma.supplier.findUnique({
+      const existingSupplier = await prisma.suppliers.findUnique({
         where: { code: data.code },
       })
 
@@ -214,7 +214,7 @@ export async function POST(request: NextRequest) {
 
     // Check if email already exists (if provided)
     if (data.email) {
-      const existingEmail = await prisma.supplier.findFirst({
+      const existingEmail = await prisma.suppliers.findFirst({
         where: { 
           email: data.email,
           isActive: true,
@@ -229,7 +229,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const supplier = await prisma.supplier.create({
+    const supplier = await prisma.suppliers.create({
       data,
       include: {
         _count: {

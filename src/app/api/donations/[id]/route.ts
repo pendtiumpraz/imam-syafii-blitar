@@ -12,7 +12,7 @@ export async function GET(
   try {
     const { id } = params
 
-    const campaign = await prisma.donationCampaign.findUnique({
+    const campaign = await prisma.donations_campaigns.findUnique({
       where: { id },
       include: {
         category: true,
@@ -117,7 +117,7 @@ export async function PUT(
     const body = await request.json()
 
     // Find existing campaign
-    const existingCampaign = await prisma.donationCampaign.findUnique({
+    const existingCampaign = await prisma.donations_campaigns.findUnique({
       where: { id }
     })
 
@@ -160,7 +160,7 @@ export async function PUT(
 
     // Check if slug is being changed and if it's unique
     if (slug && slug !== existingCampaign.slug) {
-      const slugExists = await prisma.donationCampaign.findUnique({
+      const slugExists = await prisma.donations_campaigns.findUnique({
         where: { slug }
       })
 
@@ -174,7 +174,7 @@ export async function PUT(
 
     // Verify category exists if being changed
     if (categoryId && categoryId !== existingCampaign.categoryId) {
-      const category = await prisma.donationCategory.findUnique({
+      const category = await prisma.donations_categories.findUnique({
         where: { id: categoryId }
       })
 
@@ -209,7 +209,7 @@ export async function PUT(
     if (allowAnonymous !== undefined) updateData.allowAnonymous = allowAnonymous
 
     // Update campaign
-    const updatedCampaign = await prisma.donationCampaign.update({
+    const updatedCampaign = await prisma.donations_campaigns.update({
       where: { id },
       data: updateData,
       include: {
@@ -261,7 +261,7 @@ export async function DELETE(
     const { id } = params
 
     // Find existing campaign
-    const existingCampaign = await prisma.donationCampaign.findUnique({
+    const existingCampaign = await prisma.donations_campaigns.findUnique({
       where: { id },
       include: {
         _count: {
@@ -289,7 +289,7 @@ export async function DELETE(
 
     // Soft delete campaign
     await softDelete(
-      prisma.donationCampaign,
+      prisma.donations_campaigns,
       { id },
       session.user.id
     )

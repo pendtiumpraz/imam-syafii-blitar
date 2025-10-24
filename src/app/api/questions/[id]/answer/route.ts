@@ -26,7 +26,7 @@ export async function POST(
     }
     
     // Check if user is ustadz
-    const user = await prisma.user.findUnique({
+    const user = await prisma.users.findUnique({
       where: { id: session.user.id },
       select: { id: true, role: true, isUstadz: true, name: true }
     })
@@ -43,7 +43,7 @@ export async function POST(
     const validatedData = answerSchema.parse(body)
     
     // Check if question exists and is still pending
-    const question = await prisma.question.findUnique({
+    const question = await prisma.questions.findUnique({
       where: { id: params.id },
       include: { answer: true }
     })
@@ -143,7 +143,7 @@ export async function PUT(
     }
     
     // Check if user is ustadz
-    const user = await prisma.user.findUnique({
+    const user = await prisma.users.findUnique({
       where: { id: session.user.id },
       select: { id: true, role: true, isUstadz: true, name: true }
     })
@@ -160,7 +160,7 @@ export async function PUT(
     const validatedData = answerSchema.parse(body)
     
     // Check if question exists and has an answer
-    const question = await prisma.question.findUnique({
+    const question = await prisma.questions.findUnique({
       where: { id: params.id },
       include: { 
         answer: {
@@ -199,7 +199,7 @@ export async function PUT(
     }
     
     // Update the answer
-    const updatedAnswer = await prisma.answer.update({
+    const updatedAnswer = await prisma.answers.update({
       where: { id: question.answer.id },
       data: {
         answer: validatedData.answer.trim(),
@@ -216,7 +216,7 @@ export async function PUT(
     })
     
     // Also update question's updatedAt
-    await prisma.question.update({
+    await prisma.questions.update({
       where: { id: params.id },
       data: { updatedAt: new Date() }
     })
@@ -272,7 +272,7 @@ export async function GET(
     }
     
     // Check if user is ustadz
-    const user = await prisma.user.findUnique({
+    const user = await prisma.users.findUnique({
       where: { id: session.user.id },
       select: { id: true, role: true, isUstadz: true }
     })
@@ -285,7 +285,7 @@ export async function GET(
     }
     
     // Get question with answer
-    const question = await prisma.question.findUnique({
+    const question = await prisma.questions.findUnique({
       where: { id: params.id },
       include: {
         answer: {

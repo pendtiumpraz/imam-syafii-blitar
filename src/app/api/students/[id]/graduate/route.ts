@@ -22,7 +22,7 @@ export async function POST(
     }
 
     // Get student data
-    const student = await prisma.student.findUnique({
+    const student = await prisma.students.findUnique({
       where: { id: params.id },
     });
 

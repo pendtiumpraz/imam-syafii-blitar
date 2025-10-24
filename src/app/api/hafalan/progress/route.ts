@@ -10,7 +10,7 @@ export const runtime = 'nodejs';
 
 // Helper function to calculate completion percentage for a specific juz
 async function calculateJuzCompletion(studentId: string, juzNumber: number) {
-  const juzSurahs = await prisma.quranSurah.findMany({
+  const juzSurahs = await prisma.quran_surahs.findMany({
     where: { juz: juzNumber }
   });
 
@@ -22,7 +22,7 @@ async function calculateJuzCompletion(studentId: string, juzNumber: number) {
     totalAyats += ayatsInThisJuz;
 
     // Get completed ayats for this surah
-    const records = await prisma.hafalanRecord.findMany({
+    const records = await prisma.hafalan_records.findMany({
       where: {
         studentId,
         surahNumber: surah.number,
@@ -45,7 +45,7 @@ async function calculateJuzCompletion(studentId: string, juzNumber: number) {
 
 // Helper function to calculate streak
 async function calculateStreak(studentId: string): Promise<{ current: number, longest: number }> {
-  const sessions = await prisma.hafalanSession.findMany({
+  const sessions = await prisma.hafalan_sessions.findMany({
     where: { studentId },
     select: { sessionDate: true },
     orderBy: { sessionDate: 'desc' }
@@ -105,7 +105,7 @@ async function calculateStreak(studentId: string): Promise<{ current: number, lo
 
 // Helper function to generate progress report
 async function generateProgressReport(studentId: string) {
-  const student = await prisma.student.findUnique({
+  const student = await prisma.students.findUnique({
     where: { id: studentId },
     select: {
       fullName: true,
@@ -119,12 +119,12 @@ async function generateProgressReport(studentId: string) {
   if (!student) return null;
 
   // Get progress data
-  const progress = await prisma.hafalanProgress.findUnique({
+  const progress = await prisma.hafalan_progress.findUnique({
     where: { studentId }
   });
 
   // Get recent sessions
-  const recentSessions = await prisma.hafalanSession.findMany({
+  const recentSessions = await prisma.hafalan_sessions.findMany({
     where: { studentId },
     orderBy: { sessionDate: 'desc' },
     take: 5,
@@ -134,7 +134,7 @@ async function generateProgressReport(studentId: string) {
   });
 
   // Get achievements
-  const achievements = await prisma.hafalanAchievement.findMany({
+  const achievements = await prisma.hafalan_achievements.findMany({
     where: { studentId },
     orderBy: { earnedAt: 'desc' },
     take: 10
@@ -170,7 +170,7 @@ async function generateProgressReport(studentId: string) {
   }
 
   // Get current targets
-  const currentTargets = await prisma.hafalanTarget.findMany({
+  const currentTargets = await prisma.hafalan_targets.findMany({
     where: {
       studentId,
       status: 'ACTIVE'
@@ -220,7 +220,7 @@ async function handleAnalytics(classId?: string | null, level?: string | null, p
   }
 
   // Get all students in scope
-  const students = await prisma.student.findMany({
+  const students = await prisma.students.findMany({
     where: studentWhere,
     select: { id: true, fullName: true }
   });
@@ -237,17 +237,17 @@ async function handleAnalytics(classId?: string | null, level?: string | null, p
     topPerformers
   ] = await Promise.all([
     // Total sessions
-    prisma.hafalanSession.count({
+    prisma.hafalan_sessions.count({
       where: { studentId: { in: studentIds } }
     }),
     
     // Total records
-    prisma.hafalanRecord.count({
+    prisma.hafalan_records.count({
       where: { studentId: { in: studentIds } }
     }),
     
     // Completion rates by level
-    prisma.hafalanProgress.findMany({
+    prisma.hafalan_progress.findMany({
       where: { studentId: { in: studentIds } },
       select: {
         level: true,
@@ -279,7 +279,7 @@ async function handleAnalytics(classId?: string | null, level?: string | null, p
     `,
     
     // Level distribution
-    prisma.hafalanProgress.groupBy({
+    prisma.hafalan_progress.groupBy({
       by: ['level'],
       where: { studentId: { in: studentIds } },
       _count: { level: true },
@@ -290,7 +290,7 @@ async function handleAnalytics(classId?: string | null, level?: string | null, p
     }),
     
     // Top performers
-    prisma.hafalanProgress.findMany({
+    prisma.hafalan_progress.findMany({
       where: { studentId: { in: studentIds } },
       include: {
         student: {
@@ -399,7 +399,7 @@ export async function GET(request: NextRequest) {
       };
     }
 
-    const students = await prisma.student.findMany({
+    const students = await prisma.students.findMany({
       where: studentWhere,
       take: parseInt(limit),
       skip: (parseInt(page) - 1) * parseInt(limit),
@@ -427,12 +427,12 @@ export async function GET(request: NextRequest) {
           weeklyStats
         ] = await Promise.all([
           // Progress data
-          prisma.hafalanProgress.findUnique({
+          prisma.hafalan_progress.findUnique({
             where: { studentId: student.id }
           }),
           
           // Most recent record
-          prisma.hafalanRecord.findFirst({
+          prisma.hafalan_records.findFirst({
             where: { studentId: student.id },
             orderBy: { date: 'desc' },
             include: {
@@ -447,7 +447,7 @@ export async function GET(request: NextRequest) {
           }),
           
           // Current active target
-          prisma.hafalanTarget.findFirst({
+          prisma.hafalan_targets.findFirst({
             where: {
               studentId: student.id,
               status: 'ACTIVE'
@@ -465,7 +465,7 @@ export async function GET(request: NextRequest) {
           }),
           
           // Achievement count
-          prisma.hafalanAchievement.count({
+          prisma.hafalan_achievements.count({
             where: { studentId: student.id }
           }),
           
@@ -473,7 +473,7 @@ export async function GET(request: NextRequest) {
           calculateStreak(student.id),
           
           // Most recent session
-          prisma.hafalanSession.findFirst({
+          prisma.hafalan_sessions.findFirst({
             where: { studentId: student.id },
             orderBy: { sessionDate: 'desc' },
             select: {
@@ -486,7 +486,7 @@ export async function GET(request: NextRequest) {
           }),
           
           // Weekly statistics
-          prisma.hafalanSession.aggregate({
+          prisma.hafalan_sessions.aggregate({
             where: {
               studentId: student.id,
               sessionDate: {
@@ -572,7 +572,7 @@ export async function GET(request: NextRequest) {
       return progressB - progressA;
     });
 
-    const total = await prisma.student.count({ where: studentWhere });
+    const total = await prisma.students.count({ where: studentWhere });
 
     // Calculate class/overall statistics
     const statistics = {
@@ -657,7 +657,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate student exists
-    const student = await prisma.student.findUnique({
+    const student = await prisma.students.findUnique({
       where: { id: studentId }
     });
 
@@ -671,7 +671,7 @@ export async function POST(request: NextRequest) {
       case 'recalculate':
         // Recalculate progress based on existing records
         await updateStudentProgressFromRecords(studentId);
-        result = await prisma.hafalanProgress.findUnique({
+        result = await prisma.hafalan_progress.findUnique({
           where: { studentId }
         });
         break;
@@ -685,7 +685,7 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        result = await prisma.hafalanTarget.create({
+        result = await prisma.hafalan_targets.create({
           data: {
             studentId,
             targetSurah: data.surahNumber,
@@ -714,7 +714,7 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        result = await prisma.hafalanProgress.upsert({
+        result = await prisma.hafalan_progress.upsert({
           where: { studentId },
           create: {
             studentId,
@@ -781,7 +781,7 @@ export async function PUT(request: NextRequest) {
           await updateStudentProgressFromRecords(studentId);
         }
         
-        results = await prisma.hafalanProgress.findMany({
+        results = await prisma.hafalan_progress.findMany({
           where: { studentId: { in: studentIds } },
           include: {
             student: { select: { fullName: true } }
@@ -799,7 +799,7 @@ export async function PUT(request: NextRequest) {
         }
 
         for (const studentId of studentIds) {
-          await prisma.hafalanTarget.create({
+          await prisma.hafalan_targets.create({
             data: {
               studentId,
               targetSurah: data.surahNumber,
@@ -816,7 +816,7 @@ export async function PUT(request: NextRequest) {
           });
         }
 
-        results = await prisma.hafalanTarget.findMany({
+        results = await prisma.hafalan_targets.findMany({
           where: {
             studentId: { in: studentIds },
             createdBy: session.user.id
@@ -853,7 +853,7 @@ export async function PUT(request: NextRequest) {
 
 // Helper function to recalculate progress from records
 async function updateStudentProgressFromRecords(studentId: string) {
-  const records = await prisma.hafalanRecord.findMany({
+  const records = await prisma.hafalan_records.findMany({
     where: { 
       studentId,
       status: { in: ['LANCAR', 'MUTQIN'] }
@@ -917,12 +917,12 @@ async function updateStudentProgressFromRecords(studentId: string) {
   }
 
   // Get session count
-  const sessionCount = await prisma.hafalanSession.count({
+  const sessionCount = await prisma.hafalan_sessions.count({
     where: { studentId }
   });
 
   // Update progress
-  await prisma.hafalanProgress.upsert({
+  await prisma.hafalan_progress.upsert({
     where: { studentId },
     create: {
       studentId,

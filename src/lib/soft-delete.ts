@@ -44,7 +44,7 @@ export interface BulkOperationResult {
  * @example
  * ```typescript
  * const deletedUser = await softDelete(
- *   prisma.user,
+ *   prisma.users,
  *   { id: '123' },
  *   'admin-user-id'
  * );
@@ -98,7 +98,7 @@ export async function softDelete<T>(
  * @example
  * ```typescript
  * const restoredUser = await restore(
- *   prisma.user,
+ *   prisma.users,
  *   { id: '123' }
  * );
  * ```
@@ -153,7 +153,7 @@ export async function restore<T>(
  * @example
  * ```typescript
  * const deletedUser = await forceDelete(
- *   prisma.user,
+ *   prisma.users,
  *   { id: '123' }
  * );
  * ```
@@ -194,12 +194,12 @@ export async function forceDelete<T>(
  *
  * @example
  * ```typescript
- * const activeUsers = await prisma.user.findMany({
+ * const activeUsers = await prisma.users.findMany({
  *   where: excludeDeleted({ role: 'ADMIN' })
  * });
  *
  * // Or without additional conditions
- * const allActiveUsers = await prisma.user.findMany({
+ * const allActiveUsers = await prisma.users.findMany({
  *   where: excludeDeleted()
  * });
  * ```
@@ -219,12 +219,12 @@ export function excludeDeleted(where: any = {}): any {
  *
  * @example
  * ```typescript
- * const deletedUsers = await prisma.user.findMany({
+ * const deletedUsers = await prisma.users.findMany({
  *   where: onlyDeleted({ role: 'ADMIN' })
  * });
  *
  * // Or without additional conditions
- * const allDeletedUsers = await prisma.user.findMany({
+ * const allDeletedUsers = await prisma.users.findMany({
  *   where: onlyDeleted()
  * });
  * ```
@@ -250,7 +250,7 @@ export function onlyDeleted(where: any = {}): any {
  * @example
  * ```typescript
  * const result = await softDeleteMany(
- *   prisma.user,
+ *   prisma.users,
  *   { role: 'GUEST' },
  *   'admin-user-id'
  * );
@@ -307,7 +307,7 @@ export async function softDeleteMany(
  * @example
  * ```typescript
  * const result = await restoreMany(
- *   prisma.user,
+ *   prisma.users,
  *   { role: 'GUEST' }
  * );
  * console.log(`Restored ${result.count} users`);
@@ -364,7 +364,7 @@ export async function restoreMany(
  * @example
  * ```typescript
  * const result = await forceDeleteMany(
- *   prisma.user,
+ *   prisma.users,
  *   { deletedAt: { lt: new Date('2024-01-01') } }
  * );
  * console.log(`Permanently deleted ${result.count} users`);
@@ -416,7 +416,7 @@ export type SoftDeletableModel = {
  *
  * @example
  * ```typescript
- * const user = await prisma.user.findUnique({ where: { id: '123' } });
+ * const user = await prisma.users.findUnique({ where: { id: '123' } });
  * if (isSoftDeleted(user)) {
  *   console.log('User is deleted');
  * }
@@ -434,7 +434,7 @@ export function isSoftDeleted(record: SoftDeletableModel | null | undefined): bo
  *
  * @example
  * ```typescript
- * const user = await prisma.user.findUnique({ where: { id: '123' } });
+ * const user = await prisma.users.findUnique({ where: { id: '123' } });
  * if (isActive(user)) {
  *   console.log('User is active');
  * }

@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
     }
 
     const [sponsors, total] = await Promise.all([
-      prisma.oTASponsor.findMany({
+      prisma.ota_sponsors.findMany({
         where: whereConditions,
         include: {
           program: {
@@ -95,7 +95,7 @@ export async function GET(request: NextRequest) {
         skip,
         take: limit,
       }),
-      prisma.oTASponsor.count({ where: whereConditions })
+      prisma.ota_sponsors.count({ where: whereConditions })
     ]);
 
     return NextResponse.json({
@@ -152,7 +152,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if program exists
-    const program = await prisma.oTAProgram.findUnique({
+    const program = await prisma.ota_programs.findUnique({
       where: { id: programId },
       include: { student: true }
     });
@@ -174,7 +174,7 @@ export async function POST(request: NextRequest) {
     const donationMonth = month || new Date().toISOString().substring(0, 7);
 
     // Create sponsor donation
-    const sponsor = await prisma.oTASponsor.create({
+    const sponsor = await prisma.ota_sponsors.create({
       data: {
         programId,
         donorName,
@@ -254,7 +254,7 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const sponsor = await prisma.oTASponsor.findUnique({
+    const sponsor = await prisma.ota_sponsors.findUnique({
       where: { id },
       include: { program: true }
     });
@@ -295,7 +295,7 @@ export async function PUT(request: NextRequest) {
       updateData.paymentDate = new Date();
     }
 
-    const updatedSponsor = await prisma.oTASponsor.update({
+    const updatedSponsor = await prisma.ota_sponsors.update({
       where: { id },
       data: updateData,
       include: {
@@ -351,7 +351,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const sponsor = await prisma.oTASponsor.findUnique({
+    const sponsor = await prisma.ota_sponsors.findUnique({
       where: { id },
       include: { program: true }
     });
@@ -376,7 +376,7 @@ export async function DELETE(request: NextRequest) {
 
     // Soft delete sponsor
     await softDelete(
-      prisma.oTASponsor,
+      prisma.ota_sponsors,
       { id },
       session.user.id
     );
@@ -399,14 +399,14 @@ export async function DELETE(request: NextRequest) {
 // Helper function to update program progress
 async function updateProgramProgress(programId: string, month: string) {
   const [paidSponsors, program] = await Promise.all([
-    prisma.oTASponsor.findMany({
+    prisma.ota_sponsors.findMany({
       where: {
         programId,
         month,
         isPaid: true,
       }
     }),
-    prisma.oTAProgram.findUnique({
+    prisma.ota_programs.findUnique({
       where: { id: programId }
     })
   ]);
@@ -417,7 +417,7 @@ async function updateProgramProgress(programId: string, month: string) {
     sum + parseFloat(sponsor.amount.toString()), 0
   );
 
-  const totalCollected = await prisma.oTASponsor.aggregate({
+  const totalCollected = await prisma.ota_sponsors.aggregate({
     where: {
       programId,
       isPaid: true,
@@ -428,7 +428,7 @@ async function updateProgramProgress(programId: string, month: string) {
   });
 
   // Update program with new totals
-  await prisma.oTAProgram.update({
+  await prisma.ota_programs.update({
     where: { id: programId },
     data: {
       monthlyProgress: monthlyCollected,

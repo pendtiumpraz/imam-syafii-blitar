@@ -51,7 +51,7 @@ const querySchema = z.object({
 async function generateSaleNumber(): Promise<string> {
   const year = new Date().getFullYear()
   const month = String(new Date().getMonth() + 1).padStart(2, '0')
-  const count = await prisma.sale.count({
+  const count = await prisma.sales.count({
     where: {
       saleNo: {
         startsWith: `SAL-${year}${month}-`,
@@ -107,7 +107,7 @@ export async function GET(request: NextRequest) {
     }
 
     const [sales, total, summary] = await Promise.all([
-      prisma.sale.findMany({
+      prisma.sales.findMany({
         where,
         include: {
           items: {
@@ -129,27 +129,27 @@ export async function GET(request: NextRequest) {
         skip,
         take: query.limit,
       }),
-      prisma.sale.count({ where }),
+      prisma.sales.count({ where }),
       // Get summary statistics
       Promise.all([
-        prisma.sale.aggregate({
+        prisma.sales.aggregate({
           where,
           _sum: { totalAmount: true },
           _count: true,
         }),
-        prisma.sale.groupBy({
+        prisma.sales.groupBy({
           by: ['location'],
           where,
           _sum: { totalAmount: true },
           _count: true,
         }),
-        prisma.sale.groupBy({
+        prisma.sales.groupBy({
           by: ['paymentMethod'],
           where,
           _sum: { totalAmount: true },
           _count: true,
         }),
-        prisma.sale.groupBy({
+        prisma.sales.groupBy({
           by: ['status'],
           where,
           _sum: { totalAmount: true },
@@ -232,7 +232,7 @@ export async function POST(request: NextRequest) {
 
     // Validate items and check stock availability
     for (const item of data.items) {
-      const product = await prisma.product.findUnique({
+      const product = await prisma.products.findUnique({
         where: { id: item.productId },
         include: {
           inventoryRecords: {
@@ -368,7 +368,7 @@ export async function POST(request: NextRequest) {
     })
 
     // Fetch complete sale data with items
-    const completeSale = await prisma.sale.findUnique({
+    const completeSale = await prisma.sales.findUnique({
       where: { id: result.id },
       include: {
         items: {

@@ -13,7 +13,7 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const hafalanSession = await prisma.hafalanSession.findUnique({
+    const hafalanSession = await prisma.hafalan_sessions.findUnique({
       where: { id: params.id },
       include: {
         student: {
@@ -38,7 +38,7 @@ export async function GET(
     }
 
     // Parse content and get related records
-    const records = await prisma.hafalanRecord.findMany({
+    const records = await prisma.hafalan_records.findMany({
       where: {
         studentId: hafalanSession.studentId,
         createdAt: {
@@ -105,7 +105,7 @@ export async function PUT(
     } = body;
 
     // Check if session exists
-    const existingSession = await prisma.hafalanSession.findUnique({
+    const existingSession = await prisma.hafalan_sessions.findUnique({
       where: { id: params.id }
     });
 
@@ -201,7 +201,7 @@ export async function PUT(
     await updateStudentProgress(existingSession.studentId);
 
     // Get updated session with related data
-    const sessionWithData = await prisma.hafalanSession.findUnique({
+    const sessionWithData = await prisma.hafalan_sessions.findUnique({
       where: { id: params.id },
       include: {
         student: {
@@ -222,7 +222,7 @@ export async function PUT(
     });
 
     // Get records with surah data
-    const recordsWithData = await prisma.hafalanRecord.findMany({
+    const recordsWithData = await prisma.hafalan_records.findMany({
       where: {
         id: { in: result.records.map(r => r.id) }
       },
@@ -265,7 +265,7 @@ export async function DELETE(
     }
 
     // Check if session exists
-    const existingSession = await prisma.hafalanSession.findUnique({
+    const existingSession = await prisma.hafalan_sessions.findUnique({
       where: { id: params.id }
     });
 
@@ -311,7 +311,7 @@ export async function DELETE(
 
 // Helper function to update student progress (same as in setoran route)
 async function updateStudentProgress(studentId: string) {
-  const records = await prisma.hafalanRecord.findMany({
+  const records = await prisma.hafalan_records.findMany({
     where: { 
       studentId,
       status: { in: ['LANCAR', 'MUTQIN'] }
@@ -362,7 +362,7 @@ async function updateStudentProgress(studentId: string) {
   const juz30Ayats = 564;
   const juz30Progress = Math.min(((juzProgress[30] || 0) / juz30Ayats) * 100, 100);
 
-  await prisma.hafalanProgress.upsert({
+  await prisma.hafalan_progress.upsert({
     where: { studentId },
     create: {
       studentId,

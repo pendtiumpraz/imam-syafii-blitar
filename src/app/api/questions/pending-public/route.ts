@@ -35,10 +35,10 @@ export async function GET(request: NextRequest) {
     }
     
     // Get total count
-    const totalCount = await prisma.question.count({ where })
+    const totalCount = await prisma.questions.count({ where })
     
     // Get pending questions (public view - show all pending)
-    const questions = await prisma.question.findMany({
+    const questions = await prisma.questions.findMany({
       where,
       select: {
         id: true,

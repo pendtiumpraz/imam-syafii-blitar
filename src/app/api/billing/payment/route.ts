@@ -33,7 +33,7 @@ async function generatePaymentNumber(prisma: any): Promise<string> {
   const month = (currentDate.getMonth() + 1).toString().padStart(2, '0');
   const prefix = `BP-${year}-${month}`;
   
-  const lastPayment = await prisma.billPayment.findFirst({
+  const lastPayment = await prisma.bill_payments.findFirst({
     where: {
       paymentNo: {
         startsWith: prefix,
@@ -93,7 +93,7 @@ async function recordPayment(prisma: any, session: any, body: any) {
   const validated = recordPaymentSchema.parse(body);
 
   // Get the bill
-  const bill = await prisma.bill.findUnique({
+  const bill = await prisma.bills.findUnique({
     where: { id: validated.billId },
     include: {
       student: {
@@ -275,7 +275,7 @@ async function verifyPayment(prisma: any, session: any, body: any) {
   }
 
   // Get the payment
-  const payment = await prisma.billPayment.findUnique({
+  const payment = await prisma.bill_payments.findUnique({
     where: { id: validated.paymentId },
     include: {
       bill: {
@@ -440,7 +440,7 @@ export async function GET(request: NextRequest) {
     }
 
     const [payments, total] = await Promise.all([
-      prisma.billPayment.findMany({
+      prisma.bill_payments.findMany({
         where,
         include: {
           bill: {
@@ -467,7 +467,7 @@ export async function GET(request: NextRequest) {
         skip,
         take: limit,
       }),
-      prisma.billPayment.count({ where }),
+      prisma.bill_payments.count({ where }),
     ]);
 
     return NextResponse.json({

@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Check if subscription already exists
-    const existingSubscription = await prisma.pushSubscription.findFirst({
+    const existingSubscription = await prisma.push_subscriptions.findFirst({
       where: {
         userId: session.user.id,
         endpoint: subscription.endpoint
@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
 
     if (existingSubscription) {
       // Update existing subscription
-      await prisma.pushSubscription.update({
+      await prisma.push_subscriptions.update({
         where: { id: existingSubscription.id },
         data: {
           p256dh: subscription.keys.p256dh,
@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
       })
     } else {
       // Create new subscription
-      await prisma.pushSubscription.create({
+      await prisma.push_subscriptions.create({
         data: {
           userId: session.user.id,
           endpoint: subscription.endpoint,
@@ -75,7 +75,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const subscriptions = await prisma.pushSubscription.findMany({
+    const subscriptions = await prisma.push_subscriptions.findMany({
       where: {
         userId: session.user.id
       },

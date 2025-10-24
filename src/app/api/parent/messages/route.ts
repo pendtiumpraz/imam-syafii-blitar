@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
 
     // If requesting specific thread
     if (threadId) {
-      const messages = await prisma.message.findMany({
+      const messages = await prisma.messages.findMany({
         where: {
           threadId,
           OR: [
@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
       });
 
       // Mark messages as read if user is receiver
-      await prisma.message.updateMany({
+      await prisma.messages.updateMany({
         where: {
           threadId,
           receiverId: userId,
@@ -111,7 +111,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get messages (only thread starters or parent messages)
-    const messages = await prisma.message.findMany({
+    const messages = await prisma.messages.findMany({
       where: {
         ...whereConditions,
         parentMessageId: null // Only get thread starters
@@ -163,7 +163,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Get total count
-    const totalCount = await prisma.message.count({
+    const totalCount = await prisma.messages.count({
       where: {
         ...whereConditions,
         parentMessageId: null
@@ -171,7 +171,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Get unread count
-    const unreadCount = await prisma.message.count({
+    const unreadCount = await prisma.messages.count({
       where: {
         receiverId: userId,
         isRead: false,
@@ -204,13 +204,13 @@ export async function GET(request: NextRequest) {
       stats: {
         total: totalCount,
         unread: unreadCount,
-        inbox: await prisma.message.count({
+        inbox: await prisma.messages.count({
           where: { receiverId: userId, status: { not: 'ARCHIVED' } }
         }),
-        sent: await prisma.message.count({
+        sent: await prisma.messages.count({
           where: { senderId: userId, status: { not: 'ARCHIVED' } }
         }),
-        archived: await prisma.message.count({
+        archived: await prisma.messages.count({
           where: {
             OR: [
               { senderId: userId, status: 'ARCHIVED' },
@@ -265,7 +265,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify receiver exists and is staff/teacher
-    const receiver = await prisma.user.findFirst({
+    const receiver = await prisma.users.findFirst({
       where: {
         id: receiverId,
         role: { in: ['ADMIN', 'STAFF'] },
@@ -283,7 +283,7 @@ export async function POST(request: NextRequest) {
     // Generate thread ID if this is a new thread
     const finalThreadId = threadId || `thread_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-    const message = await prisma.message.create({
+    const message = await prisma.messages.create({
       data: {
         senderId: session.user.id,
         receiverId,
@@ -316,7 +316,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Create notification for receiver
-    await prisma.notification.create({
+    await prisma.notifications.create({
       data: {
         userId: receiverId,
         type: 'MESSAGE',
