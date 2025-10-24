@@ -15,8 +15,10 @@ async function main() {
     update: {
       password: hashedPassword,
       isActive: true,
+      updatedAt: new Date(),
     },
     create: {
+      id: 'seed-admin-user',
       username: 'admin',
       email: 'admin@pondokimamsyafii.com',
       password: hashedPassword,
@@ -24,6 +26,7 @@ async function main() {
       role: 'ADMIN',
       isUstadz: false,
       isActive: true,
+      updatedAt: new Date(),
     },
   });
 
@@ -37,8 +40,10 @@ async function main() {
     update: {
       password: staffPassword,
       isActive: true,
+      updatedAt: new Date(),
     },
     create: {
+      id: 'seed-staff-user',
       username: 'staff',
       email: 'staff@pondokimamsyafii.com',
       password: staffPassword,
@@ -46,6 +51,7 @@ async function main() {
       role: 'STAFF',
       isUstadz: false,
       isActive: true,
+      updatedAt: new Date(),
     },
   });
 
@@ -59,8 +65,10 @@ async function main() {
     update: {
       password: ustadzPassword,
       isActive: true,
+      updatedAt: new Date(),
     },
     create: {
+      id: 'seed-ustadz-user',
       username: 'ustadz',
       email: 'ustadz@pondokimamsyafii.com',
       password: ustadzPassword,
@@ -68,6 +76,7 @@ async function main() {
       role: 'USTADZ',
       isUstadz: true,
       isActive: true,
+      updatedAt: new Date(),
     },
   });
 
@@ -76,37 +85,42 @@ async function main() {
   // Create financial accounts
   const incomeAccount = await prisma.financial_accounts.upsert({
     where: { code: '4001' },
-    update: {},
+    update: { updatedAt: new Date() },
     create: {
+      id: 'seed-income-account',
       code: '4001',
       name: 'Income Account',
       type: 'INCOME',
       subtype: 'GENERAL',
       isActive: true,
       balance: 0,
-      description: 'General income account'
+      description: 'General income account',
+      updatedAt: new Date(),
     }
   });
 
   const expenseAccount = await prisma.financial_accounts.upsert({
     where: { code: '5001' },
-    update: {},
+    update: { updatedAt: new Date() },
     create: {
+      id: 'seed-expense-account',
       code: '5001',
       name: 'Expense Account',
       type: 'EXPENSE',
       subtype: 'GENERAL',
       isActive: true,
       balance: 0,
-      description: 'General expense account'
+      description: 'General expense account',
+      updatedAt: new Date(),
     }
   });
 
   // Create financial categories
   const sppCategory = await prisma.financial_categories.upsert({
     where: { name_type: { name: 'SPP', type: 'INCOME' } },
-    update: {},
+    update: { updatedAt: new Date() },
     create: {
+      id: 'seed-cat-spp',
       name: 'SPP',
       type: 'INCOME',
       code: 'INC001',
@@ -114,14 +128,16 @@ async function main() {
       color: '#22C55E',
       icon: 'academic-cap',
       isActive: true,
-      description: 'Student tuition payments'
+      description: 'Student tuition payments',
+      updatedAt: new Date(),
     }
   });
 
   const infaqCategory = await prisma.financial_categories.upsert({
     where: { name_type: { name: 'Infaq', type: 'DONATION' } },
-    update: {},
+    update: { updatedAt: new Date() },
     create: {
+      id: 'seed-cat-infaq',
       name: 'Infaq',
       type: 'DONATION',
       code: 'DON001',
@@ -129,14 +145,16 @@ async function main() {
       color: '#10B981',
       icon: 'heart',
       isActive: true,
-      description: 'Charitable donations'
+      description: 'Charitable donations',
+      updatedAt: new Date(),
     }
   });
 
   const operationalCategory = await prisma.financial_categories.upsert({
     where: { name_type: { name: 'Operational', type: 'EXPENSE' } },
-    update: {},
+    update: { updatedAt: new Date() },
     create: {
+      id: 'seed-cat-operational',
       name: 'Operational',
       type: 'EXPENSE',
       code: 'EXP001',
@@ -144,7 +162,8 @@ async function main() {
       color: '#EF4444',
       icon: 'cog',
       isActive: true,
-      description: 'Operational expenses'
+      description: 'Operational expenses',
+      updatedAt: new Date(),
     }
   });
 
@@ -154,6 +173,7 @@ async function main() {
   const transactions = await Promise.all([
     prisma.transactions.create({
       data: {
+        id: 'seed-trx-001',
         transactionNo: 'TRX-2024-001',
         type: 'INCOME',
         categoryId: sppCategory.id,
@@ -162,10 +182,12 @@ async function main() {
         date: new Date('2024-01-15'),
         status: 'POSTED',
         createdBy: admin.id,
+        updatedAt: new Date(),
       },
     }),
     prisma.transactions.create({
       data: {
+        id: 'seed-trx-002',
         transactionNo: 'TRX-2024-002',
         type: 'DONATION',
         categoryId: infaqCategory.id,
@@ -174,10 +196,12 @@ async function main() {
         date: new Date('2024-01-20'),
         status: 'POSTED',
         createdBy: admin.id,
+        updatedAt: new Date(),
       },
     }),
     prisma.transactions.create({
       data: {
+        id: 'seed-trx-003',
         transactionNo: 'TRX-2024-003',
         type: 'EXPENSE',
         categoryId: operationalCategory.id,
@@ -186,6 +210,7 @@ async function main() {
         date: new Date('2024-01-22'),
         status: 'POSTED',
         createdBy: admin.id,
+        updatedAt: new Date(),
       },
     }),
   ]);
@@ -196,6 +221,7 @@ async function main() {
   const activities = await Promise.all([
     prisma.activities.create({
       data: {
+        id: 'seed-activity-001',
         title: 'Pengajian Rutin Mingguan',
         description: 'Kajian kitab Riyadhus Shalihin bersama Ustadz Ahmad',
         type: 'Pondok',
@@ -204,10 +230,12 @@ async function main() {
         photos: JSON.stringify([]),
         status: 'upcoming',
         createdBy: admin.id,
+        updatedAt: new Date(),
       },
     }),
     prisma.activities.create({
       data: {
+        id: 'seed-activity-002',
         title: 'Lomba Tahfidz Antar Santri',
         description: 'Lomba hafalan Al-Quran untuk santri tingkat SMP',
         type: 'Pondok',
@@ -216,6 +244,7 @@ async function main() {
         photos: JSON.stringify([]),
         status: 'completed',
         createdBy: admin.id,
+        updatedAt: new Date(),
       },
     }),
   ]);
@@ -226,6 +255,7 @@ async function main() {
   const courses = await Promise.all([
     prisma.courses.create({
       data: {
+        id: "seed-course-001",
         name: 'Tahfidz Al-Quran',
         description: 'Program hafalan Al-Quran 30 Juz dengan metode mutqin',
         level: 'Semua Tingkat',
@@ -236,10 +266,12 @@ async function main() {
         enrolled: 35,
         status: 'active',
         createdBy: admin.id,
+        updatedAt: new Date(),
       },
     }),
     prisma.courses.create({
       data: {
+        id: "seed-course-002",
         name: 'Bahasa Arab Dasar',
         description: 'Pembelajaran bahasa Arab untuk pemula',
         level: 'Pemula',
@@ -250,6 +282,7 @@ async function main() {
         enrolled: 25,
         status: 'active',
         createdBy: admin.id,
+        updatedAt: new Date(),
       },
     }),
   ]);
@@ -260,6 +293,7 @@ async function main() {
   const videos = await Promise.all([
     prisma.videos.create({
       data: {
+        id: "seed-video-001",
         title: 'Kajian Tafsir Surat Al-Fatihah',
         description: 'Pembahasan mendalam tentang makna dan kandungan Surat Al-Fatihah',
         url: 'https://www.youtube.com/watch?v=example1',
@@ -271,10 +305,12 @@ async function main() {
         views: 150,
         isPublic: true,
         createdBy: admin.id,
+        updatedAt: new Date(),
       },
     }),
     prisma.videos.create({
       data: {
+        id: "seed-video-002",
         title: 'Adab Menuntut Ilmu',
         description: 'Penjelasan tentang adab-adab dalam menuntut ilmu menurut Islam',
         url: 'https://www.youtube.com/watch?v=example2',
@@ -286,6 +322,7 @@ async function main() {
         views: 200,
         isPublic: true,
         createdBy: admin.id,
+        updatedAt: new Date(),
       },
     }),
   ]);
@@ -296,6 +333,7 @@ async function main() {
   const ebooks = await Promise.all([
     prisma.ebooks.create({
       data: {
+        id: "seed-ebook-001",
         title: 'Riyadhus Shalihin',
         author: 'Imam An-Nawawi',
         description: 'Kumpulan hadits pilihan tentang akhlak dan adab',
@@ -308,10 +346,12 @@ async function main() {
         language: 'Indonesia',
         isPublic: true,
         createdBy: admin.id,
+        updatedAt: new Date(),
       },
     }),
     prisma.ebooks.create({
       data: {
+        id: "seed-ebook-002",
         title: 'Fiqih Sunnah',
         author: 'Sayyid Sabiq',
         description: 'Pembahasan fiqih berdasarkan Al-Quran dan Sunnah',
@@ -324,6 +364,7 @@ async function main() {
         language: 'Indonesia',
         isPublic: true,
         createdBy: admin.id,
+        updatedAt: new Date(),
       },
     }),
   ]);
@@ -334,6 +375,7 @@ async function main() {
   const students = await Promise.all([
     prisma.students.create({
       data: {
+        id: "seed-student-001",
         nis: '2024001',
         nisn: '1234567890',
         fullName: 'Ahmad Zaki Mubarak',
@@ -361,10 +403,12 @@ async function main() {
         enrollmentYear: '2024',
         photo: '/images/students/default-male.jpg',
         createdBy: admin.id,
+        updatedAt: new Date(),
       },
     }),
     prisma.students.create({
       data: {
+        id: "seed-student-002",
         nis: '2024002',
         nisn: '1234567891',
         fullName: 'Fatimah Az-Zahra',
@@ -392,10 +436,12 @@ async function main() {
         enrollmentYear: '2024',
         photo: '/images/students/default-female.jpg',
         createdBy: admin.id,
+        updatedAt: new Date(),
       },
     }),
     prisma.students.create({
       data: {
+        id: "seed-student-003",
         nis: '2024003',
         fullName: 'Muhammad Iqbal Ramadhan',
         nickname: 'Iqbal',
@@ -420,10 +466,12 @@ async function main() {
         enrollmentDate: new Date('2023-01-01'),
         enrollmentYear: '2023',
         createdBy: admin.id,
+        updatedAt: new Date(),
       },
     }),
     prisma.students.create({
       data: {
+        id: "seed-student-004",
         nis: '2024004',
         fullName: 'Siti Nur Halimah',
         nickname: 'Halimah',
@@ -447,10 +495,12 @@ async function main() {
         enrollmentDate: new Date('2023-01-01'),
         enrollmentYear: '2023',
         createdBy: admin.id,
+        updatedAt: new Date(),
       },
     }),
     prisma.students.create({
       data: {
+        id: "seed-student-005",
         nis: '2024005',
         fullName: 'Abdullah Aziz',
         nickname: 'Aziz',
@@ -474,6 +524,7 @@ async function main() {
         enrollmentDate: new Date('2022-01-01'),
         enrollmentYear: '2022',
         createdBy: admin.id,
+        updatedAt: new Date(),
       },
     }),
   ]);
