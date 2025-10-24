@@ -17,23 +17,29 @@ export async function GET(
       where: {
         id: params.id,
       },
-      include: {
-        creator: {
-          select: {
-            name: true,
-          },
-        },
-      },
     });
-    
+
     if (!ebook) {
       return NextResponse.json(
         { error: 'Ebook not found' },
         { status: 404 }
       );
     }
-    
-    return NextResponse.json(ebook);
+
+    // Get creator separately
+    const creator = await prisma.users.findUnique({
+      where: { id: ebook.createdBy },
+      select: {
+        name: true,
+      },
+    });
+
+    const ebookWithCreator = {
+      ...ebook,
+      creator,
+    };
+
+    return NextResponse.json(ebookWithCreator);
   } catch (error) {
     console.error('Error fetching ebook:', error);
     return NextResponse.json(

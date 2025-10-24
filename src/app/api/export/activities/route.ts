@@ -44,18 +44,28 @@ export async function GET(request: NextRequest) {
     // Fetch activities data
     const activities = await prisma.activities.findMany({
       where,
-      include: {
-        creator: true
-      },
       orderBy: [
         { date: 'desc' },
         { title: 'asc' }
       ]
     });
 
-    const exportData = activities.map(activity => {
+    // Get creators separately
+    const creatorIds = [...new Set(activities.map(a => a.createdBy))];
+    const creators = await prisma.users.findMany({
+      where: { id: { in: creatorIds } },
+      select: { id: true, name: true },
+    });
+    const creatorsMap = new Map(creators.map(c => [c.id, c]));
+
+    const activitiesWithCreators = activities.map(a => ({
+      ...a,
+      creator: creatorsMap.get(a.createdBy),
+    }));
+
+    const exportData = activitiesWithCreators.map(activity => {
       const photos = JSON.parse(activity.photos || '[]');
-      
+
       return {
         'Judul Kegiatan': activity.title,
         'Deskripsi': activity.description,
@@ -66,7 +76,7 @@ export async function GET(request: NextRequest) {
         'Status': activity.status,
         'Jumlah Foto': photos.length,
         'URL Foto': photos.join(', '),
-        'Dibuat Oleh': activity.creator.name,
+        'Dibuat Oleh': activity.creator?.name || '',
         'Tanggal Dibuat': activity.createdAt.toISOString().split('T')[0],
         'Terakhir Update': activity.updatedAt.toISOString().split('T')[0]
       };

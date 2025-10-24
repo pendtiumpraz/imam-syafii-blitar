@@ -33,12 +33,6 @@ export async function GET(
           campaignId: campaign.id,
           paymentStatus: 'VERIFIED' // Only show verified donations for public view
         },
-        include: {
-          category: true,
-          campaign: {
-            select: { title: true, slug: true }
-          }
-        },
         orderBy: { createdAt: 'desc' },
         skip,
         take: limit
@@ -51,13 +45,30 @@ export async function GET(
       })
     ])
 
+    // Fetch related data
+    const [categories, campaigns] = await Promise.all([
+      prisma.donation_categories.findMany({
+        where: { id: { in: donations.map(d => d.categoryId).filter(Boolean) } }
+      }),
+      prisma.donation_campaigns.findMany({
+        where: { id: { in: donations.map(d => d.campaignId).filter(Boolean) as string[] } },
+        select: { id: true, title: true, slug: true }
+      })
+    ])
+
+    // Create maps for O(1) lookups
+    const categoriesMap = new Map(categories.map(c => [c.id, c]))
+    const campaignsMap = new Map(campaigns.map(c => [c.id, c]))
+
     // Parse amount fields and hide sensitive info for anonymous donations
     const sanitizedDonations = donations.map(donation => ({
       ...donation,
       amount: parseFloat(donation.amount.toString()),
       donorName: donation.isAnonymous ? null : donation.donorName,
       donorEmail: donation.isAnonymous ? null : donation.donorEmail,
-      donorPhone: donation.isAnonymous ? null : donation.donorPhone
+      donorPhone: donation.isAnonymous ? null : donation.donorPhone,
+      category: categoriesMap.get(donation.categoryId),
+      campaign: donation.campaignId ? campaignsMap.get(donation.campaignId) : null
     }))
 
     return NextResponse.json({

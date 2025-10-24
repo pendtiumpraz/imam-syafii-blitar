@@ -151,47 +151,57 @@ async function getSummaryReport() {
     
     // Top campaigns
     prisma.donation_campaigns.findMany({
-      include: {
-        _count: {
-          select: {
-            donations: {
-              where: { paymentStatus: 'VERIFIED' }
-            }
-          }
-        }
-      },
       orderBy: { currentAmount: 'desc' },
       take: 10
-    }).then(campaigns => 
-      campaigns.map(campaign => ({
+    }).then(async (campaigns) => {
+      // Fetch donation counts for each campaign
+      const donationCounts = await Promise.all(
+        campaigns.map(campaign =>
+          prisma.donations.count({
+            where: { campaignId: campaign.id, paymentStatus: 'VERIFIED' }
+          })
+        )
+      )
+
+      return campaigns.map((campaign, index) => ({
         id: campaign.id,
         title: campaign.title,
         currentAmount: parseFloat(campaign.currentAmount.toString()),
         targetAmount: parseFloat(campaign.targetAmount.toString()),
         percentage: (parseFloat(campaign.currentAmount.toString()) / parseFloat(campaign.targetAmount.toString())) * 100,
-        donorCount: campaign._count.donations
+        donorCount: donationCounts[index]
       }))
-    ),
+    }),
     
     // Recent donations
     prisma.donations.findMany({
       where: { paymentStatus: 'VERIFIED' },
-      include: {
-        campaign: {
-          select: { title: true, slug: true }
-        },
-        category: {
-          select: { name: true }
-        }
-      },
       orderBy: { createdAt: 'desc' },
       take: 20
-    }).then(donations =>
-      donations.map(donation => ({
+    }).then(async (donations) => {
+      // Fetch related data
+      const [categories, campaigns] = await Promise.all([
+        prisma.donation_categories.findMany({
+          where: { id: { in: donations.map(d => d.categoryId).filter(Boolean) } },
+          select: { id: true, name: true }
+        }),
+        prisma.donation_campaigns.findMany({
+          where: { id: { in: donations.map(d => d.campaignId).filter(Boolean) as string[] } },
+          select: { id: true, title: true, slug: true }
+        })
+      ])
+
+      // Create maps for O(1) lookups
+      const categoriesMap = new Map(categories.map(c => [c.id, c]))
+      const campaignsMap = new Map(campaigns.map(c => [c.id, c]))
+
+      return donations.map(donation => ({
         ...donation,
-        amount: parseFloat(donation.amount.toString())
+        amount: parseFloat(donation.amount.toString()),
+        campaign: donation.campaignId ? campaignsMap.get(donation.campaignId) : null,
+        category: categoriesMap.get(donation.categoryId)
       }))
-    )
+    })
   ])
 
   return NextResponse.json({
@@ -219,10 +229,6 @@ async function getDonationsReport(startDate?: string | null, endDate?: string | 
   const [donations, summary] = await Promise.all([
     prisma.donations.findMany({
       where,
-      include: {
-        campaign: { select: { title: true, slug: true } },
-        category: { select: { name: true } }
-      },
       orderBy: { createdAt: 'desc' }
     }),
     prisma.donations.aggregate({
@@ -233,10 +239,28 @@ async function getDonationsReport(startDate?: string | null, endDate?: string | 
     })
   ])
 
+  // Fetch related data
+  const [categories, campaigns] = await Promise.all([
+    prisma.donation_categories.findMany({
+      where: { id: { in: donations.map(d => d.categoryId).filter(Boolean) } },
+      select: { id: true, name: true }
+    }),
+    prisma.donation_campaigns.findMany({
+      where: { id: { in: donations.map(d => d.campaignId).filter(Boolean) as string[] } },
+      select: { id: true, title: true, slug: true }
+    })
+  ])
+
+  // Create maps for O(1) lookups
+  const categoriesMap = new Map(categories.map(c => [c.id, c]))
+  const campaignsMap = new Map(campaigns.map(c => [c.id, c]))
+
   return NextResponse.json({
     donations: donations.map(d => ({
       ...d,
-      amount: parseFloat(d.amount.toString())
+      amount: parseFloat(d.amount.toString()),
+      campaign: d.campaignId ? campaignsMap.get(d.campaignId) : null,
+      category: categoriesMap.get(d.categoryId)
     })),
     summary: {
       totalAmount: parseFloat(summary._sum.amount?.toString() || '0'),
@@ -248,27 +272,43 @@ async function getDonationsReport(startDate?: string | null, endDate?: string | 
 
 async function getCampaignsReport() {
   const campaigns = await prisma.donation_campaigns.findMany({
-    include: {
-      category: { select: { name: true } },
-      creator: { select: { name: true } },
-      _count: {
-        select: {
-          donations: {
-            where: { paymentStatus: 'VERIFIED' }
-          }
-        }
-      }
-    },
     orderBy: { currentAmount: 'desc' }
   })
 
-  const campaignsWithStats = campaigns.map(campaign => ({
+  // Fetch related data
+  const [categories, creators] = await Promise.all([
+    prisma.donation_categories.findMany({
+      where: { id: { in: campaigns.map(c => c.categoryId).filter(Boolean) } },
+      select: { id: true, name: true }
+    }),
+    prisma.users.findMany({
+      where: { id: { in: campaigns.map(c => c.createdBy).filter(Boolean) } },
+      select: { id: true, name: true }
+    })
+  ])
+
+  // Fetch donation counts for each campaign
+  const donationCounts = await Promise.all(
+    campaigns.map(campaign =>
+      prisma.donations.count({
+        where: { campaignId: campaign.id, paymentStatus: 'VERIFIED' }
+      })
+    )
+  )
+
+  // Create maps for O(1) lookups
+  const categoriesMap = new Map(categories.map(c => [c.id, c]))
+  const creatorsMap = new Map(creators.map(c => [c.id, c]))
+
+  const campaignsWithStats = campaigns.map((campaign, index) => ({
     ...campaign,
     currentAmount: parseFloat(campaign.currentAmount.toString()),
     targetAmount: parseFloat(campaign.targetAmount.toString()),
     percentage: (parseFloat(campaign.currentAmount.toString()) / parseFloat(campaign.targetAmount.toString())) * 100,
-    donorCount: campaign._count.donations,
-    images: JSON.parse(campaign.images)
+    donorCount: donationCounts[index],
+    images: JSON.parse(campaign.images),
+    category: categoriesMap.get(campaign.categoryId),
+    creator: creatorsMap.get(campaign.createdBy)
   }))
 
   return NextResponse.json({

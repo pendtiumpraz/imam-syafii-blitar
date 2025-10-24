@@ -15,23 +15,37 @@ export async function GET(request: NextRequest) {
 
     const categories = await prisma.donation_categories.findMany({
       where,
-      include: {
-        _count: {
-          select: {
-            campaigns: true,
-            donations: {
-              where: { paymentStatus: 'VERIFIED' }
-            }
-          }
-        }
-      },
       orderBy: [
         { sortOrder: 'asc' },
         { name: 'asc' }
       ]
     })
 
-    return NextResponse.json(categories)
+    // Fetch counts for each category
+    const categoryIds = categories.map(c => c.id)
+    const [campaignCounts, donationCounts] = await Promise.all([
+      Promise.all(categoryIds.map(id =>
+        prisma.donation_campaigns.count({
+          where: { categoryId: id }
+        })
+      )),
+      Promise.all(categoryIds.map(id =>
+        prisma.donations.count({
+          where: { categoryId: id, paymentStatus: 'VERIFIED' }
+        })
+      ))
+    ])
+
+    // Add counts to categories
+    const categoriesWithCounts = categories.map((category, index) => ({
+      ...category,
+      _count: {
+        campaigns: campaignCounts[index],
+        donations: donationCounts[index]
+      }
+    }))
+
+    return NextResponse.json(categoriesWithCounts)
   } catch (error) {
     console.error('Error fetching donation categories:', error)
     return NextResponse.json(

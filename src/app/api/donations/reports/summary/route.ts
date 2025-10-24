@@ -106,19 +106,19 @@ export async function GET(request: NextRequest) {
       
       // Top campaigns
       prisma.donation_campaigns.findMany({
-        include: {
-          _count: {
-            select: {
-              donations: {
-                where: { paymentStatus: 'VERIFIED' }
-              }
-            }
-          }
-        },
         orderBy: { currentAmount: 'desc' },
         take: 10
-      }).then(campaigns => 
-        campaigns.map(campaign => ({
+      }).then(async (campaigns) => {
+        // Fetch donation counts for each campaign
+        const donationCounts = await Promise.all(
+          campaigns.map(campaign =>
+            prisma.donations.count({
+              where: { campaignId: campaign.id, paymentStatus: 'VERIFIED' }
+            })
+          )
+        )
+
+        return campaigns.map((campaign, index) => ({
           id: campaign.id,
           title: campaign.title,
           slug: campaign.slug,
@@ -128,25 +128,33 @@ export async function GET(request: NextRequest) {
             (parseFloat(campaign.currentAmount.toString()) / parseFloat(campaign.targetAmount.toString())) * 100,
             100
           ),
-          donorCount: campaign._count.donations
+          donorCount: donationCounts[index]
         }))
-      ),
+      }),
       
       // Recent donations (last 10)
       prisma.donations.findMany({
         where: { paymentStatus: 'VERIFIED' },
-        include: {
-          campaign: {
-            select: { title: true, slug: true }
-          },
-          category: {
-            select: { name: true }
-          }
-        },
         orderBy: { createdAt: 'desc' },
         take: 10
-      }).then(donations =>
-        donations.map(donation => ({
+      }).then(async (donations) => {
+        // Fetch related data
+        const [categories, campaigns] = await Promise.all([
+          prisma.donation_categories.findMany({
+            where: { id: { in: donations.map(d => d.categoryId).filter(Boolean) } },
+            select: { id: true, name: true }
+          }),
+          prisma.donation_campaigns.findMany({
+            where: { id: { in: donations.map(d => d.campaignId).filter(Boolean) as string[] } },
+            select: { id: true, title: true, slug: true }
+          })
+        ])
+
+        // Create maps for O(1) lookups
+        const categoriesMap = new Map(categories.map(c => [c.id, c]))
+        const campaignsMap = new Map(campaigns.map(c => [c.id, c]))
+
+        return donations.map(donation => ({
           id: donation.id,
           donationNo: donation.donationNo,
           amount: parseFloat(donation.amount.toString()),
@@ -155,10 +163,10 @@ export async function GET(request: NextRequest) {
           message: donation.message,
           isAnonymous: donation.isAnonymous,
           createdAt: donation.createdAt,
-          campaign: donation.campaign,
-          category: donation.category
+          campaign: donation.campaignId ? campaignsMap.get(donation.campaignId) : null,
+          category: categoriesMap.get(donation.categoryId)
         }))
-      )
+      })
     ])
 
     const response = {

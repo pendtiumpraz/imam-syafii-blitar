@@ -339,27 +339,37 @@ async function updateStudentProgress(studentId: string) {
 
   const avgQuality = records.length > 0 ? qualitySum / records.length : 0;
 
-  await prisma.hafalan_progress.upsert({
-    where: { studentId },
-    create: {
-      studentId,
-      totalSurah: completedSurahs.size,
-      totalAyat,
-      juz30Progress: Number(juz30Progress.toFixed(2)),
-      overallProgress: Number(overallProgress.toFixed(2)),
-      avgQuality: Number(avgQuality.toFixed(2)),
-      totalSessions: records.length,
-      lastSetoranDate: new Date(),
-      lastUpdated: new Date()
-    },
-    update: {
-      totalSurah: completedSurahs.size,
-      totalAyat,
-      juz30Progress: Number(juz30Progress.toFixed(2)),
-      overallProgress: Number(overallProgress.toFixed(2)),
-      avgQuality: Number(avgQuality.toFixed(2)),
-      lastSetoranDate: new Date(),
-      lastUpdated: new Date()
-    }
+  // Find existing progress record
+  const existingProgress = await prisma.hafalan_progress.findFirst({
+    where: { studentId }
   });
+
+  if (existingProgress) {
+    await prisma.hafalan_progress.update({
+      where: { id: existingProgress.id },
+      data: {
+        totalSurah: completedSurahs.size,
+        totalAyat,
+        juz30Progress: Number(juz30Progress.toFixed(2)),
+        overallProgress: Number(overallProgress.toFixed(2)),
+        avgQuality: Number(avgQuality.toFixed(2)),
+        lastSetoranDate: new Date(),
+        lastUpdated: new Date()
+      }
+    });
+  } else {
+    await prisma.hafalan_progress.create({
+      data: {
+        studentId,
+        totalSurah: completedSurahs.size,
+        totalAyat,
+        juz30Progress: Number(juz30Progress.toFixed(2)),
+        overallProgress: Number(overallProgress.toFixed(2)),
+        avgQuality: Number(avgQuality.toFixed(2)),
+        totalSessions: records.length,
+        lastSetoranDate: new Date(),
+        lastUpdated: new Date()
+      }
+    });
+  }
 }

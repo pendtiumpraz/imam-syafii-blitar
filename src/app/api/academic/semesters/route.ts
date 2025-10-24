@@ -35,14 +35,6 @@ export async function GET(request: NextRequest) {
             isActive: true,
           },
         },
-        _count: {
-          select: {
-            teacherSubjects: true,
-            grades: true,
-            attendances: true,
-            exams: true,
-          },
-        },
       },
       orderBy: [
         { academic_years: { startDate: 'desc' } },
@@ -50,7 +42,29 @@ export async function GET(request: NextRequest) {
       ],
     });
 
-    return NextResponse.json(semesters);
+    // Get counts separately
+    const counts = await Promise.all(
+      semesters.map(async (s) => ({
+        semesterId: s.id,
+        teacherSubjects: await prisma.teacher_subjects.count({ where: { semesterId: s.id } }),
+        grades: await prisma.grades.count({ where: { semesterId: s.id } }),
+        attendances: await prisma.attendances.count({ where: { semesterId: s.id } }),
+        exams: await prisma.exams.count({ where: { semesterId: s.id } }),
+      }))
+    );
+    const countsMap = new Map(counts.map(c => [c.semesterId, c]));
+
+    const semestersWithCounts = semesters.map(s => ({
+      ...s,
+      _count: {
+        teacherSubjects: countsMap.get(s.id)?.teacherSubjects || 0,
+        grades: countsMap.get(s.id)?.grades || 0,
+        attendances: countsMap.get(s.id)?.attendances || 0,
+        exams: countsMap.get(s.id)?.exams || 0,
+      },
+    }));
+
+    return NextResponse.json(semestersWithCounts);
   } catch (error) {
     console.error('Error fetching semesters:', error);
     return NextResponse.json(
@@ -129,18 +143,28 @@ export async function POST(request: NextRequest) {
             isActive: true,
           },
         },
-        _count: {
-          select: {
-            teacherSubjects: true,
-            grades: true,
-            attendances: true,
-            exams: true,
-          },
-        },
       },
     });
 
-    return NextResponse.json(semester, { status: 201 });
+    // Get counts separately
+    const [teacherSubjects, grades, attendances, exams] = await Promise.all([
+      prisma.teacher_subjects.count({ where: { semesterId: semester.id } }),
+      prisma.grades.count({ where: { semesterId: semester.id } }),
+      prisma.attendances.count({ where: { semesterId: semester.id } }),
+      prisma.exams.count({ where: { semesterId: semester.id } }),
+    ]);
+
+    const semesterWithCount = {
+      ...semester,
+      _count: {
+        teacherSubjects,
+        grades,
+        attendances,
+        exams,
+      },
+    };
+
+    return NextResponse.json(semesterWithCount, { status: 201 });
   } catch (error) {
     console.error('Error creating semester:', error);
     
@@ -228,18 +252,28 @@ export async function PUT(request: NextRequest) {
             isActive: true,
           },
         },
-        _count: {
-          select: {
-            teacherSubjects: true,
-            grades: true,
-            attendances: true,
-            exams: true,
-          },
-        },
       },
     });
 
-    return NextResponse.json(semester);
+    // Get counts separately
+    const [teacherSubjects, grades, attendances, exams] = await Promise.all([
+      prisma.teacher_subjects.count({ where: { semesterId: semester.id } }),
+      prisma.grades.count({ where: { semesterId: semester.id } }),
+      prisma.attendances.count({ where: { semesterId: semester.id } }),
+      prisma.exams.count({ where: { semesterId: semester.id } }),
+    ]);
+
+    const semesterWithCount = {
+      ...semester,
+      _count: {
+        teacherSubjects,
+        grades,
+        attendances,
+        exams,
+      },
+    };
+
+    return NextResponse.json(semesterWithCount);
   } catch (error) {
     console.error('Error updating semester:', error);
     
@@ -281,19 +315,9 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // Check if semester has associated data
+    // Check if semester exists
     const semester = await prisma.semesters.findUnique({
       where: { id },
-      include: {
-        _count: {
-          select: {
-            teacherSubjects: true,
-            grades: true,
-            attendances: true,
-            exams: true,
-          },
-        },
-      },
     });
 
     if (!semester) {
@@ -303,7 +327,14 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const { teacherSubjects, grades, attendances, exams } = semester._count;
+    // Check if semester has associated data
+    const [teacherSubjects, grades, attendances, exams] = await Promise.all([
+      prisma.teacher_subjects.count({ where: { semesterId: id } }),
+      prisma.grades.count({ where: { semesterId: id } }),
+      prisma.attendances.count({ where: { semesterId: id } }),
+      prisma.exams.count({ where: { semesterId: id } }),
+    ]);
+
     if (teacherSubjects > 0 || grades > 0 || attendances > 0 || exams > 0) {
       return NextResponse.json(
         { error: 'Cannot delete semester that has associated academic data' },

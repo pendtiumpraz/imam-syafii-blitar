@@ -49,26 +49,78 @@ export async function GET(request: NextRequest) {
 
     const categories = await prisma.financial_categories.findMany({
       where,
-      include: {
-        account: true,
-        parent: true,
-        children: query.includeChildren,
-        _count: {
-          select: {
-            transactions: true,
-            budgetItems: true,
-          },
-        },
-      },
       orderBy: [
         { type: 'asc' },
         { name: 'asc' },
       ],
     })
 
-    return NextResponse.json({ 
-      categories,
-      total: categories.length,
+    // Fetch related data separately
+    const accountIds = [...new Set(categories.map(c => c.accountId))]
+    const parentIds = [...new Set(categories.filter(c => c.parentId).map(c => c.parentId!))]
+    const categoryIds = categories.map(c => c.id)
+
+    const [accountsList, parents, children, transactionCounts, budgetItemCounts] = await Promise.all([
+      // Fetch accounts
+      accountIds.length > 0 ? prisma.financial_accounts.findMany({
+        where: { id: { in: accountIds } },
+      }) : [],
+      // Fetch parents
+      parentIds.length > 0 ? prisma.financial_categories.findMany({
+        where: { id: { in: parentIds } },
+      }) : [],
+      // Fetch children if requested
+      query.includeChildren ? prisma.financial_categories.findMany({
+        where: { parentId: { in: categoryIds } },
+      }) : [],
+      // Count transactions per category
+      Promise.all(categoryIds.map(async id => ({
+        categoryId: id,
+        count: await prisma.transactions.count({ where: { categoryId: id } }),
+      }))),
+      // Count budget items per category
+      Promise.all(categoryIds.map(async id => ({
+        categoryId: id,
+        count: await prisma.budget_items.count({ where: { categoryId: id } }),
+      }))),
+    ])
+
+    // Create Maps for efficient lookups
+    const accountsMap = new Map(accountsList.map(a => [a.id, a]))
+    const parentsMap = new Map(parents.map(p => [p.id, p]))
+
+    // Type for children array
+    type ChildCategory = typeof categories[number]
+    const childrenMap = new Map<string, ChildCategory[]>()
+    categories.forEach(c => childrenMap.set(c.id, []))
+    if (query.includeChildren && children.length > 0) {
+      children.forEach(child => {
+        if (child.parentId) {
+          const childList = childrenMap.get(child.parentId)
+          if (childList) {
+            childList.push(child)
+          }
+        }
+      })
+    }
+    const transactionCountsMap = new Map(transactionCounts.map(tc => [tc.categoryId, tc.count]))
+    const budgetItemCountsMap = new Map(budgetItemCounts.map(bc => [bc.categoryId, bc.count]))
+
+    // Combine all data
+    const categoriesWithRelations = categories.map(c => ({
+      ...c,
+      account: accountsMap.get(c.accountId) || null,
+      parent: c.parentId ? (parentsMap.get(c.parentId) || null) : null,
+      children: query.includeChildren ? (childrenMap.get(c.id) || []) : undefined,
+      _count: {
+        transactions: transactionCountsMap.get(c.id) || 0,
+        budgetItems: budgetItemCountsMap.get(c.id) || 0,
+      },
+    }))
+
+    return NextResponse.json({
+      categories: categoriesWithRelations,
+      total: categoriesWithRelations.length,
     })
 
   } catch (error: any) {
@@ -147,20 +199,45 @@ export async function POST(request: NextRequest) {
 
     const category = await prisma.financial_categories.create({
       data,
-      include: {
-        account: true,
-        parent: true,
-        children: true,
-        _count: {
-          select: {
-            transactions: true,
-            budgetItems: true,
-          },
-        },
-      },
     })
 
-    return NextResponse.json(category, { status: 201 })
+    // Fetch related data separately
+    const [categoryAccount, categoryParent, categoryChildren, transactionCount, budgetItemCount] = await Promise.all([
+      // Fetch account
+      prisma.financial_accounts.findUnique({
+        where: { id: category.accountId },
+      }),
+      // Fetch parent
+      category.parentId ? prisma.financial_categories.findUnique({
+        where: { id: category.parentId },
+      }) : null,
+      // Fetch children (will be empty for new category)
+      prisma.financial_categories.findMany({
+        where: { parentId: category.id },
+      }),
+      // Count transactions (will be 0 for new category)
+      prisma.transactions.count({
+        where: { categoryId: category.id },
+      }),
+      // Count budget items (will be 0 for new category)
+      prisma.budget_items.count({
+        where: { categoryId: category.id },
+      }),
+    ])
+
+    // Combine all data
+    const categoryWithRelations = {
+      ...category,
+      account: categoryAccount,
+      parent: categoryParent,
+      children: categoryChildren,
+      _count: {
+        transactions: transactionCount,
+        budgetItems: budgetItemCount,
+      },
+    }
+
+    return NextResponse.json(categoryWithRelations, { status: 201 })
 
   } catch (error: any) {
     console.error('Error creating category:', error)

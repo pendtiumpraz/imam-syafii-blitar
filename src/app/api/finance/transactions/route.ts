@@ -52,12 +52,16 @@ async function generateTransactionNumber(): Promise<string> {
 async function createJournalEntry(transaction: any, userId: string) {
   const category = await prisma.financial_categories.findUnique({
     where: { id: transaction.categoryId },
-    include: { account: true },
   })
 
   if (!category) {
     throw new Error('Category not found')
   }
+
+  // Fetch account separately
+  const account = await prisma.financial_accounts.findUnique({
+    where: { id: category.accountId },
+  })
 
   // Generate journal entry number
   const year = new Date().getFullYear()
@@ -105,33 +109,57 @@ async function createJournalEntry(transaction: any, userId: string) {
       totalCredit: transaction.amount,
       isBalanced: true,
       createdBy: userId,
-      entries: {
-        create: [
-          {
-            accountId: debitAccountId,
-            debitAmount: transaction.amount,
-            creditAmount: 0,
-            description: `${transaction.type}: ${transaction.description}`,
-            lineOrder: 1,
-          },
-          {
-            accountId: creditAccountId,
-            debitAmount: 0,
-            creditAmount: transaction.amount,
-            description: `${transaction.type}: ${transaction.description}`,
-            lineOrder: 2,
-          },
-        ],
-      },
-    },
-    include: {
-      entries: {
-        include: {
-          account: true,
-        },
-      },
     },
   })
+
+  // Create journal entry lines separately
+  const [debitLine, creditLine] = await Promise.all([
+    prisma.journal_entry_lines.create({
+      data: {
+        journalId: journalEntry.id,
+        accountId: debitAccountId,
+        debitAmount: transaction.amount,
+        creditAmount: 0,
+        description: `${transaction.type}: ${transaction.description}`,
+        lineOrder: 1,
+      },
+    }),
+    prisma.journal_entry_lines.create({
+      data: {
+        journalId: journalEntry.id,
+        accountId: creditAccountId,
+        debitAmount: 0,
+        creditAmount: transaction.amount,
+        description: `${transaction.type}: ${transaction.description}`,
+        lineOrder: 2,
+      },
+    }),
+  ])
+
+  // Fetch accounts for the lines
+  const [debitAccount, creditAccount] = await Promise.all([
+    prisma.financial_accounts.findUnique({
+      where: { id: debitAccountId },
+    }),
+    prisma.financial_accounts.findUnique({
+      where: { id: creditAccountId },
+    }),
+  ])
+
+  // Combine journal entry with lines and accounts
+  const journalEntryWithLines = {
+    ...journalEntry,
+    entries: [
+      {
+        ...debitLine,
+        account: debitAccount,
+      },
+      {
+        ...creditLine,
+        account: creditAccount,
+      },
+    ],
+  }
 
   // Update account balances
   await prisma.financial_accounts.update({
@@ -152,7 +180,7 @@ async function createJournalEntry(transaction: any, userId: string) {
     },
   })
 
-  return journalEntry
+  return journalEntryWithLines
 }
 
 // GET - Retrieve transactions with advanced filtering
@@ -205,29 +233,6 @@ export async function GET(request: NextRequest) {
     const [transactions, total, summary] = await Promise.all([
       prisma.transactions.findMany({
         where,
-        include: {
-          category: {
-            include: {
-              account: true,
-            },
-          },
-          creator: {
-            select: {
-              id: true,
-              name: true,
-              username: true,
-            },
-          },
-          journalEntry: {
-            include: {
-              entries: {
-                include: {
-                  account: true,
-                },
-              },
-            },
-          },
-        },
         orderBy: {
           [query.sortBy]: query.sortOrder,
         },
@@ -246,8 +251,89 @@ export async function GET(request: NextRequest) {
       }),
     ])
 
+    // Fetch related data separately
+    const categoryIds = [...new Set(transactions.map(t => t.categoryId))]
+    const creatorIds = [...new Set(transactions.map(t => t.createdBy))]
+    const transactionIds = transactions.map(t => t.id)
+
+    const [categories, creators, journalEntries] = await Promise.all([
+      // Fetch categories
+      categoryIds.length > 0 ? prisma.financial_categories.findMany({
+        where: { id: { in: categoryIds } },
+      }) : [],
+      // Fetch creators
+      creatorIds.length > 0 ? prisma.users.findMany({
+        where: { id: { in: creatorIds } },
+        select: {
+          id: true,
+          name: true,
+          username: true,
+        },
+      }) : [],
+      // Fetch journal entries
+      transactionIds.length > 0 ? prisma.journal_entries.findMany({
+        where: { transactionId: { in: transactionIds } },
+      }) : [],
+    ])
+
+    // Fetch accounts for categories
+    const accountIds = [...new Set(categories.map(c => c.accountId))]
+    const accounts = accountIds.length > 0 ? await prisma.financial_accounts.findMany({
+      where: { id: { in: accountIds } },
+    }) : []
+
+    // Fetch journal entry lines for all journal entries
+    const journalEntryIds = journalEntries.map(je => je.id)
+    const journalEntryLines = journalEntryIds.length > 0 ? await prisma.journal_entry_lines.findMany({
+      where: { journalId: { in: journalEntryIds } },
+    }) : []
+
+    // Fetch accounts for journal entry lines
+    const jeLineAccountIds = [...new Set(journalEntryLines.map(jel => jel.accountId))]
+    const jeLineAccounts = jeLineAccountIds.length > 0 ? await prisma.financial_accounts.findMany({
+      where: { id: { in: jeLineAccountIds } },
+    }) : []
+
+    // Create Maps for efficient lookups
+    const accountsMap = new Map(accounts.map(a => [a.id, a]))
+    const categoriesMap = new Map(categories.map(c => ({
+      ...c,
+      account: accountsMap.get(c.accountId) || null,
+    })).map(c => [c.id, c]))
+    const creatorsMap = new Map(creators.map(u => [u.id, u]))
+    const jeLineAccountsMap = new Map(jeLineAccounts.map(a => [a.id, a]))
+
+    // Group journal entry lines by journalId
+    const journalEntryLinesMap = new Map<string, typeof journalEntryLines>()
+    journalEntryLines.forEach(line => {
+      if (!journalEntryLinesMap.has(line.journalId)) {
+        journalEntryLinesMap.set(line.journalId, [])
+      }
+      journalEntryLinesMap.get(line.journalId)?.push({
+        ...line,
+        account: jeLineAccountsMap.get(line.accountId) || null,
+      } as any)
+    })
+
+    // Map journal entries with their lines
+    const journalEntriesMap = new Map(journalEntries.map(je => [
+      je.transactionId,
+      {
+        ...je,
+        entries: journalEntryLinesMap.get(je.id) || [],
+      }
+    ]))
+
+    // Combine all data
+    const transactionsWithRelations = transactions.map(t => ({
+      ...t,
+      category: categoriesMap.get(t.categoryId) || null,
+      creator: creatorsMap.get(t.createdBy) || null,
+      journalEntry: t.id ? journalEntriesMap.get(t.id) || null : null,
+    }))
+
     return NextResponse.json({
-      transactions,
+      transactions: transactionsWithRelations,
       pagination: {
         page: query.page,
         limit: query.limit,
@@ -297,9 +383,6 @@ export async function POST(request: NextRequest) {
         type: data.type,
         isActive: true,
       },
-      include: {
-        account: true,
-      },
     })
 
     if (!category) {
@@ -308,6 +391,11 @@ export async function POST(request: NextRequest) {
         { status: 404 }
       )
     }
+
+    // Fetch account separately
+    const account = await prisma.financial_accounts.findUnique({
+      where: { id: category.accountId },
+    })
 
     // Generate transaction number
     const transactionNo = await generateTransactionNumber()
@@ -330,27 +418,33 @@ export async function POST(request: NextRequest) {
           notes: data.notes,
           createdBy: session.user.id,
         },
-        include: {
-          category: {
-            include: {
-              account: true,
-            },
-          },
-          creator: {
-            select: {
-              id: true,
-              name: true,
-              username: true,
-            },
-          },
-        },
       })
 
       // Create journal entry for double-entry bookkeeping
       const journalEntry = await createJournalEntry(transaction, session.user.id)
 
+      // Fetch creator separately
+      const creator = await tx.users.findUnique({
+        where: { id: session.user.id },
+        select: {
+          id: true,
+          name: true,
+          username: true,
+        },
+      })
+
+      // Combine transaction with category and creator
+      const transactionWithRelations = {
+        ...transaction,
+        category: {
+          ...category,
+          account,
+        },
+        creator,
+      }
+
       return {
-        transaction,
+        transaction: transactionWithRelations,
         journalEntry,
       }
     })

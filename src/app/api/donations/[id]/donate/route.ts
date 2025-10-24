@@ -133,21 +133,16 @@ export async function POST(
         ipAddress: ipAddress || null,
         userAgent: userAgent || null,
         referrer: referrer || null
-      },
-      include: {
-        campaign: {
-          select: {
-            id: true,
-            title: true,
-            slug: true
-          }
-        },
-        category: {
-          select: {
-            id: true,
-            name: true
-          }
-        }
+      }
+    })
+
+    // Fetch related campaign data
+    const campaignData = await prisma.donation_campaigns.findUnique({
+      where: { id: campaignId },
+      select: {
+        id: true,
+        title: true,
+        slug: true
       }
     })
 
@@ -210,8 +205,8 @@ export async function POST(
       donationId: donation.id,
       donationNo: donation.donationNo,
       campaignId: donation.campaignId,
-      campaignTitle: donation.campaign?.title,
-      campaignSlug: donation.campaign?.slug,
+      campaignTitle: campaignData?.title,
+      campaignSlug: campaignData?.slug,
       amount: parseFloat(donation.amount.toString()),
       paymentMethod: donation.paymentMethod,
       paymentStatus: donation.paymentStatus,

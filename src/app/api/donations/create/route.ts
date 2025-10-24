@@ -128,10 +128,6 @@ export async function POST(request: NextRequest) {
         ipAddress: ipAddress || null,
         userAgent: userAgent || null,
         referrer: referrer || null
-      },
-      include: {
-        campaign: true,
-        category: true
       }
     })
 

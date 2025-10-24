@@ -18,39 +18,7 @@ export async function GET(request: NextRequest) {
       include: {
         parentStudents: {
           include: {
-            student: {
-              include: {
-                studentClasses: {
-                  where: {
-                    status: 'ACTIVE'
-                  },
-                  include: {
-                    class: {
-                      include: {
-                        teacher: {
-                          select: {
-                            name: true,
-                            email: true
-                          }
-                        },
-                        academicYear: {
-                          select: {
-                            name: true,
-                            isActive: true
-                          }
-                        }
-                      }
-                    }
-                  }
-                },
-                grades: {
-                  include: {
-                    subjects: true
-                  }
-                },
-                attendances: true
-              }
-            }
+            student: true
           }
         }
       }
@@ -78,38 +46,152 @@ export async function GET(request: NextRequest) {
       }, { status: 404 });
     }
 
+    // Get student IDs for fetching related data separately
+    const allStudentIds = parentAccount.parentStudents.map(ps => ps.student.id);
+
+    // Fetch student_classes, grades, and attendances separately
+    const [studentClasses, grades, attendances] = await Promise.all([
+      prisma.student_classes.findMany({
+        where: {
+          studentId: { in: allStudentIds },
+          status: 'ACTIVE'
+        },
+        include: {
+          classes: {
+            include: {
+              academicYear: {
+                select: {
+                  name: true,
+                  isActive: true
+                }
+              },
+              teacher: {
+                select: {
+                  name: true,
+                  email: true
+                }
+              }
+            }
+          }
+        }
+      }),
+      prisma.grades.findMany({
+        where: {
+          studentId: { in: allStudentIds }
+        },
+        include: {
+          subjects: true
+        }
+      }),
+      prisma.attendances.findMany({
+        where: {
+          studentId: { in: allStudentIds }
+        }
+      })
+    ]);
+
+    // Create maps for quick lookup
+    const studentClassesMap = new Map<string, typeof studentClasses>();
+    const gradesMap = new Map<string, typeof grades>();
+    const attendancesMap = new Map<string, typeof attendances>();
+
+    allStudentIds.forEach((id: string) => {
+      studentClassesMap.set(id, []);
+      gradesMap.set(id, []);
+      attendancesMap.set(id, []);
+    });
+
+    studentClasses.forEach(sc => {
+      const existing = studentClassesMap.get(sc.studentId) || [];
+      existing.push(sc);
+      studentClassesMap.set(sc.studentId, existing);
+    });
+
+    grades.forEach(g => {
+      const existing = gradesMap.get(g.studentId) || [];
+      existing.push(g);
+      gradesMap.set(g.studentId, existing);
+    });
+
+    attendances.forEach(a => {
+      const existing = attendancesMap.get(a.studentId) || [];
+      existing.push(a);
+      attendancesMap.set(a.studentId, existing);
+    });
+
+    // Define types for attendance and grade objects
+    interface AttendanceRecord {
+      semesterId: string;
+      status: string;
+    }
+
+    interface GradeRecord {
+      semesterId: string;
+      total: { toNumber: () => number } | null;
+      grade: string | null;
+      point: { toNumber: () => number } | null;
+      subjects: {
+        name: string;
+        code: string;
+        category: string;
+      } | null;
+    }
+
+    interface StudentClass {
+      status: string;
+      rollNumber: string | null;
+      classes: {
+        id: string;
+        name: string;
+        level: string | null;
+        program: string | null;
+        academicYear: {
+          name: string;
+          isActive: boolean;
+        } | null;
+        teacher: {
+          name: string | null;
+          email: string;
+        } | null;
+      } | null;
+    }
+
     // Process children data
     const children = parentAccount.parentStudents.map((parentStudent) => {
       const student = parentStudent.student;
-      
+
+      // Get data from maps
+      const studentAttendances = (attendancesMap.get(student.id) || []) as AttendanceRecord[];
+      const studentGrades = (gradesMap.get(student.id) || []) as GradeRecord[];
+
       // Calculate current attendance stats
-      const currentAttendances = student.attendances.filter(
-        (att) => currentSemester && att.semesterId === currentSemester.id
+      const currentAttendances = studentAttendances.filter(
+        (att: AttendanceRecord) => currentSemester && att.semesterId === currentSemester.id
       );
-      
+
       const attendanceStats = {
         totalDays: currentAttendances.length,
-        presentDays: currentAttendances.filter((att) => att.status === 'HADIR').length,
-        absentDays: currentAttendances.filter((att) => att.status === 'ALPHA').length,
-        sickDays: currentAttendances.filter((att) => att.status === 'SAKIT').length,
-        permittedDays: currentAttendances.filter((att) => att.status === 'IZIN').length,
-        lateDays: currentAttendances.filter((att) => att.status === 'TERLAMBAT').length,
-        percentage: currentAttendances.length > 0 
-          ? Math.round((currentAttendances.filter((att) => att.status === 'HADIR').length / currentAttendances.length) * 100)
+        presentDays: currentAttendances.filter((att: AttendanceRecord) => att.status === 'HADIR').length,
+        absentDays: currentAttendances.filter((att: AttendanceRecord) => att.status === 'ALPHA').length,
+        sickDays: currentAttendances.filter((att: AttendanceRecord) => att.status === 'SAKIT').length,
+        permittedDays: currentAttendances.filter((att: AttendanceRecord) => att.status === 'IZIN').length,
+        lateDays: currentAttendances.filter((att: AttendanceRecord) => att.status === 'TERLAMBAT').length,
+        percentage: currentAttendances.length > 0
+          ? Math.round((currentAttendances.filter((att: AttendanceRecord) => att.status === 'HADIR').length / currentAttendances.length) * 100)
           : 0
       };
 
       // Calculate current semester grades
-      const currentGrades = student.grades.filter(
-        (grade) => currentSemester && grade.semesterId === currentSemester.id && grade.total
+      const currentGrades = studentGrades.filter(
+        (grade: GradeRecord) => currentSemester && grade.semesterId === currentSemester.id && grade.total
       );
 
       const gradeStats = {
         totalSubjects: currentGrades.length,
-        average: currentGrades.length > 0 
-          ? Math.round(currentGrades.reduce((sum, grade) => sum + (grade.total?.toNumber() || 0), 0) / currentGrades.length * 100) / 100
+        average: currentGrades.length > 0
+          ? Math.round(currentGrades.reduce((sum: number, grade: GradeRecord) => sum + (grade.total?.toNumber() || 0), 0) / currentGrades.length * 100) / 100
           : 0,
-        subjects: currentGrades.map((grade) => ({
+        subjects: currentGrades.map((grade: GradeRecord) => ({
           name: grade.subjects?.name || 'Unknown',
           code: grade.subjects?.code || 'N/A',
           category: grade.subjects?.category || 'UMUM',
@@ -119,9 +201,10 @@ export async function GET(request: NextRequest) {
         }))
       };
 
-      // Get current class info
-      const currentClass = student.studentClasses.find((sc) => 
-        sc.status === 'ACTIVE' && sc.class.academicYear.isActive
+      // Get current class info from the separately fetched data
+      const studentClassList = (studentClassesMap.get(student.id) || []) as StudentClass[];
+      const currentClass = studentClassList.find((sc: StudentClass) =>
+        sc.status === 'ACTIVE' && sc.classes?.academicYear?.isActive
       );
 
       return {
@@ -132,13 +215,13 @@ export async function GET(request: NextRequest) {
         photo: student.photo,
         institutionType: student.institutionType,
         grade: student.grade,
-        currentClass: currentClass ? {
-          id: currentClass.class.id,
-          name: currentClass.class.name,
-          level: currentClass.class.level,
-          program: currentClass.class.program,
-          teacher: currentClass.class.teacher,
-          academicYear: currentClass.class.academicYear.name,
+        currentClass: currentClass && currentClass.classes ? {
+          id: currentClass.classes.id,
+          name: currentClass.classes.name,
+          level: currentClass.classes.level,
+          program: currentClass.classes.program,
+          teacher: currentClass.classes.teacher || null,
+          academicYear: currentClass.classes.academicYear?.name || 'Unknown',
           rollNumber: currentClass.rollNumber
         } : null,
         attendance: attendanceStats,
@@ -154,7 +237,7 @@ export async function GET(request: NextRequest) {
           lte: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // Next 30 days
         },
         classesId: {
-          in: children.map(child => child.currentClass?.id).filter((id): id is string => !!id)
+          in: children.map((child: { currentClass: { id: string } | null }) => child.currentClass?.id).filter((id): id is string => !!id)
         }
       },
       include: {
@@ -170,7 +253,7 @@ export async function GET(request: NextRequest) {
     const recentGrades = await prisma.grades.findMany({
       where: {
         studentId: {
-          in: children.map(child => child.id)
+          in: children.map((child: { id: string }) => child.id)
         },
         semesterId: currentSemester.id,
         updatedAt: {
@@ -190,12 +273,12 @@ export async function GET(request: NextRequest) {
     });
 
     // Get student names for recent grades
-    const studentIds = [...new Set(recentGrades.map(g => g.studentId))];
+    const recentGradeStudentIds = [...new Set(recentGrades.map((g: { studentId: string }) => g.studentId))];
     const students = await prisma.students.findMany({
-      where: { id: { in: studentIds } },
+      where: { id: { in: recentGradeStudentIds } },
       select: { id: true, fullName: true, nickname: true }
     });
-    const studentMap = new Map(students.map(s => [s.id, s]));
+    const studentMap = new Map(students.map((s: { id: string; fullName: string; nickname: string | null }) => [s.id, s]));
 
     // Get teacher feedback (simulated for now as there's no specific feedback model)
     const teacherFeedback = [

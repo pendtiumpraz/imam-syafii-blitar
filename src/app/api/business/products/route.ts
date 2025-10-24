@@ -103,20 +103,6 @@ export async function GET(request: NextRequest) {
     const [products, total, categories, lowStockCount] = await Promise.all([
       prisma.products.findMany({
         where,
-        include: {
-          category: true,
-          inventoryRecords: {
-            select: {
-              quantity: true,
-              location: true,
-            },
-          },
-          _count: {
-            select: {
-              saleItems: true,
-            },
-          },
-        },
         orderBy: {
           [query.sortBy]: query.sortOrder,
         },
@@ -137,15 +123,61 @@ export async function GET(request: NextRequest) {
           stock: { lt: prisma.products.fields.minStock },
         },
       }),
-    ])
+    ]);
+
+    // Get categories for products
+    const categoryIds = [...new Set(products.map(p => p.categoryId))];
+    const productCategories = await prisma.product_categories.findMany({
+      where: { id: { in: categoryIds } },
+    });
+    const categoriesMap = new Map(productCategories.map(c => [c.id, c]));
+
+    // Get inventory records separately
+    const productIds = products.map(p => p.id);
+    const inventoryRecords = await prisma.inventory.findMany({
+      where: { productId: { in: productIds } },
+      select: {
+        productId: true,
+        quantity: true,
+        location: true,
+      },
+    });
+    const inventoryMap = new Map<string, Array<{ quantity: number; location: string }>>();
+    inventoryRecords.forEach(inv => {
+      if (!inventoryMap.has(inv.productId)) {
+        inventoryMap.set(inv.productId, []);
+      }
+      inventoryMap.get(inv.productId)!.push({
+        quantity: inv.quantity,
+        location: inv.location,
+      });
+    });
+
+    // Get sale items count
+    const saleItemsCounts = await Promise.all(
+      products.map(async (p) => ({
+        productId: p.id,
+        count: await prisma.sale_items.count({ where: { productId: p.id } }),
+      }))
+    );
+    const saleItemsMap = new Map(saleItemsCounts.map(s => [s.productId, s.count]));
+
+    const productsWithRelations = products.map(p => ({
+      ...p,
+      category: categoriesMap.get(p.categoryId),
+      inventoryRecords: inventoryMap.get(p.id) || [],
+      _count: {
+        saleItems: saleItemsMap.get(p.id) || 0,
+      },
+    }))
 
     // Calculate total inventory value
-    const totalValue = products.reduce((sum, product) => {
+    const totalValue = productsWithRelations.reduce((sum, product) => {
       return sum + (Number(product.price) * product.stock)
     }, 0)
 
     return NextResponse.json({
-      products: products.map(product => ({
+      products: productsWithRelations.map(product => ({
         ...product,
         tags: JSON.parse(product.tags),
         salesCount: product._count.saleItems,
@@ -225,10 +257,17 @@ export async function POST(request: NextRequest) {
           ...data,
           tags: JSON.stringify(data.tags),
         },
-        include: {
-          category: true,
-        },
-      })
+      });
+
+      // Get category separately
+      const category = await tx.product_categories.findUnique({
+        where: { id: product.categoryId },
+      });
+
+      const productWithCategory = {
+        ...product,
+        category,
+      }
 
       // Create initial inventory record if stock > 0
       if (data.stock > 0) {
@@ -257,7 +296,7 @@ export async function POST(request: NextRequest) {
         })
       }
 
-      return product
+      return productWithCategory
     })
 
     return NextResponse.json(

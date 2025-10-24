@@ -125,11 +125,6 @@ export async function GET(request: NextRequest) {
       // Business Units
       prisma.business_units.findMany({
         where: { isActive: true },
-        include: {
-          _count: {
-            select: { monthlyReports: true }
-          }
-        }
       }),
       
       // Business Reports for current month
@@ -138,7 +133,6 @@ export async function GET(request: NextRequest) {
           year: now.getFullYear(),
           month: now.getMonth() + 1
         },
-        include: { unit: true }
       }),
       
       // PPDB
@@ -193,6 +187,15 @@ export async function GET(request: NextRequest) {
       acc.profit += Number(report.netProfit);
       return acc;
     }, { revenue: 0, expenses: 0, profit: 0 });
+
+    // Get monthly reports count for each unit
+    const unitReportsCounts = await Promise.all(
+      businessUnits.map(async (unit) => ({
+        unitId: unit.id,
+        count: await prisma.business_unit_reports.count({ where: { unitId: unit.id } }),
+      }))
+    );
+    const unitReportsMap = new Map(unitReportsCounts.map(u => [u.unitId, u.count]));
 
     // Growth calculations
     const [lastMonthStudents, lastMonthIncome] = await Promise.all([
@@ -268,7 +271,7 @@ export async function GET(request: NextRequest) {
         units: businessUnits.map(unit => ({
           name: unit.name,
           code: unit.code,
-          reportCount: unit._count.monthlyReports
+          reportCount: unitReportsMap.get(unit.id) || 0
         }))
       },
       

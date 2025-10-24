@@ -31,28 +31,25 @@ export async function GET(request: NextRequest) {
           ],
           status: { not: 'ARCHIVED' }
         },
-        include: {
-          sender: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              role: true
-            }
-          },
-          receiver: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              role: true
-            }
-          }
-        },
         orderBy: {
           sentAt: 'asc'
         }
       });
+
+      // Get all unique user IDs
+      const userIds = [...new Set([...messages.map(m => m.senderId), ...messages.map(m => m.receiverId)])];
+
+      // Fetch user data separately
+      const users = await prisma.users.findMany({
+        where: { id: { in: userIds } },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true
+        }
+      });
+      const userMap = new Map(users.map(u => [u.id, u]));
 
       // Mark messages as read if user is receiver
       await prisma.messages.updateMany({
@@ -72,6 +69,8 @@ export async function GET(request: NextRequest) {
           id: threadId,
           messages: messages.map(msg => ({
             ...msg,
+            sender: userMap.get(msg.senderId) || null,
+            receiver: userMap.get(msg.receiverId) || null,
             attachments: JSON.parse(msg.attachments)
           }))
         }
@@ -116,50 +115,74 @@ export async function GET(request: NextRequest) {
         ...whereConditions,
         parentMessageId: null // Only get thread starters
       },
-      include: {
-        sender: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            role: true
-          }
-        },
-        receiver: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            role: true
-          }
-        },
-        replies: {
-          select: {
-            id: true,
-            isRead: true,
-            sentAt: true,
-            sender: {
-              select: {
-                name: true
-              }
-            }
-          },
-          orderBy: {
-            sentAt: 'desc'
-          },
-          take: 1
-        },
-        _count: {
-          select: {
-            replies: true
-          }
-        }
-      },
       orderBy: {
         sentAt: 'desc'
       },
       skip: offset,
       take: limit
+    });
+
+    // Get all unique user IDs from messages
+    const messageUserIds = [...new Set([...messages.map(m => m.senderId), ...messages.map(m => m.receiverId)])];
+
+    // Fetch user data separately
+    const messageUsers = await prisma.users.findMany({
+      where: { id: { in: messageUserIds } },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true
+      }
+    });
+    const messageUserMap = new Map(messageUsers.map(u => [u.id, u]));
+
+    // Get replies for each message
+    const messageIds = messages.map(m => m.id);
+    const replies = await prisma.messages.findMany({
+      where: {
+        parentMessageId: { in: messageIds }
+      },
+      select: {
+        id: true,
+        parentMessageId: true,
+        isRead: true,
+        sentAt: true,
+        senderId: true
+      },
+      orderBy: {
+        sentAt: 'desc'
+      }
+    });
+
+    // Get unique sender IDs from replies
+    const replySenderIds = [...new Set(replies.map(r => r.senderId))];
+    const replySenders = await prisma.users.findMany({
+      where: { id: { in: replySenderIds } },
+      select: {
+        id: true,
+        name: true
+      }
+    });
+    const replySenderMap = new Map(replySenders.map(u => [u.id, u]));
+
+    // Group replies by parent message
+    const repliesByMessage = new Map<string, typeof replies>();
+    messageIds.forEach(id => repliesByMessage.set(id, []));
+    replies.forEach(reply => {
+      if (reply.parentMessageId) {
+        const existing = repliesByMessage.get(reply.parentMessageId) || [];
+        existing.push(reply);
+        repliesByMessage.set(reply.parentMessageId, existing);
+      }
+    });
+
+    // Count replies for each message
+    const replyCountsByMessage = new Map<string, number>();
+    replies.forEach(reply => {
+      if (reply.parentMessageId) {
+        replyCountsByMessage.set(reply.parentMessageId, (replyCountsByMessage.get(reply.parentMessageId) || 0) + 1);
+      }
     });
 
     // Get total count
@@ -180,24 +203,34 @@ export async function GET(request: NextRequest) {
     });
 
     // Format messages
-    const formattedMessages = messages.map(msg => ({
-      id: msg.id,
-      threadId: msg.threadId,
-      subject: msg.subject,
-      content: msg.content.substring(0, 150) + (msg.content.length > 150 ? '...' : ''),
-      type: msg.type,
-      priority: msg.priority,
-      status: msg.status,
-      isRead: msg.isRead,
-      readAt: msg.readAt,
-      sentAt: msg.sentAt,
-      sender: msg.sender,
-      receiver: msg.receiver,
-      replyCount: msg._count.replies,
-      lastReply: msg.replies[0] || null,
-      hasAttachments: JSON.parse(msg.attachments).length > 0,
-      timeAgo: getTimeAgo(msg.sentAt)
-    }));
+    const formattedMessages = messages.map(msg => {
+      const msgReplies = repliesByMessage.get(msg.id) || [];
+      const lastReply = msgReplies.length > 0 ? msgReplies[0] : null;
+
+      return {
+        id: msg.id,
+        threadId: msg.threadId,
+        subject: msg.subject,
+        content: msg.content.substring(0, 150) + (msg.content.length > 150 ? '...' : ''),
+        type: msg.type,
+        priority: msg.priority,
+        status: msg.status,
+        isRead: msg.isRead,
+        readAt: msg.readAt,
+        sentAt: msg.sentAt,
+        sender: messageUserMap.get(msg.senderId) || null,
+        receiver: messageUserMap.get(msg.receiverId) || null,
+        replyCount: replyCountsByMessage.get(msg.id) || 0,
+        lastReply: lastReply ? {
+          id: lastReply.id,
+          isRead: lastReply.isRead,
+          sentAt: lastReply.sentAt,
+          sender: replySenderMap.get(lastReply.senderId) || null
+        } : null,
+        hasAttachments: JSON.parse(msg.attachments).length > 0,
+        timeAgo: getTimeAgo(msg.sentAt)
+      };
+    });
 
     const result = {
       messages: formattedMessages,
@@ -265,7 +298,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify receiver exists and is staff/teacher
-    const receiver = await prisma.users.findFirst({
+    const receiverUser = await prisma.users.findFirst({
       where: {
         id: receiverId,
         role: { in: ['ADMIN', 'STAFF'] },
@@ -273,7 +306,7 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    if (!receiver) {
+    if (!receiverUser) {
       return NextResponse.json(
         { error: 'Invalid receiver' },
         { status: 400 }
@@ -294,26 +327,30 @@ export async function POST(request: NextRequest) {
         attachments: JSON.stringify(attachments),
         parentMessageId,
         threadId: finalThreadId
-      },
-      include: {
-        sender: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            role: true
-          }
-        },
-        receiver: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            role: true
-          }
-        }
       }
     });
+
+    // Fetch sender and receiver data separately
+    const [sender, receiver] = await Promise.all([
+      prisma.users.findUnique({
+        where: { id: message.senderId },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true
+        }
+      }),
+      prisma.users.findUnique({
+        where: { id: message.receiverId },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true
+        }
+      })
+    ]);
 
     // Create notification for receiver
     await prisma.notifications.create({
@@ -335,6 +372,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       ...message,
+      sender,
+      receiver,
       attachments: JSON.parse(message.attachments)
     }, { status: 201 });
   } catch (error) {

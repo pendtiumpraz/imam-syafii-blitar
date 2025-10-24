@@ -66,16 +66,6 @@ export async function GET(request: NextRequest) {
     const [donations, total] = await Promise.all([
       prisma.donations.findMany({
         where,
-        include: {
-          category: true,
-          campaign: {
-            select: {
-              id: true,
-              title: true,
-              slug: true
-            }
-          }
-        },
         orderBy: { createdAt: 'desc' },
         skip,
         take: limit
@@ -83,11 +73,28 @@ export async function GET(request: NextRequest) {
       prisma.donations.count({ where })
     ])
 
+    // Fetch related data
+    const [categories, campaigns] = await Promise.all([
+      prisma.donation_categories.findMany({
+        where: { id: { in: donations.map(d => d.categoryId).filter(Boolean) } }
+      }),
+      prisma.donation_campaigns.findMany({
+        where: { id: { in: donations.map(d => d.campaignId).filter(Boolean) as string[] } },
+        select: { id: true, title: true, slug: true }
+      })
+    ])
+
+    // Create maps for O(1) lookups
+    const categoriesMap = new Map(categories.map(c => [c.id, c]))
+    const campaignsMap = new Map(campaigns.map(c => [c.id, c]))
+
     // Parse amount fields and sanitize sensitive data for non-admin users
     const sanitizedDonations = donations.map(donation => {
       const baseData = {
         ...donation,
-        amount: parseFloat(donation.amount.toString())
+        amount: parseFloat(donation.amount.toString()),
+        category: categoriesMap.get(donation.categoryId),
+        campaign: donation.campaignId ? campaignsMap.get(donation.campaignId) : null
       }
 
       // Hide sensitive information for non-admin users

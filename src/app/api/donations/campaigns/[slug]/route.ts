@@ -12,21 +12,7 @@ export async function GET(
     const { slug } = params
 
     const campaign = await prisma.donation_campaigns.findUnique({
-      where: { slug },
-      include: {
-        category: true,
-        creator: {
-          select: { id: true, name: true, email: true }
-        },
-        _count: {
-          select: {
-            donations: {
-              where: { paymentStatus: 'VERIFIED' }
-            },
-            updates: true
-          }
-        }
-      }
+      where: { slug }
     })
 
     if (!campaign) {
@@ -36,11 +22,37 @@ export async function GET(
       )
     }
 
+    // Fetch related data
+    const [category, creator, donationCount, updateCount] = await Promise.all([
+      prisma.donation_categories.findUnique({
+        where: { id: campaign.categoryId }
+      }),
+      prisma.users.findUnique({
+        where: { id: campaign.createdBy },
+        select: { id: true, name: true, email: true }
+      }),
+      prisma.donations.count({
+        where: {
+          campaignId: campaign.id,
+          paymentStatus: 'VERIFIED'
+        }
+      }),
+      prisma.campaign_updates.count({
+        where: { campaignId: campaign.id }
+      })
+    ])
+
     return NextResponse.json({
       ...campaign,
       images: JSON.parse(campaign.images),
       currentAmount: parseFloat(campaign.currentAmount.toString()),
-      targetAmount: parseFloat(campaign.targetAmount.toString())
+      targetAmount: parseFloat(campaign.targetAmount.toString()),
+      category,
+      creator,
+      _count: {
+        donations: donationCount,
+        updates: updateCount
+      }
     })
   } catch (error) {
     console.error('Error fetching campaign:', error)
@@ -123,20 +135,27 @@ export async function PUT(
         ...(allowAnonymous !== undefined && { allowAnonymous }),
         ...(status && { status }),
         updatedAt: new Date()
-      },
-      include: {
-        category: true,
-        creator: {
-          select: { id: true, name: true, email: true }
-        }
       }
     })
+
+    // Fetch related data
+    const [category, creator] = await Promise.all([
+      prisma.donation_categories.findUnique({
+        where: { id: updatedCampaign.categoryId }
+      }),
+      prisma.users.findUnique({
+        where: { id: updatedCampaign.createdBy },
+        select: { id: true, name: true, email: true }
+      })
+    ])
 
     return NextResponse.json({
       ...updatedCampaign,
       images: JSON.parse(updatedCampaign.images),
       currentAmount: parseFloat(updatedCampaign.currentAmount.toString()),
-      targetAmount: parseFloat(updatedCampaign.targetAmount.toString())
+      targetAmount: parseFloat(updatedCampaign.targetAmount.toString()),
+      category,
+      creator
     })
   } catch (error) {
     console.error('Error updating campaign:', error)

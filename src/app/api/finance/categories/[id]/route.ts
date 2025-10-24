@@ -33,42 +33,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     const category = await prisma.financial_categories.findUnique({
       where: { id: params.id },
-      include: {
-        account: true,
-        parent: true,
-        children: true,
-        transactions: {
-          take: 10,
-          orderBy: { createdAt: 'desc' },
-          select: {
-            id: true,
-            transactionNo: true,
-            amount: true,
-            description: true,
-            date: true,
-            status: true,
-          },
-        },
-        budgetItems: {
-          include: {
-            budget: {
-              select: {
-                id: true,
-                name: true,
-                startDate: true,
-                endDate: true,
-              },
-            },
-          },
-        },
-        _count: {
-          select: {
-            transactions: true,
-            budgetItems: true,
-            children: true,
-          },
-        },
-      },
     })
 
     if (!category) {
@@ -78,7 +42,87 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       )
     }
 
-    return NextResponse.json(category)
+    // Fetch related data separately
+    const [account, parent, children, transactions, budgetItems, transactionCount, budgetItemCount, childrenCount] = await Promise.all([
+      // Fetch account
+      category.accountId ? prisma.financial_accounts.findUnique({
+        where: { id: category.accountId },
+      }) : null,
+      // Fetch parent
+      category.parentId ? prisma.financial_categories.findUnique({
+        where: { id: category.parentId },
+      }) : null,
+      // Fetch children
+      prisma.financial_categories.findMany({
+        where: { parentId: params.id },
+      }),
+      // Fetch recent transactions
+      prisma.transactions.findMany({
+        where: { categoryId: params.id },
+        select: {
+          id: true,
+          transactionNo: true,
+          amount: true,
+          description: true,
+          date: true,
+          status: true,
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 10,
+      }),
+      // Fetch budget items
+      prisma.budget_items.findMany({
+        where: { categoryId: params.id },
+      }),
+      // Count transactions
+      prisma.transactions.count({
+        where: { categoryId: params.id },
+      }),
+      // Count budget items
+      prisma.budget_items.count({
+        where: { categoryId: params.id },
+      }),
+      // Count children
+      prisma.financial_categories.count({
+        where: { parentId: params.id },
+      }),
+    ])
+
+    // Fetch budgets for budget items
+    const budgetIds = budgetItems.map(bi => bi.budgetId).filter((id): id is string => id !== null)
+    const budgets = budgetIds.length > 0 ? await prisma.budgets.findMany({
+      where: { id: { in: budgetIds } },
+      select: {
+        id: true,
+        name: true,
+        startDate: true,
+        endDate: true,
+      },
+    }) : []
+    const budgetsMap = new Map(budgets.map(b => [b.id, b]))
+
+    // Combine budget items with their budgets
+    const budgetItemsWithBudgets = budgetItems.map(bi => ({
+      ...bi,
+      budget: bi.budgetId ? budgetsMap.get(bi.budgetId) : null,
+    }))
+
+    // Combine all data
+    const categoryWithRelations = {
+      ...category,
+      account,
+      parent,
+      children,
+      transactions,
+      budgetItems: budgetItemsWithBudgets,
+      _count: {
+        transactions: transactionCount,
+        budgetItems: budgetItemCount,
+        children: childrenCount,
+      },
+    }
+
+    return NextResponse.json(categoryWithRelations)
 
   } catch (error: any) {
     console.error('Error fetching category:', error)
@@ -198,20 +242,45 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     const category = await prisma.financial_categories.update({
       where: { id: params.id },
       data,
-      include: {
-        account: true,
-        parent: true,
-        children: true,
-        _count: {
-          select: {
-            transactions: true,
-            budgetItems: true,
-          },
-        },
-      },
     })
 
-    return NextResponse.json(category)
+    // Fetch related data separately
+    const [account, parent, children, transactionCount, budgetItemCount] = await Promise.all([
+      // Fetch account
+      category.accountId ? prisma.financial_accounts.findUnique({
+        where: { id: category.accountId },
+      }) : null,
+      // Fetch parent
+      category.parentId ? prisma.financial_categories.findUnique({
+        where: { id: category.parentId },
+      }) : null,
+      // Fetch children
+      prisma.financial_categories.findMany({
+        where: { parentId: params.id },
+      }),
+      // Count transactions
+      prisma.transactions.count({
+        where: { categoryId: params.id },
+      }),
+      // Count budget items
+      prisma.budget_items.count({
+        where: { categoryId: params.id },
+      }),
+    ])
+
+    // Combine all data
+    const categoryWithRelations = {
+      ...category,
+      account,
+      parent,
+      children,
+      _count: {
+        transactions: transactionCount,
+        budgetItems: budgetItemCount,
+      },
+    }
+
+    return NextResponse.json(categoryWithRelations)
 
   } catch (error: any) {
     console.error('Error updating category:', error)
@@ -239,15 +308,6 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     // Check if category exists
     const category = await prisma.financial_categories.findUnique({
       where: { id: params.id },
-      include: {
-        children: true,
-        _count: {
-          select: {
-            transactions: true,
-            budgetItems: true,
-          },
-        },
-      },
     })
 
     if (!category) {
@@ -257,15 +317,28 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       )
     }
 
+    // Fetch related data separately to check constraints
+    const [children, transactionCount, budgetItemCount] = await Promise.all([
+      prisma.financial_categories.findMany({
+        where: { parentId: params.id },
+      }),
+      prisma.transactions.count({
+        where: { categoryId: params.id },
+      }),
+      prisma.budget_items.count({
+        where: { categoryId: params.id },
+      }),
+    ])
+
     // Check if category has transactions or budget items
-    if (category._count.transactions > 0) {
+    if (transactionCount > 0) {
       return NextResponse.json(
         { error: 'Cannot delete category with existing transactions' },
         { status: 409 }
       )
     }
 
-    if (category._count.budgetItems > 0) {
+    if (budgetItemCount > 0) {
       return NextResponse.json(
         { error: 'Cannot delete category with existing budget items' },
         { status: 409 }
@@ -273,7 +346,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     // Check if category has children
-    if (category.children.length > 0) {
+    if (children.length > 0) {
       return NextResponse.json(
         { error: 'Cannot delete category with subcategories. Delete subcategories first.' },
         { status: 409 }

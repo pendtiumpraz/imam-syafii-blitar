@@ -515,9 +515,10 @@ export async function GET(request: NextRequest) {
             where: { number: recentRecord.surahNumber },
             select: { number: true, name: true, nameArabic: true }
           });
-          recentRecordWithSurah = recentRecord as any;
           if (surah) {
-            recentRecordWithSurah = { ...recentRecord, surah };
+            recentRecordWithSurah = { ...recentRecord, surah } as any;
+          } else {
+            recentRecordWithSurah = recentRecord as any;
           }
         }
 
@@ -526,9 +527,10 @@ export async function GET(request: NextRequest) {
             where: { number: currentTarget.targetSurah },
             select: { number: true, name: true, nameArabic: true }
           });
-          currentTargetWithSurah = currentTarget as any;
           if (surah) {
-            currentTargetWithSurah = { ...currentTarget, surah };
+            currentTargetWithSurah = { ...currentTarget, surah } as any;
+          } else {
+            currentTargetWithSurah = currentTarget as any;
           }
         }
 

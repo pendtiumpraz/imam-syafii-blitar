@@ -73,13 +73,6 @@ export async function GET(request: NextRequest) {
     const [transactions, total, summary] = await Promise.all([
       prisma.inventory_transactions.findMany({
         where,
-        include: {
-          product: {
-            include: {
-              category: true,
-            },
-          },
-        },
         orderBy: {
           [query.sortBy]: query.sortOrder,
         },
@@ -97,10 +90,34 @@ export async function GET(request: NextRequest) {
         _count: true,
         where,
       }),
-    ])
+    ]);
+
+    // Get products and categories separately
+    const productIds = [...new Set(transactions.map(t => t.productId))];
+    const products = await prisma.products.findMany({
+      where: { id: { in: productIds } },
+    });
+    const productsMap = new Map(products.map(p => [p.id, p]));
+
+    const categoryIds = [...new Set(products.map(p => p.categoryId))];
+    const categories = await prisma.product_categories.findMany({
+      where: { id: { in: categoryIds } },
+    });
+    const categoriesMap = new Map(categories.map(c => [c.id, c]));
+
+    const transactionsWithProducts = transactions.map(t => {
+      const product = productsMap.get(t.productId);
+      return {
+        ...t,
+        product: product ? {
+          ...product,
+          category: categoriesMap.get(product.categoryId),
+        } : null,
+      };
+    })
 
     return NextResponse.json({
-      transactions,
+      transactions: transactionsWithProducts,
       pagination: {
         page: query.page,
         limit: query.limit,

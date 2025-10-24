@@ -101,7 +101,6 @@ export async function GET(request: NextRequest) {
     }
 
     const [inventory, total] = await Promise.all([
-      // TODO: Add product relation to inventory schema
       prisma.inventory.findMany({
         where,
         orderBy: { [query.sortBy === 'productName' ? 'productId' : query.sortBy]: query.sortOrder },
@@ -109,7 +108,19 @@ export async function GET(request: NextRequest) {
         take: query.limit,
       }),
       prisma.inventory.count({ where }),
-    ])
+    ]);
+
+    // Get products separately
+    const productIds = [...new Set(inventory.map(i => i.productId))];
+    const products = await prisma.products.findMany({
+      where: { id: { in: productIds } },
+    });
+    const productsMap = new Map(products.map(p => [p.id, p]));
+
+    const inventoryWithProducts = inventory.map(i => ({
+      ...i,
+      product: productsMap.get(i.productId),
+    }))
 
     // Get summary statistics
     const [totalValue, lowStockCount, expiringSoonCount, locationSummary] = await Promise.all([
@@ -142,7 +153,7 @@ export async function GET(request: NextRequest) {
     ])
 
     return NextResponse.json({
-      inventory,
+      inventory: inventoryWithProducts,
       pagination: {
         page: query.page,
         limit: query.limit,
@@ -244,9 +255,6 @@ export async function POST(request: NextRequest) {
             lastUpdated: new Date(),
             expiryDate: data.expiryDate ? new Date(data.expiryDate) : undefined,
           },
-          include: {
-            product: true,
-          },
         });
       } else {
         // Create new record
@@ -260,11 +268,18 @@ export async function POST(request: NextRequest) {
             expiryDate: data.expiryDate ? new Date(data.expiryDate) : null,
             lastUpdated: new Date(),
           },
-          include: {
-            product: true,
-          },
         });
       }
+
+      // Get product separately
+      const product = await tx.products.findUnique({
+        where: { id: data.productId },
+      });
+
+      const inventoryWithProduct = {
+        ...inventoryRecord,
+        product,
+      };
 
       // Update product total stock
       const totalStock = await tx.inventory.aggregate({
@@ -277,7 +292,7 @@ export async function POST(request: NextRequest) {
         data: { stock: totalStock._sum.quantity || 0 },
       })
 
-      return { transaction, inventoryRecord }
+      return { transaction, inventoryRecord: inventoryWithProduct }
     })
 
     return NextResponse.json(

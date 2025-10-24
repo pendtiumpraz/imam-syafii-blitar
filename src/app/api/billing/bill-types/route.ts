@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
     const validated = createBillTypeSchema.parse(body);
 
     // Check if name already exists
-    const existing = await prisma.bill_types.findUnique({
+    const existing = await prisma.bill_types.findFirst({
       where: { name: validated.name },
     });
 

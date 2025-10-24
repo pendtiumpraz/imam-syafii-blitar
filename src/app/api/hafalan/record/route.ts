@@ -85,27 +85,37 @@ async function updateStudentProgress(studentId: string) {
   // Update or create progress record
   const avgQuality = records.length > 0 ? qualitySum / records.length : 0;
 
-  await prisma.hafalan_progress.upsert({
-    where: { studentId },
-    create: {
-      studentId,
-      totalSurah: completedSurahs.size,
-      totalAyat,
-      juz30Progress: Number(juz30Progress.toFixed(2)),
-      overallProgress: Number(overallProgress.toFixed(2)),
-      avgQuality: Number(avgQuality.toFixed(2)),
-      totalSessions: records.length,
-      lastUpdated: new Date()
-    },
-    update: {
-      totalSurah: completedSurahs.size,
-      totalAyat,
-      juz30Progress: Number(juz30Progress.toFixed(2)),
-      overallProgress: Number(overallProgress.toFixed(2)),
-      avgQuality: Number(avgQuality.toFixed(2)),
-      lastUpdated: new Date()
-    }
+  // Find existing progress record
+  const existingProgress = await prisma.hafalan_progress.findFirst({
+    where: { studentId }
   });
+
+  if (existingProgress) {
+    await prisma.hafalan_progress.update({
+      where: { id: existingProgress.id },
+      data: {
+        totalSurah: completedSurahs.size,
+        totalAyat,
+        juz30Progress: Number(juz30Progress.toFixed(2)),
+        overallProgress: Number(overallProgress.toFixed(2)),
+        avgQuality: Number(avgQuality.toFixed(2)),
+        lastUpdated: new Date()
+      }
+    });
+  } else {
+    await prisma.hafalan_progress.create({
+      data: {
+        studentId,
+        totalSurah: completedSurahs.size,
+        totalAyat,
+        juz30Progress: Number(juz30Progress.toFixed(2)),
+        overallProgress: Number(overallProgress.toFixed(2)),
+        avgQuality: Number(avgQuality.toFixed(2)),
+        totalSessions: records.length,
+        lastUpdated: new Date()
+      }
+    });
+  }
 }
 
 export async function GET(request: NextRequest) {
@@ -358,7 +368,7 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    const surah = await prisma.quran_surahs.findFirst({
+    const surahData = await prisma.quran_surahs.findFirst({
       where: { number: parseInt(surahNumber) },
       select: {
         number: true,
@@ -373,7 +383,7 @@ export async function POST(request: NextRequest) {
       ...record,
       student,
       teacher: teacherData,
-      surah
+      surah: surahData
     };
 
     // Update student progress
@@ -508,7 +518,7 @@ export async function PUT(request: NextRequest) {
       }
     });
 
-    const surah = await prisma.quran_surahs.findFirst({
+    const surahInfo = await prisma.quran_surahs.findFirst({
       where: { number: record.surahNumber },
       select: {
         number: true,
@@ -523,7 +533,7 @@ export async function PUT(request: NextRequest) {
       ...record,
       student,
       teacher,
-      surah
+      surah: surahInfo
     };
 
     // Update student progress
