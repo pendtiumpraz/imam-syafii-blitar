@@ -45,7 +45,8 @@ export const handleSiswaCommand = {
           institutionType: 'PONDOK',
           enrollmentDate: new Date(),
           enrollmentYear: new Date().getFullYear().toString(),
-          creator: { connect: { id: systemUser.id } }
+          // TODO: creator relation doesn't exist in students model - needs schema update
+          createdBy: systemUser.id
         }
       })
 

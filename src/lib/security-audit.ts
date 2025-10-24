@@ -292,10 +292,11 @@ export class SecurityAuditService {
   /**
    * Export security report for a user
    */
-  static async exportUserSecurityReport(userId: string, daysBack = 30) {
+  static async exportUserSecurityReport(userId: string, daysBack = 30): Promise<any> {
     try {
       const since = new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000)
-      
+
+      // TODO: users relation doesn't exist in security_audit_logs model - needs schema update
       const events = await prisma.security_audit_logs.findMany({
         where: {
           userId,
@@ -304,19 +305,20 @@ export class SecurityAuditService {
           }
         },
         orderBy: { timestamp: 'desc' },
-        include: {
-          user: {
-            select: {
-              username: true,
-              email: true,
-              name: true
-            }
-          }
+      })
+
+      // Get user info separately
+      const user = await prisma.users.findUnique({
+        where: { id: userId },
+        select: {
+          username: true,
+          email: true,
+          name: true
         }
       })
 
       const report = {
-        user: events[0]?.user,
+        user,
         reportPeriod: {
           from: since,
           to: new Date(),

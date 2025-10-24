@@ -44,7 +44,7 @@ export async function POST(
     // Start transaction to update donation and campaign amount
     const result = await prisma.$transaction(async (tx) => {
       // Update donation status
-      const updatedDonation = await tx.donation.update({
+      const updatedDonation = await tx.donations.update({
         where: { id },
         data: {
           paymentStatus: 'VERIFIED',
@@ -56,7 +56,7 @@ export async function POST(
 
       // Update campaign current amount if it's a campaign donation
       if (donation.campaignId) {
-        await tx.donationCampaign.update({
+        await tx.donation_campaigns.update({
           where: { id: donation.campaignId },
           data: {
             currentAmount: {
@@ -70,7 +70,7 @@ export async function POST(
       const certificateNo = `CERT-${donation.donationNo}-${Date.now()}`
       
       // Update donation with certificate number
-      await tx.donation.update({
+      await tx.donations.update({
         where: { id },
         data: {
           certificateNo

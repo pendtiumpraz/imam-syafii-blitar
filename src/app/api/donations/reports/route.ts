@@ -94,9 +94,9 @@ async function getSummaryReport() {
     
     // Campaign statistics
     Promise.all([
-      prisma.donations_campaigns.count({ where: { status: 'ACTIVE' } }),
-      prisma.donations_campaigns.count({ where: { status: 'COMPLETED' } }),
-      prisma.donations_campaigns.count()
+      prisma.donation_campaigns.count({ where: { status: 'ACTIVE' } }),
+      prisma.donation_campaigns.count({ where: { status: 'COMPLETED' } }),
+      prisma.donation_campaigns.count()
     ]).then(([active, completed, total]) => ({
       active,
       completed,
@@ -110,7 +110,7 @@ async function getSummaryReport() {
       _sum: { amount: true },
       _count: true
     }).then(async (results) => {
-      const categories = await prisma.donations_categories.findMany({
+      const categories = await prisma.donation_categories.findMany({
         where: {
           id: { in: results.map(r => r.categoryId) }
         }
@@ -150,7 +150,7 @@ async function getSummaryReport() {
     ).then(amounts => amounts.reverse()),
     
     // Top campaigns
-    prisma.donations_campaigns.findMany({
+    prisma.donation_campaigns.findMany({
       include: {
         _count: {
           select: {
@@ -247,7 +247,7 @@ async function getDonationsReport(startDate?: string | null, endDate?: string | 
 }
 
 async function getCampaignsReport() {
-  const campaigns = await prisma.donations_campaigns.findMany({
+  const campaigns = await prisma.donation_campaigns.findMany({
     include: {
       category: { select: { name: true } },
       creator: { select: { name: true } },
@@ -300,7 +300,7 @@ async function getCategoriesReport(startDate?: string | null, endDate?: string |
     _avg: { amount: true }
   })
 
-  const categories = await prisma.donations_categories.findMany({
+  const categories = await prisma.donation_categories.findMany({
     where: {
       id: { in: categoryStats.map(s => s.categoryId) }
     }

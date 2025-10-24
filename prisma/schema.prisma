@@ -17,13 +17,16 @@ model academic_years {
   isActive    Boolean   @default(false)
   description String?
   createdAt   DateTime  @default(now())
-  updatedAt   DateTime @updatedAt
+  updatedAt   DateTime  @updatedAt
   deletedAt   DateTime?
   isDeleted   Boolean   @default(false)
   deletedBy   String?
   deleted_at  DateTime? @db.Timestamp(6)
   is_deleted  Boolean?  @default(false)
   deleted_by  String?   @db.VarChar(255)
+
+  classes   classes[]
+  semesters semesters[]
 
   @@index([is_deleted, deleted_at], map: "idx_academic_years_deleted")
 }
@@ -40,7 +43,7 @@ model activities {
   status      String    @default("planned")
   createdBy   String
   createdAt   DateTime  @default(now())
-  updatedAt   DateTime @updatedAt
+  updatedAt   DateTime  @updatedAt
   deletedAt   DateTime?
   deletedBy   String?
   isDeleted   Boolean   @default(false)
@@ -98,7 +101,7 @@ model alumni {
   lastContactDate    DateTime?
   createdBy          String
   createdAt          DateTime  @default(now())
-  updatedAt          DateTime @updatedAt
+  updatedAt          DateTime  @updatedAt
   deletedAt          DateTime?
   isDeleted          Boolean   @default(false)
   deletedBy          String?
@@ -137,7 +140,7 @@ model announcements {
   approvedAt     DateTime?
   publishedAt    DateTime?
   createdAt      DateTime  @default(now())
-  updatedAt      DateTime @updatedAt
+  updatedAt      DateTime  @updatedAt
   deletedAt      DateTime?
   isDeleted      Boolean   @default(false)
   deletedBy      String?
@@ -155,7 +158,7 @@ model answers {
   ustadzId   String
   answer     String
   createdAt  DateTime  @default(now())
-  updatedAt  DateTime @updatedAt
+  updatedAt  DateTime  @updatedAt
   deletedAt  DateTime?
   isDeleted  Boolean   @default(false)
   deletedBy  String?
@@ -178,10 +181,12 @@ model attendances {
   markedBy   String
   markedAt   DateTime  @default(now())
   createdAt  DateTime  @default(now())
-  updatedAt  DateTime @updatedAt
+  updatedAt  DateTime  @updatedAt
   deletedAt  DateTime?
   isDeleted  Boolean   @default(false)
   deletedBy  String?
+  classes    classes?  @relation(fields: [classesId], references: [id])
+  classesId  String?
 }
 
 model audit_trails {
@@ -226,7 +231,7 @@ model bill_payments {
   ipAddress          String?
   userAgent          String?
   createdAt          DateTime  @default(now())
-  updatedAt          DateTime @updatedAt
+  updatedAt          DateTime  @updatedAt
   deletedAt          DateTime?
   isDeleted          Boolean   @default(false)
   deletedBy          String?
@@ -253,7 +258,7 @@ model bill_types {
   isActive                 Boolean   @default(true)
   sortOrder                Int       @default(0)
   createdAt                DateTime  @default(now())
-  updatedAt                DateTime @updatedAt
+  updatedAt                DateTime  @updatedAt
   deleted_at               DateTime? @db.Timestamp(6)
   is_deleted               Boolean?  @default(false)
   deleted_by               String?   @db.VarChar(255)
@@ -279,7 +284,7 @@ model billing_reports {
   completedAt  DateTime?
   errorMessage String?
   createdAt    DateTime  @default(now())
-  updatedAt    DateTime @updatedAt
+  updatedAt    DateTime  @updatedAt
 }
 
 model billing_settings {
@@ -323,7 +328,7 @@ model bills {
   cancelledBy      String?
   cancelReason     String?
   createdAt        DateTime  @default(now())
-  updatedAt        DateTime @updatedAt
+  updatedAt        DateTime  @updatedAt
   deletedAt        DateTime?
   isDeleted        Boolean   @default(false)
   deletedBy        String?
@@ -363,7 +368,7 @@ model budgets {
   approvedBy  String?
   approvedAt  DateTime?
   createdAt   DateTime  @default(now())
-  updatedAt   DateTime @updatedAt
+  updatedAt   DateTime  @updatedAt
   deletedAt   DateTime?
   isDeleted   Boolean   @default(false)
   deletedBy   String?
@@ -393,7 +398,7 @@ model business_transactions {
   receiptNo     String?
   recordedBy    String
   createdAt     DateTime  @default(now())
-  updatedAt     DateTime @updatedAt
+  updatedAt     DateTime  @updatedAt
   deleted_at    DateTime? @db.Timestamp(6)
   is_deleted    Boolean?  @default(false)
   deleted_by    String?   @db.VarChar(255)
@@ -435,7 +440,7 @@ model business_unit_reports {
   notes             String?
   highlights        String?
   createdAt         DateTime  @default(now())
-  updatedAt         DateTime @updatedAt
+  updatedAt         DateTime  @updatedAt
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
@@ -451,7 +456,7 @@ model business_units {
   isActive    Boolean   @default(true)
   startDate   DateTime  @default(now())
   createdAt   DateTime  @default(now())
-  updatedAt   DateTime @updatedAt
+  updatedAt   DateTime  @updatedAt
   deleted_at  DateTime? @db.Timestamp(6)
   is_deleted  Boolean?  @default(false)
   deleted_by  String?   @db.VarChar(255)
@@ -487,13 +492,21 @@ model classes {
   description    String?
   isActive       Boolean   @default(true)
   createdAt      DateTime  @default(now())
-  updatedAt      DateTime @updatedAt
+  updatedAt      DateTime  @updatedAt
   deletedAt      DateTime?
   isDeleted      Boolean   @default(false)
   deletedBy      String?
   deleted_at     DateTime? @db.Timestamp(6)
   is_deleted     Boolean?  @default(false)
   deleted_by     String?   @db.VarChar(255)
+
+  academicYear    academic_years?    @relation(fields: [academicYearId], references: [id])
+  teacher         users?             @relation("ClassTeacher", fields: [teacherId], references: [id])
+  schedules       schedules[]
+  studentClasses  student_classes[]
+  teacherSubjects teacher_subjects[]
+  exams           exams[]
+  attendances     attendances[]
 
   @@index([is_deleted, deleted_at], map: "idx_classes_deleted")
 }
@@ -512,7 +525,7 @@ model courses {
   status      String    @default("active")
   createdBy   String
   createdAt   DateTime  @default(now())
-  updatedAt   DateTime @updatedAt
+  updatedAt   DateTime  @updatedAt
   deletedAt   DateTime?
   deletedBy   String?
   isDeleted   Boolean   @default(false)
@@ -525,16 +538,18 @@ model courses {
 }
 
 model curriculum_subjects {
-  id           String   @id @default(cuid())
+  id           String    @id @default(cuid())
   curriculumId String
   subjectId    String
   grade        String
   semester     Int?
-  credits      Int      @default(2)
-  isRequired   Boolean  @default(true)
-  minScore     Int      @default(60)
-  sortOrder    Int      @default(0)
-  createdAt    DateTime @default(now())
+  credits      Int       @default(2)
+  isRequired   Boolean   @default(true)
+  minScore     Int       @default(60)
+  sortOrder    Int       @default(0)
+  createdAt    DateTime  @default(now())
+  subjects     subjects? @relation(fields: [subjectsId], references: [id])
+  subjectsId   String?
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
@@ -548,7 +563,7 @@ model curriculums {
   validFrom   DateTime
   validUntil  DateTime?
   createdAt   DateTime  @default(now())
-  updatedAt   DateTime @updatedAt
+  updatedAt   DateTime  @updatedAt
   deletedAt   DateTime?
   isDeleted   Boolean   @default(false)
   deletedBy   String?
@@ -583,7 +598,7 @@ model donation_campaigns {
   approvedBy     String?
   approvedAt     DateTime?
   createdAt      DateTime  @default(now())
-  updatedAt      DateTime @updatedAt
+  updatedAt      DateTime  @updatedAt
   deletedAt      DateTime?
   isDeleted      Boolean   @default(false)
   deletedBy      String?
@@ -608,7 +623,7 @@ model donation_categories {
   isActive    Boolean   @default(true)
   sortOrder   Int       @default(0)
   createdAt   DateTime  @default(now())
-  updatedAt   DateTime @updatedAt
+  updatedAt   DateTime  @updatedAt
   deleted_at  DateTime? @db.Timestamp(6)
   is_deleted  Boolean?  @default(false)
   deleted_by  String?   @db.VarChar(255)
@@ -647,7 +662,7 @@ model donations {
   userAgent      String?
   referrer       String?
   createdAt      DateTime  @default(now())
-  updatedAt      DateTime @updatedAt
+  updatedAt      DateTime  @updatedAt
   deletedAt      DateTime?
   isDeleted      Boolean   @default(false)
   deletedBy      String?
@@ -678,7 +693,7 @@ model donor_profiles {
   verificationToken   String?
   verifiedAt          DateTime?
   createdAt           DateTime  @default(now())
-  updatedAt           DateTime @updatedAt
+  updatedAt           DateTime  @updatedAt
 
   @@index([email])
   @@index([isVerified])
@@ -707,7 +722,7 @@ model ebooks {
   isPublic      Boolean   @default(true)
   createdBy     String
   createdAt     DateTime  @default(now())
-  updatedAt     DateTime @updatedAt
+  updatedAt     DateTime  @updatedAt
   deletedAt     DateTime?
   deletedBy     String?
   isDeleted     Boolean   @default(false)
@@ -731,7 +746,7 @@ model exam_results {
   enteredBy String?
   enteredAt DateTime?
   createdAt DateTime  @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime  @updatedAt
   deletedAt DateTime?
   isDeleted Boolean   @default(false)
   deletedBy String?
@@ -760,13 +775,17 @@ model exams {
   status       String    @default("SCHEDULED")
   isPublished  Boolean   @default(false)
   createdAt    DateTime  @default(now())
-  updatedAt    DateTime @updatedAt
+  updatedAt    DateTime  @updatedAt
   deletedAt    DateTime?
   isDeleted    Boolean   @default(false)
   deletedBy    String?
   deleted_at   DateTime? @db.Timestamp(6)
   is_deleted   Boolean?  @default(false)
   deleted_by   String?   @db.VarChar(255)
+  classes      classes?  @relation(fields: [classesId], references: [id])
+  classesId    String?
+  subjects     subjects? @relation(fields: [subjectsId], references: [id])
+  subjectsId   String?
 
   @@index([is_deleted, deleted_at], map: "idx_exams_deleted")
 }
@@ -783,7 +802,7 @@ model financial_accounts {
   balance     Float     @default(0)
   description String?
   createdAt   DateTime  @default(now())
-  updatedAt   DateTime @updatedAt
+  updatedAt   DateTime  @updatedAt
   deletedAt   DateTime?
   isDeleted   Boolean   @default(false)
   deletedBy   String?
@@ -809,7 +828,7 @@ model financial_categories {
   description String?
   parentId    String?
   createdAt   DateTime  @default(now())
-  updatedAt   DateTime @updatedAt
+  updatedAt   DateTime  @updatedAt
   deletedAt   DateTime?
   isDeleted   Boolean   @default(false)
   deletedBy   String?
@@ -836,7 +855,7 @@ model financial_reports {
   status    String    @default("GENERATED")
   createdBy String
   createdAt DateTime  @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime  @updatedAt
   deletedAt DateTime?
   isDeleted Boolean   @default(false)
   deletedBy String?
@@ -869,13 +888,15 @@ model grades {
   enteredBy     String?
   enteredAt     DateTime?
   createdAt     DateTime  @default(now())
-  updatedAt     DateTime @updatedAt
+  updatedAt     DateTime  @updatedAt
   deletedAt     DateTime?
   isDeleted     Boolean   @default(false)
   deletedBy     String?
   deleted_at    DateTime? @db.Timestamp(6)
   is_deleted    Boolean?  @default(false)
   deleted_by    String?   @db.VarChar(255)
+  subjects      subjects? @relation(fields: [subjectsId], references: [id])
+  subjectsId    String?
 
   @@index([is_deleted, deleted_at], map: "idx_grades_deleted")
 }
@@ -924,7 +945,7 @@ model hafalan_progress {
   avgFluency       Decimal   @default(0)
   avgTajweed       Decimal   @default(0)
   createdAt        DateTime  @default(now())
-  updatedAt        DateTime @updatedAt
+  updatedAt        DateTime  @updatedAt
   deletedAt        DateTime?
   isDeleted        Boolean   @default(false)
   deletedBy        String?
@@ -952,7 +973,7 @@ model hafalan_records {
   previousRecord String?
   nextTarget     String?
   createdAt      DateTime  @default(now())
-  updatedAt      DateTime @updatedAt
+  updatedAt      DateTime  @updatedAt
   deletedAt      DateTime?
   isDeleted      Boolean   @default(false)
   deletedBy      String?
@@ -989,7 +1010,7 @@ model hafalan_sessions {
   parentFeedback String?
   notes          String?
   createdAt      DateTime  @default(now())
-  updatedAt      DateTime @updatedAt
+  updatedAt      DateTime  @updatedAt
   deletedAt      DateTime?
   isDeleted      Boolean   @default(false)
   deletedBy      String?
@@ -1017,7 +1038,7 @@ model hafalan_targets {
   approvedBy     String?
   notes          String?
   createdAt      DateTime  @default(now())
-  updatedAt      DateTime @updatedAt
+  updatedAt      DateTime  @updatedAt
   deleted_at     DateTime? @db.Timestamp(6)
   is_deleted     Boolean?  @default(false)
   deleted_by     String?   @db.VarChar(255)
@@ -1073,7 +1094,7 @@ model journal_entries {
   reversedBy    String?
   reversedAt    DateTime?
   createdAt     DateTime  @default(now())
-  updatedAt     DateTime @updatedAt
+  updatedAt     DateTime  @updatedAt
   deletedAt     DateTime?
   isDeleted     Boolean   @default(false)
   deletedBy     String?
@@ -1152,7 +1173,7 @@ model line_user_sessions {
   retryCount   Int       @default(0)
   lockedUntil  DateTime?
   createdAt    DateTime  @default(now())
-  updatedAt    DateTime @updatedAt
+  updatedAt    DateTime  @updatedAt
   expiresAt    DateTime?
 }
 
@@ -1191,7 +1212,7 @@ model messages {
   scheduledFor    DateTime?
   sentAt          DateTime  @default(now())
   createdAt       DateTime  @default(now())
-  updatedAt       DateTime @updatedAt
+  updatedAt       DateTime  @updatedAt
   deletedAt       DateTime?
   isDeleted       Boolean   @default(false)
   deletedBy       String?
@@ -1223,7 +1244,7 @@ model notifications {
   scheduledFor DateTime?
   expiresAt    DateTime?
   createdAt    DateTime  @default(now())
-  updatedAt    DateTime @updatedAt
+  updatedAt    DateTime  @updatedAt
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
@@ -1242,7 +1263,7 @@ model ota_programs {
   showProgress    Boolean   @default(true)
   adminNotes      String?
   createdAt       DateTime  @default(now())
-  updatedAt       DateTime @updatedAt
+  updatedAt       DateTime  @updatedAt
   deleted_at      DateTime? @db.Timestamp(6)
   is_deleted      Boolean?  @default(false)
   deleted_by      String?   @db.VarChar(255)
@@ -1279,7 +1300,7 @@ model ota_reports {
   reportFileUrl      String?
   proofFileUrl       String?
   createdAt          DateTime  @default(now())
-  updatedAt          DateTime @updatedAt
+  updatedAt          DateTime  @updatedAt
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
@@ -1307,7 +1328,7 @@ model ota_sponsors {
   donorMessage       String?
   adminNotes         String?
   createdAt          DateTime  @default(now())
-  updatedAt          DateTime @updatedAt
+  updatedAt          DateTime  @updatedAt
   deleted_at         DateTime? @db.Timestamp(6)
   is_deleted         Boolean?  @default(false)
   deleted_by         String?   @db.VarChar(255)
@@ -1326,7 +1347,7 @@ model parent_accounts {
   timezone             String    @default("Asia/Jakarta")
   isActive             Boolean   @default(true)
   createdAt            DateTime  @default(now())
-  updatedAt            DateTime @updatedAt
+  updatedAt            DateTime  @updatedAt
   deletedAt            DateTime?
   isDeleted            Boolean   @default(false)
   deletedBy            String?
@@ -1384,7 +1405,7 @@ model payment_reminders {
   templateUsed     String?
   metadata         String    @default("{}")
   createdAt        DateTime  @default(now())
-  updatedAt        DateTime @updatedAt
+  updatedAt        DateTime  @updatedAt
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
@@ -1418,7 +1439,7 @@ model payments {
   approvalCode       String?
   paidAt             DateTime?
   createdAt          DateTime  @default(now())
-  updatedAt          DateTime @updatedAt
+  updatedAt          DateTime  @updatedAt
   deletedAt          DateTime?
   isDeleted          Boolean   @default(false)
   deletedBy          String?
@@ -1525,7 +1546,7 @@ model ppdb_registrations {
   reviewedBy        String?
   reviewedAt        DateTime?
   createdAt         DateTime  @default(now())
-  updatedAt         DateTime @updatedAt
+  updatedAt         DateTime  @updatedAt
   deletedAt         DateTime?
   isDeleted         Boolean   @default(false)
   deletedBy         String?
@@ -1573,7 +1594,7 @@ model product_categories {
   parentId    String?
   sortOrder   Int       @default(0)
   createdAt   DateTime  @default(now())
-  updatedAt   DateTime @updatedAt
+  updatedAt   DateTime  @updatedAt
   deleted_at  DateTime? @db.Timestamp(6)
   is_deleted  Boolean?  @default(false)
   deleted_by  String?   @db.VarChar(255)
@@ -1602,7 +1623,7 @@ model products {
   tags        String    @default("[]")
   notes       String?
   createdAt   DateTime  @default(now())
-  updatedAt   DateTime @updatedAt
+  updatedAt   DateTime  @updatedAt
   deletedAt   DateTime?
   isDeleted   Boolean   @default(false)
   deletedBy   String?
@@ -1650,7 +1671,7 @@ model purchase_orders {
   notes          String?
   terms          String?
   createdAt      DateTime  @default(now())
-  updatedAt      DateTime @updatedAt
+  updatedAt      DateTime  @updatedAt
   createdBy      String
   deleted_at     DateTime? @db.Timestamp(6)
   is_deleted     Boolean?  @default(false)
@@ -1681,7 +1702,7 @@ model questions {
   isAnonymous Boolean   @default(false)
   status      String    @default("pending")
   createdAt   DateTime  @default(now())
-  updatedAt   DateTime @updatedAt
+  updatedAt   DateTime  @updatedAt
   deletedAt   DateTime?
   isDeleted   Boolean   @default(false)
   deletedBy   String?
@@ -1709,7 +1730,7 @@ model quran_surahs {
   isActive            Boolean   @default(true)
   sortOrder           Int       @default(0)
   createdAt           DateTime  @default(now())
-  updatedAt           DateTime @updatedAt
+  updatedAt           DateTime  @updatedAt
   deleted_at          DateTime? @db.Timestamp(6)
   is_deleted          Boolean?  @default(false)
   deleted_by          String?   @db.VarChar(255)
@@ -1785,7 +1806,7 @@ model registrations {
   verifiedAt       DateTime?
   rejectionReason  String?
   createdAt        DateTime  @default(now())
-  updatedAt        DateTime @updatedAt
+  updatedAt        DateTime  @updatedAt
   submittedAt      DateTime?
   deletedAt        DateTime?
   isDeleted        Boolean   @default(false)
@@ -1832,7 +1853,7 @@ model report_cards {
   pdfUrl               String?
   status               String    @default("DRAFT")
   createdAt            DateTime  @default(now())
-  updatedAt            DateTime @updatedAt
+  updatedAt            DateTime  @updatedAt
   deletedAt            DateTime?
   isDeleted            Boolean   @default(false)
   deletedBy            String?
@@ -1872,7 +1893,7 @@ model sales {
   status           String    @default("COMPLETED")
   notes            String?
   createdAt        DateTime  @default(now())
-  updatedAt        DateTime @updatedAt
+  updatedAt        DateTime  @updatedAt
   deleted_at       DateTime? @db.Timestamp(6)
   is_deleted       Boolean?  @default(false)
   deleted_by       String?   @db.VarChar(255)
@@ -1894,13 +1915,17 @@ model schedules {
   isActive   Boolean   @default(true)
   notes      String?
   createdAt  DateTime  @default(now())
-  updatedAt  DateTime @updatedAt
+  updatedAt  DateTime  @updatedAt
   deletedAt  DateTime?
   isDeleted  Boolean   @default(false)
   deletedBy  String?
   deleted_at DateTime? @db.Timestamp(6)
   is_deleted Boolean?  @default(false)
   deleted_by String?   @db.VarChar(255)
+
+  class   classes  @relation(fields: [classId], references: [id])
+  subject subjects @relation(fields: [subjectId], references: [id])
+  teacher users    @relation("ScheduleTeacher", fields: [teacherId], references: [id])
 
   @@index([is_deleted, deleted_at], map: "idx_schedules_deleted")
 }
@@ -1920,23 +1945,25 @@ model security_audit_logs {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model semesters {
-  id              String    @id @default(cuid())
-  academicYearId  String
-  name            String
-  shortName       String?
-  startDate       DateTime
-  endDate         DateTime
-  isActive        Boolean   @default(false)
-  gradingDeadline DateTime?
-  reportDeadline  DateTime?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime @updatedAt
-  deletedAt       DateTime?
-  isDeleted       Boolean   @default(false)
-  deletedBy       String?
-  deleted_at      DateTime? @db.Timestamp(6)
-  is_deleted      Boolean?  @default(false)
-  deleted_by      String?   @db.VarChar(255)
+  id               String          @id @default(cuid())
+  academicYearId   String
+  name             String
+  shortName        String?
+  startDate        DateTime
+  endDate          DateTime
+  isActive         Boolean         @default(false)
+  gradingDeadline  DateTime?
+  reportDeadline   DateTime?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  deletedAt        DateTime?
+  isDeleted        Boolean         @default(false)
+  deletedBy        String?
+  deleted_at       DateTime?       @db.Timestamp(6)
+  is_deleted       Boolean?        @default(false)
+  deleted_by       String?         @db.VarChar(255)
+  academic_years   academic_years? @relation(fields: [academic_yearsId], references: [id])
+  academic_yearsId String?
 
   @@index([is_deleted, deleted_at], map: "idx_semesters_deleted")
 }
@@ -1961,7 +1988,7 @@ model setoran_schedules {
   notifyParent    Boolean   @default(true)
   notes           String?
   createdAt       DateTime  @default(now())
-  updatedAt       DateTime @updatedAt
+  updatedAt       DateTime  @updatedAt
   deleted_at      DateTime? @db.Timestamp(6)
   is_deleted      Boolean?  @default(false)
   deleted_by      String?   @db.VarChar(255)
@@ -2011,7 +2038,7 @@ model spp_billings {
   cancelledBy    String?
   cancelReason   String?
   createdAt      DateTime  @default(now())
-  updatedAt      DateTime @updatedAt
+  updatedAt      DateTime  @updatedAt
   deletedAt      DateTime?
   isDeleted      Boolean   @default(false)
   deletedBy      String?
@@ -2044,7 +2071,7 @@ model spp_payments {
   notes         String?
   recordedBy    String
   createdAt     DateTime  @default(now())
-  updatedAt     DateTime @updatedAt
+  updatedAt     DateTime  @updatedAt
   deletedAt     DateTime?
   isDeleted     Boolean   @default(false)
   deletedBy     String?
@@ -2064,7 +2091,7 @@ model spp_reminders {
   attempts     Int       @default(0)
   maxAttempts  Int       @default(3)
   createdAt    DateTime  @default(now())
-  updatedAt    DateTime @updatedAt
+  updatedAt    DateTime  @updatedAt
 }
 
 model spp_reports {
@@ -2119,7 +2146,9 @@ model student_classes {
   joinDate       DateTime  @default(now())
   leaveDate      DateTime?
   createdAt      DateTime  @default(now())
-  updatedAt      DateTime @updatedAt
+  updatedAt      DateTime  @updatedAt
+  classes        classes?  @relation(fields: [classesId], references: [id])
+  classesId      String?
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
@@ -2170,7 +2199,7 @@ model students {
   graduationDate   DateTime?
   createdBy        String
   createdAt        DateTime  @default(now())
-  updatedAt        DateTime @updatedAt
+  updatedAt        DateTime  @updatedAt
   registrationId   String?   @unique
   isOrphan         Boolean   @default(false)
   monthlyNeeds     Decimal?
@@ -2205,13 +2234,19 @@ model subjects {
   isActive    Boolean   @default(true)
   sortOrder   Int       @default(0)
   createdAt   DateTime  @default(now())
-  updatedAt   DateTime @updatedAt
+  updatedAt   DateTime  @updatedAt
   deletedAt   DateTime?
   isDeleted   Boolean   @default(false)
   deletedBy   String?
   deleted_at  DateTime? @db.Timestamp(6)
   is_deleted  Boolean?  @default(false)
   deleted_by  String?   @db.VarChar(255)
+
+  schedules          schedules[]
+  teacherSubjects    teacher_subjects[]
+  curriculumSubjects curriculum_subjects[]
+  grades             grades[]
+  exams              exams[]
 
   @@index([is_deleted, deleted_at], map: "idx_subjects_deleted")
 }
@@ -2233,7 +2268,7 @@ model suppliers {
   rating       Int       @default(5)
   notes        String?
   createdAt    DateTime  @default(now())
-  updatedAt    DateTime @updatedAt
+  updatedAt    DateTime  @updatedAt
   deletedAt    DateTime?
   isDeleted    Boolean   @default(false)
   deletedBy    String?
@@ -2245,14 +2280,18 @@ model suppliers {
 }
 
 model teacher_subjects {
-  id         String   @id @default(cuid())
+  id         String    @id @default(cuid())
   teacherId  String
   subjectId  String
   classId    String
   semesterId String
-  isActive   Boolean  @default(true)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  isActive   Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  classes    classes?  @relation(fields: [classesId], references: [id])
+  classesId  String?
+  subjects   subjects? @relation(fields: [subjectsId], references: [id])
+  subjectsId String?
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
@@ -2284,7 +2323,7 @@ model teachers {
   achievements   String    @default("[]")
   isUstadz       Boolean   @default(true)
   createdAt      DateTime  @default(now())
-  updatedAt      DateTime @updatedAt
+  updatedAt      DateTime  @updatedAt
   createdBy      String?
   deletedAt      DateTime?
   isDeleted      Boolean   @default(false)
@@ -2308,7 +2347,7 @@ model transactions {
   date          DateTime
   createdBy     String
   createdAt     DateTime  @default(now())
-  updatedAt     DateTime @updatedAt
+  updatedAt     DateTime  @updatedAt
   approvedAt    DateTime?
   approvedBy    String?
   attachments   String    @default("[]")
@@ -2342,36 +2381,38 @@ model two_factor_verifications {
   backupAttempts        Int       @default(0)
   backupAttemptsResetAt DateTime?
   createdAt             DateTime  @default(now())
-  updatedAt             DateTime @updatedAt
+  updatedAt             DateTime  @updatedAt
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model users {
-  id               String         @id @default(cuid())
-  username         String         @unique
-  email            String         @unique
-  password         String
-  name             String
-  role             String         @default("STAFF")
-  isActive         Boolean        @default(true)
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime @updatedAt
-  backupCodes      String[]       @default([])
-  deletedAt        DateTime?
-  deletedBy        String?
-  isDeleted        Boolean        @default(false)
-  isUstadz         Boolean        @default(false)
-  phoneVerified    Boolean        @default(false)
-  twoFactorEnabled Boolean        @default(false)
-  twoFactorSecret  String?
-  deleted_at       DateTime?      @db.Timestamp(6)
-  is_deleted       Boolean?       @default(false)
-  deleted_by       String?        @db.VarChar(255)
-  activities       activities[]
-  courses          courses[]
-  ebooks           ebooks[]
-  transactions     transactions[]
-  videos           videos[]
+  id                 String         @id @default(cuid())
+  username           String         @unique
+  email              String         @unique
+  password           String
+  name               String
+  role               String         @default("STAFF")
+  isActive           Boolean        @default(true)
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+  backupCodes        String[]       @default([])
+  deletedAt          DateTime?
+  deletedBy          String?
+  isDeleted          Boolean        @default(false)
+  isUstadz           Boolean        @default(false)
+  phoneVerified      Boolean        @default(false)
+  twoFactorEnabled   Boolean        @default(false)
+  twoFactorSecret    String?
+  deleted_at         DateTime?      @db.Timestamp(6)
+  is_deleted         Boolean?       @default(false)
+  deleted_by         String?        @db.VarChar(255)
+  activities         activities[]
+  courses            courses[]
+  ebooks             ebooks[]
+  transactions       transactions[]
+  videos             videos[]
+  classesAsTeacher   classes[]      @relation("ClassTeacher")
+  schedulesAsTeacher schedules[]    @relation("ScheduleTeacher")
 
   @@index([is_deleted, deleted_at], map: "idx_users_deleted")
 }
@@ -2391,7 +2432,7 @@ model videos {
   isPublic    Boolean   @default(true)
   createdBy   String
   createdAt   DateTime  @default(now())
-  updatedAt   DateTime @updatedAt
+  updatedAt   DateTime  @updatedAt
   deletedAt   DateTime?
   deletedBy   String?
   isDeleted   Boolean   @default(false)
@@ -2432,68 +2473,68 @@ model zakat_calculations {
 /// Stores information about the Yayasan (foundation)
 /// This is the top-level organization entity
 model organization_info {
-  id                String    @id @default(cuid())
+  id String @id @default(cuid())
 
   // Organization details
-  name              String    // e.g., "Yayasan Pondok Imam Syafii"
-  nameArabic        String?   // Arabic version of name
-  shortName         String?   // Short version for headers
-  legalName         String?   // Full legal name
+  name       String // e.g., "Yayasan Pondok Imam Syafii"
+  nameArabic String? // Arabic version of name
+  shortName  String? // Short version for headers
+  legalName  String? // Full legal name
 
   // Legal and registration
-  registrationNo    String?   // Foundation registration number
+  registrationNo    String? // Foundation registration number
   establishmentDate DateTime? // Date of establishment
-  notarialDeed      String?   // Notarial deed number
-  taxId             String?   // NPWP
+  notarialDeed      String? // Notarial deed number
+  taxId             String? // NPWP
 
   // Contact information
-  address           String?
-  village           String?
-  district          String?
-  city              String?
-  province          String?
-  postalCode        String?
-  phone             String?
-  fax               String?
-  email             String?
-  website           String?
+  address    String?
+  village    String?
+  district   String?
+  city       String?
+  province   String?
+  postalCode String?
+  phone      String?
+  fax        String?
+  email      String?
+  website    String?
 
   // Vision & Mission
-  vision            String?   @db.Text
-  visionArabic      String?   @db.Text
-  mission           String?   @db.Text
-  missionArabic     String?   @db.Text
+  vision        String? @db.Text
+  visionArabic  String? @db.Text
+  mission       String? @db.Text
+  missionArabic String? @db.Text
 
   // About & History
-  about             String?   @db.Text
-  aboutArabic       String?   @db.Text
-  history           String?   @db.Text
-  historyArabic     String?   @db.Text
+  about         String? @db.Text
+  aboutArabic   String? @db.Text
+  history       String? @db.Text
+  historyArabic String? @db.Text
 
   // Organizational structure (JSON)
-  structure         String    @default("{}") @db.Text // Stores hierarchy
+  structure String @default("{}") @db.Text // Stores hierarchy
 
   // Media
-  logoUrl           String?   // Main logo
-  logoAltUrl        String?   // Alternative logo (dark mode, etc.)
-  faviconUrl        String?
-  coverImageUrl     String?   // Hero/banner image
+  logoUrl       String? // Main logo
+  logoAltUrl    String? // Alternative logo (dark mode, etc.)
+  faviconUrl    String?
+  coverImageUrl String? // Hero/banner image
 
   // Social media
-  facebook          String?
-  instagram         String?
-  twitter           String?
-  youtube           String?
-  linkedin          String?
-  tiktok            String?
+  facebook  String?
+  instagram String?
+  twitter   String?
+  youtube   String?
+  linkedin  String?
+  tiktok    String?
 
   // Meta
-  isActive          Boolean   @default(true)
-  publishedAt       DateTime?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  createdBy         String?
-  updatedBy         String?
+  isActive    Boolean   @default(true)
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdBy   String?
+  updatedBy   String?
 
   @@index([isActive])
   @@map("organization_info")
@@ -2502,83 +2543,83 @@ model organization_info {
 /// Stores information about educational institutions under the foundation
 /// Supports TK, SD, SMP, and Pondok Pesantren
 model institution_info {
-  id                String    @id @default(cuid())
+  id String @id @default(cuid())
 
   // Institution type and identification
-  type              String    // TK, SD, SMP, PONDOK, etc.
-  code              String    @unique // Unique code for each institution
-  name              String
-  nameArabic        String?
-  shortName         String?
+  type       String // TK, SD, SMP, PONDOK, etc.
+  code       String  @unique // Unique code for each institution
+  name       String
+  nameArabic String?
+  shortName  String?
 
   // Accreditation
-  accreditation     String?   // A, B, C, or Not Accredited
+  accreditation     String? // A, B, C, or Not Accredited
   accreditationNo   String?
   accreditationDate DateTime?
 
   // Registration
-  npsn              String?   // National School ID
-  nss               String?   // National School Serial Number
-  nis               String?   // School ID Number
+  npsn              String? // National School ID
+  nss               String? // National School Serial Number
+  nis               String? // School ID Number
   establishmentDate DateTime?
   operationalPermit String?
 
   // Contact
-  address           String?
-  village           String?
-  district          String?
-  city              String?
-  province          String?
-  postalCode        String?
-  phone             String?
-  email             String?
-  website           String?
+  address    String?
+  village    String?
+  district   String?
+  city       String?
+  province   String?
+  postalCode String?
+  phone      String?
+  email      String?
+  website    String?
 
   // Vision & Mission (specific to institution)
-  vision            String?   @db.Text
-  visionArabic      String?   @db.Text
-  mission           String?   @db.Text
-  missionArabic     String?   @db.Text
+  vision        String? @db.Text
+  visionArabic  String? @db.Text
+  mission       String? @db.Text
+  missionArabic String? @db.Text
 
   // About & Description
-  description       String?   @db.Text
-  descriptionArabic String?   @db.Text
+  description       String? @db.Text
+  descriptionArabic String? @db.Text
 
   // Programs and facilities (JSON arrays)
-  programs          String    @default("[]") // ["Tahfidz", "Bilingual", etc.]
-  facilities        String    @default("[]") // ["Library", "Lab", "Mosque", etc.]
-  achievements      String    @default("[]") // Array of achievement objects
+  programs     String @default("[]") // ["Tahfidz", "Bilingual", etc.]
+  facilities   String @default("[]") // ["Library", "Lab", "Mosque", etc.]
+  achievements String @default("[]") // Array of achievement objects
 
   // Curriculum
-  curriculum        String?   // "K13", "Merdeka", "Cambridge", etc.
+  curriculum String? // "K13", "Merdeka", "Cambridge", etc.
 
   // Capacity
-  studentCapacity   Int?
-  teacherCount      Int?
-  classCount        Int?
+  studentCapacity Int?
+  teacherCount    Int?
+  classCount      Int?
 
   // Leadership
-  principalName     String?
-  principalNip      String?
-  principalPhone    String?
-  principalEmail    String?
+  principalName  String?
+  principalNip   String?
+  principalPhone String?
+  principalEmail String?
 
   // Media
-  logoUrl           String?
-  coverImageUrl     String?
-  galleryImages     String    @default("[]") // Array of image URLs
+  logoUrl       String?
+  coverImageUrl String?
+  galleryImages String  @default("[]") // Array of image URLs
 
   // Display settings
-  showOnWebsite     Boolean   @default(true)
-  sortOrder         Int       @default(0)
+  showOnWebsite Boolean @default(true)
+  sortOrder     Int     @default(0)
 
   // Meta
-  isActive          Boolean   @default(true)
-  publishedAt       DateTime?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  createdBy         String?
-  updatedBy         String?
+  isActive    Boolean   @default(true)
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdBy   String?
+  updatedBy   String?
 
   @@index([type, isActive])
   @@index([code])
@@ -2588,45 +2629,45 @@ model institution_info {
 
 /// Organizational structure for hierarchical display (Board, Directors, etc.)
 model organization_structure {
-  id              String    @id @default(cuid())
+  id String @id @default(cuid())
 
   // Hierarchy
-  parentId        String?   // For nested structures
-  level           Int       @default(0) // 0=Board, 1=Director, 2=Manager, etc.
+  parentId String? // For nested structures
+  level    Int     @default(0) // 0=Board, 1=Director, 2=Manager, etc.
 
   // Position details
-  positionName    String    // "Ketua Yayasan", "Direktur", etc.
-  positionNameAr  String?   // Arabic version
-  department      String?   // Department or division
+  positionName   String // "Ketua Yayasan", "Direktur", etc.
+  positionNameAr String? // Arabic version
+  department     String? // Department or division
 
   // Person details
-  personName      String?
-  personNameAr    String?
-  photoUrl        String?
+  personName   String?
+  personNameAr String?
+  photoUrl     String?
 
   // Contact
-  email           String?
-  phone           String?
+  email String?
+  phone String?
 
   // Biography
-  bio             String?   @db.Text
-  bioArabic       String?   @db.Text
-  qualifications  String    @default("[]") // Array of degrees/certs
+  bio            String? @db.Text
+  bioArabic      String? @db.Text
+  qualifications String  @default("[]") // Array of degrees/certs
 
   // Period of service
-  startDate       DateTime?
-  endDate         DateTime?
-  isActive        Boolean   @default(true)
+  startDate DateTime?
+  endDate   DateTime?
+  isActive  Boolean   @default(true)
 
   // Display
-  sortOrder       Int       @default(0)
-  showOnWebsite   Boolean   @default(true)
+  sortOrder     Int     @default(0)
+  showOnWebsite Boolean @default(true)
 
   // Meta
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  createdBy       String?
-  updatedBy       String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
 
   @@index([parentId, sortOrder])
   @@index([level, isActive])
@@ -2639,31 +2680,31 @@ model organization_structure {
 
 /// Global site configuration and appearance settings
 model site_config {
-  id              String    @id @default(cuid())
-  key             String    @unique // Unique config key
+  id  String @id @default(cuid())
+  key String @unique // Unique config key
 
   // Value and metadata
-  value           String?   @db.Text // JSON or plain text value
-  dataType        String    @default("STRING") // STRING, JSON, BOOLEAN, NUMBER
-  category        String    @default("GENERAL") // GENERAL, NAVBAR, FOOTER, SEO, etc.
+  value    String? @db.Text // JSON or plain text value
+  dataType String  @default("STRING") // STRING, JSON, BOOLEAN, NUMBER
+  category String  @default("GENERAL") // GENERAL, NAVBAR, FOOTER, SEO, etc.
 
   // Description
-  label           String    // Human-readable label
-  description     String?   // Help text
+  label       String // Human-readable label
+  description String? // Help text
 
   // Display
-  isEditable      Boolean   @default(true)
-  isPublic        Boolean   @default(true) // Whether to expose in public API
-  sortOrder       Int       @default(0)
+  isEditable Boolean @default(true)
+  isPublic   Boolean @default(true) // Whether to expose in public API
+  sortOrder  Int     @default(0)
 
   // Validation
-  validationRules String?   @db.Text // JSON schema for validation
+  validationRules String? @db.Text // JSON schema for validation
   defaultValue    String?
 
   // Meta
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  updatedBy       String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  updatedBy String?
 
   @@index([category, key])
   @@index([isPublic])
@@ -2672,42 +2713,42 @@ model site_config {
 
 /// Navbar menu items configuration
 model navbar_items {
-  id              String    @id @default(cuid())
+  id String @id @default(cuid())
 
   // Hierarchy
-  parentId        String?   // For dropdown menus
-  level           Int       @default(0) // 0=top level, 1=dropdown, etc.
+  parentId String? // For dropdown menus
+  level    Int     @default(0) // 0=top level, 1=dropdown, etc.
 
   // Menu item details
-  label           String
-  labelArabic     String?
-  icon            String?   // Icon name or URL
+  label       String
+  labelArabic String?
+  icon        String? // Icon name or URL
 
   // Link configuration
-  linkType        String    @default("INTERNAL") // INTERNAL, EXTERNAL, PAGE, CUSTOM
-  linkUrl         String?   // URL or path
-  pageId          String?   // Reference to cms_pages if linkType=PAGE
+  linkType String  @default("INTERNAL") // INTERNAL, EXTERNAL, PAGE, CUSTOM
+  linkUrl  String? // URL or path
+  pageId   String? // Reference to cms_pages if linkType=PAGE
 
   // Behavior
-  openInNewTab    Boolean   @default(false)
-  requiresAuth    Boolean   @default(false)
-  allowedRoles    String    @default("[]") // Array of roles if restricted
+  openInNewTab Boolean @default(false)
+  requiresAuth Boolean @default(false)
+  allowedRoles String  @default("[]") // Array of roles if restricted
 
   // Display
-  isActive        Boolean   @default(true)
-  showOnMobile    Boolean   @default(true)
-  showOnDesktop   Boolean   @default(true)
-  sortOrder       Int       @default(0)
+  isActive      Boolean @default(true)
+  showOnMobile  Boolean @default(true)
+  showOnDesktop Boolean @default(true)
+  sortOrder     Int     @default(0)
 
   // Styling
-  cssClass        String?
-  highlightColor  String?   // For active/hover states
+  cssClass       String?
+  highlightColor String? // For active/hover states
 
   // Meta
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  createdBy       String?
-  updatedBy       String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
 
   @@index([parentId, sortOrder])
   @@index([isActive, level])
@@ -2716,31 +2757,31 @@ model navbar_items {
 
 /// Footer configuration sections
 model footer_sections {
-  id              String    @id @default(cuid())
+  id String @id @default(cuid())
 
   // Section details
-  title           String
-  titleArabic     String?
-  type            String    // LINKS, CONTACT, SOCIAL, CUSTOM
+  title       String
+  titleArabic String?
+  type        String // LINKS, CONTACT, SOCIAL, CUSTOM
 
   // Content (flexible JSON structure)
-  content         String    @db.Text // JSON: links, text, widgets, etc.
+  content String @db.Text // JSON: links, text, widgets, etc.
 
   // Layout
-  column          Int       @default(1) // 1, 2, 3, 4 for grid layout
+  column Int @default(1) // 1, 2, 3, 4 for grid layout
 
   // Display
-  isActive        Boolean   @default(true)
-  sortOrder       Int       @default(0)
+  isActive  Boolean @default(true)
+  sortOrder Int     @default(0)
 
   // Styling
-  cssClass        String?
+  cssClass String?
 
   // Meta
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  createdBy       String?
-  updatedBy       String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
 
   @@index([isActive, sortOrder])
   @@index([column])
@@ -2753,39 +2794,39 @@ model footer_sections {
 
 /// General financial transactions (income/expense) separate from school billing
 model general_transactions {
-  id              String    @id @default(cuid())
+  id String @id @default(cuid())
 
   // Transaction identification
-  transactionNo   String    @unique
+  transactionNo String @unique
 
   // Basic info
-  date            DateTime  @db.Date
-  type            String    // INCOME, EXPENSE
-  category        String    // DONATION, OTA, OPERATIONAL, SALARY, etc.
-  subCategory     String?   // More specific categorization
+  date        DateTime @db.Date
+  type        String // INCOME, EXPENSE
+  category    String // DONATION, OTA, OPERATIONAL, SALARY, etc.
+  subCategory String? // More specific categorization
 
   // Financial details
-  amount          Decimal   @db.Decimal(15, 2)
-  currency        String    @default("IDR")
+  amount   Decimal @db.Decimal(15, 2)
+  currency String  @default("IDR")
 
   // Description
-  description     String
-  notes           String?   @db.Text
+  description String
+  notes       String? @db.Text
 
   // Party information (donor, supplier, etc.)
-  partyName       String?
-  partyType       String?   // DONOR, SUPPLIER, EMPLOYEE, OTHER
-  partyContact    String?
-  partyEmail      String?
+  partyName    String?
+  partyType    String? // DONOR, SUPPLIER, EMPLOYEE, OTHER
+  partyContact String?
+  partyEmail   String?
 
   // Payment details
-  paymentMethod   String?   // CASH, TRANSFER, CHECK, etc.
-  paymentChannel  String?   // Bank name, payment gateway, etc.
-  referenceNo     String?   // Bank reference, receipt number, etc.
+  paymentMethod  String? // CASH, TRANSFER, CHECK, etc.
+  paymentChannel String? // Bank name, payment gateway, etc.
+  referenceNo    String? // Bank reference, receipt number, etc.
 
   // Documentation
-  proofUrl        String?   // Receipt/proof image URL
-  attachments     String    @default("[]") // Array of attachment URLs
+  proofUrl    String? // Receipt/proof image URL
+  attachments String  @default("[]") // Array of attachment URLs
 
   // Verification
   status          String    @default("PENDING") // PENDING, VERIFIED, REJECTED
@@ -2794,38 +2835,38 @@ model general_transactions {
   rejectionReason String?
 
   // Accounting
-  accountCode     String?   // Link to chart of accounts
-  fiscalYear      String?
-  fiscalPeriod    String?
+  accountCode  String? // Link to chart of accounts
+  fiscalYear   String?
+  fiscalPeriod String?
 
   // OTA specific fields (if applicable)
-  isOtaRelated    Boolean   @default(false)
-  otaProgramId    String?   // Link to ota_programs
-  otaMonth        String?
-  otaSponsorId    String?   // Link to ota_sponsors
+  isOtaRelated Boolean @default(false)
+  otaProgramId String? // Link to ota_programs
+  otaMonth     String?
+  otaSponsorId String? // Link to ota_sponsors
 
   // Recurring transaction
-  isRecurring     Boolean   @default(false)
-  recurringType   String?   // MONTHLY, QUARTERLY, YEARLY
-  recurringGroup  String?   // Group ID for related recurring transactions
+  isRecurring    Boolean @default(false)
+  recurringType  String? // MONTHLY, QUARTERLY, YEARLY
+  recurringGroup String? // Group ID for related recurring transactions
 
   // Bulk entry support
-  bulkEntryId     String?   // Groups multiple transactions entered together
-  entrySequence   Int?      // Order in bulk entry
+  bulkEntryId   String? // Groups multiple transactions entered together
+  entrySequence Int? // Order in bulk entry
 
   // Tags and categorization
-  tags            String    @default("[]") // Flexible tagging
+  tags String @default("[]") // Flexible tagging
 
   // Meta
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  createdBy       String
-  updatedBy       String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String
+  updatedBy String?
 
   // Soft delete
-  deletedAt       DateTime?
-  deletedBy       String?
-  isDeleted       Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?
+  isDeleted Boolean   @default(false)
 
   @@index([date, type])
   @@index([category, subCategory])
@@ -2839,36 +2880,36 @@ model general_transactions {
 
 /// Bulk entry tracking for multiple transactions entered at once
 model transaction_bulk_entries {
-  id              String    @id @default(cuid())
+  id String @id @default(cuid())
 
   // Entry info
-  bulkEntryNo     String    @unique
-  totalTransactions Int     @default(0)
+  bulkEntryNo       String @unique
+  totalTransactions Int    @default(0)
 
   // Summary
-  totalIncome     Decimal   @db.Decimal(15, 2) @default(0)
-  totalExpense    Decimal   @db.Decimal(15, 2) @default(0)
-  netAmount       Decimal   @db.Decimal(15, 2) @default(0)
+  totalIncome  Decimal @default(0) @db.Decimal(15, 2)
+  totalExpense Decimal @default(0) @db.Decimal(15, 2)
+  netAmount    Decimal @default(0) @db.Decimal(15, 2)
 
   // Period
-  startDate       DateTime  @db.Date
-  endDate         DateTime  @db.Date
+  startDate DateTime @db.Date
+  endDate   DateTime @db.Date
 
   // Description
-  description     String?
-  notes           String?   @db.Text
+  description String?
+  notes       String? @db.Text
 
   // Processing
-  status          String    @default("DRAFT") // DRAFT, SUBMITTED, VERIFIED, REJECTED
-  submittedAt     DateTime?
-  verifiedBy      String?
-  verifiedAt      DateTime?
+  status      String    @default("DRAFT") // DRAFT, SUBMITTED, VERIFIED, REJECTED
+  submittedAt DateTime?
+  verifiedBy  String?
+  verifiedAt  DateTime?
 
   // Meta
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  createdBy       String
-  updatedBy       String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String
+  updatedBy String?
 
   @@index([status, createdAt])
   @@index([startDate, endDate])
@@ -2877,43 +2918,43 @@ model transaction_bulk_entries {
 
 /// Transaction reports and summaries
 model transaction_reports {
-  id              String    @id @default(cuid())
+  id String @id @default(cuid())
 
   // Report identification
-  reportNo        String    @unique
-  reportType      String    // MONTHLY, QUARTERLY, YEARLY, CUSTOM, OTA_SPECIFIC
+  reportNo   String @unique
+  reportType String // MONTHLY, QUARTERLY, YEARLY, CUSTOM, OTA_SPECIFIC
 
   // Period
-  startDate       DateTime  @db.Date
-  endDate         DateTime  @db.Date
-  fiscalYear      String?
-  fiscalPeriod    String?
+  startDate    DateTime @db.Date
+  endDate      DateTime @db.Date
+  fiscalYear   String?
+  fiscalPeriod String?
 
   // Filters (JSON)
-  filters         String    @default("{}") @db.Text
+  filters String @default("{}") @db.Text
 
   // Summary data (JSON)
-  summary         String    @db.Text // Income, expense, net, by category, etc.
+  summary String @db.Text // Income, expense, net, by category, etc.
 
   // Details (JSON - can be large)
-  details         String?   @db.Text // Detailed breakdown
+  details String? @db.Text // Detailed breakdown
 
   // Charts/visualizations data
-  chartData       String?   @db.Text // Data for charts
+  chartData String? @db.Text // Data for charts
 
   // Files
-  pdfUrl          String?
-  excelUrl        String?
+  pdfUrl   String?
+  excelUrl String?
 
   // Generation
-  status          String    @default("GENERATING") // GENERATING, COMPLETED, FAILED
-  progress        Int       @default(0)
-  errorMessage    String?
+  status       String  @default("GENERATING") // GENERATING, COMPLETED, FAILED
+  progress     Int     @default(0)
+  errorMessage String?
 
   // Meta
-  generatedAt     DateTime  @default(now())
-  generatedBy     String
-  completedAt     DateTime?
+  generatedAt DateTime  @default(now())
+  generatedBy String
+  completedAt DateTime?
 
   @@index([reportType, startDate])
   @@index([status])
@@ -2927,114 +2968,114 @@ model transaction_reports {
 
 /// CMS Pages and Articles with full SEO support
 model cms_pages {
-  id              String    @id @default(cuid())
+  id String @id @default(cuid())
 
   // Identification
-  slug            String    @unique
-  title           String
-  titleArabic     String?
+  slug        String  @unique
+  title       String
+  titleArabic String?
 
   // Content
-  excerpt         String?   @db.Text // Short summary
-  content         String    @db.Text // Full content (HTML/Markdown)
-  contentArabic   String?   @db.Text
+  excerpt       String? @db.Text // Short summary
+  content       String  @db.Text // Full content (HTML/Markdown)
+  contentArabic String? @db.Text
 
   // Type and categorization
-  type            String    @default("PAGE") // PAGE, ARTICLE, POST, NEWS
-  category        String?   // Blog category, news category, etc.
-  subCategory     String?
-  tags            String    @default("[]") // Array of tags
+  type        String  @default("PAGE") // PAGE, ARTICLE, POST, NEWS
+  category    String? // Blog category, news category, etc.
+  subCategory String?
+  tags        String  @default("[]") // Array of tags
 
   // Media
-  featuredImage   String?
+  featuredImage    String?
   featuredImageAlt String?
-  galleryImages   String    @default("[]") // Array of image objects
-  videoUrl        String?
+  galleryImages    String  @default("[]") // Array of image objects
+  videoUrl         String?
 
   // Author and attribution
-  authorId        String?
-  authorName      String?
-  coAuthors       String    @default("[]") // Array of co-author names
+  authorId   String?
+  authorName String?
+  coAuthors  String  @default("[]") // Array of co-author names
 
   // Publishing
-  status          String    @default("DRAFT") // DRAFT, PUBLISHED, SCHEDULED, ARCHIVED
-  publishedAt     DateTime?
-  scheduledFor    DateTime?
-  archivedAt      DateTime?
+  status       String    @default("DRAFT") // DRAFT, PUBLISHED, SCHEDULED, ARCHIVED
+  publishedAt  DateTime?
+  scheduledFor DateTime?
+  archivedAt   DateTime?
 
   // Display options
-  showAuthor      Boolean   @default(true)
-  showDate        Boolean   @default(true)
-  allowComments   Boolean   @default(false)
-  isFeatured      Boolean   @default(false)
-  isPinned        Boolean   @default(false)
+  showAuthor    Boolean @default(true)
+  showDate      Boolean @default(true)
+  allowComments Boolean @default(false)
+  isFeatured    Boolean @default(false)
+  isPinned      Boolean @default(false)
 
   // Template and layout
-  template        String    @default("DEFAULT") // DEFAULT, SIDEBAR, FULLWIDTH, CUSTOM
-  layout          String?   @db.Text // JSON for custom layout configuration
+  template String  @default("DEFAULT") // DEFAULT, SIDEBAR, FULLWIDTH, CUSTOM
+  layout   String? @db.Text // JSON for custom layout configuration
 
   // Access control
-  isPublic        Boolean   @default(true)
-  requiresAuth    Boolean   @default(false)
-  allowedRoles    String    @default("[]")
-  password        String?   // Optional password protection
+  isPublic     Boolean @default(true)
+  requiresAuth Boolean @default(false)
+  allowedRoles String  @default("[]")
+  password     String? // Optional password protection
 
   // SEO - Basic
   metaTitle       String?
-  metaDescription String?   @db.Text
+  metaDescription String? @db.Text
   metaKeywords    String?
 
   // SEO - Open Graph
-  ogTitle         String?
-  ogDescription   String?
-  ogImage         String?
-  ogType          String    @default("article")
+  ogTitle       String?
+  ogDescription String?
+  ogImage       String?
+  ogType        String  @default("article")
 
   // SEO - Twitter Card
-  twitterCard     String    @default("summary_large_image")
-  twitterTitle    String?
+  twitterCard        String  @default("summary_large_image")
+  twitterTitle       String?
   twitterDescription String?
-  twitterImage    String?
+  twitterImage       String?
 
   // SEO - Advanced
-  canonicalUrl    String?
-  robotsIndex     Boolean   @default(true)
-  robotsFollow    Boolean   @default(true)
-  structuredData  String?   @db.Text // JSON-LD structured data
+  canonicalUrl   String?
+  robotsIndex    Boolean @default(true)
+  robotsFollow   Boolean @default(true)
+  structuredData String? @db.Text // JSON-LD structured data
 
   // Language and localization
-  language        String    @default("id")
-  translationOf   String?   // ID of original page for translations
+  language      String  @default("id")
+  translationOf String? // ID of original page for translations
 
   // Analytics
-  viewCount       Int       @default(0)
-  shareCount      Int       @default(0)
-  likeCount       Int       @default(0)
-  commentCount    Int       @default(0)
+  viewCount    Int @default(0)
+  shareCount   Int @default(0)
+  likeCount    Int @default(0)
+  commentCount Int @default(0)
 
   // Reading metrics
-  readingTime     Int?      // Estimated reading time in minutes
+  readingTime Int? // Estimated reading time in minutes
 
   // Related content
-  relatedPages    String    @default("[]") // Array of page IDs
+  relatedPages String @default("[]") // Array of page IDs
 
   // Sorting
-  sortOrder       Int       @default(0)
+  sortOrder Int @default(0)
 
   // Version control
-  version         Int       @default(1)
-  lastEditedBy    String?
+  version      Int     @default(1)
+  lastEditedBy String?
 
   // Meta
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  createdBy       String
-  updatedBy       String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String
+  updatedBy String?
 
   // Soft delete
-  deletedAt       DateTime?
-  deletedBy       String?
-  isDeleted       Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?
+  isDeleted Boolean   @default(false)
 
   @@index([slug])
   @@index([type, status])
@@ -3048,23 +3089,23 @@ model cms_pages {
 
 /// Page revisions for version history
 model cms_page_revisions {
-  id              String    @id @default(cuid())
+  id String @id @default(cuid())
 
   // Reference
-  pageId          String
-  version         Int
+  pageId  String
+  version Int
 
   // Snapshot of content at this version
-  title           String
-  content         String    @db.Text
-  excerpt         String?   @db.Text
+  title   String
+  content String  @db.Text
+  excerpt String? @db.Text
 
   // Change tracking
-  changesSummary  String?   // Brief description of what changed
+  changesSummary String? // Brief description of what changed
 
   // Meta
-  createdAt       DateTime  @default(now())
-  createdBy       String
+  createdAt DateTime @default(now())
+  createdBy String
 
   @@index([pageId, version])
   @@map("cms_page_revisions")
@@ -3072,37 +3113,37 @@ model cms_page_revisions {
 
 /// Article categories for blog/news organization
 model cms_categories {
-  id              String    @id @default(cuid())
+  id String @id @default(cuid())
 
   // Hierarchy
-  parentId        String?
-  level           Int       @default(0)
+  parentId String?
+  level    Int     @default(0)
 
   // Details
-  name            String
-  nameArabic      String?
-  slug            String    @unique
-  description     String?   @db.Text
+  name        String
+  nameArabic  String?
+  slug        String  @unique
+  description String? @db.Text
 
   // Media
-  icon            String?
-  color           String?
-  coverImage      String?
+  icon       String?
+  color      String?
+  coverImage String?
 
   // SEO
   metaTitle       String?
   metaDescription String?
 
   // Display
-  isActive        Boolean   @default(true)
-  showInMenu      Boolean   @default(true)
-  sortOrder       Int       @default(0)
+  isActive   Boolean @default(true)
+  showInMenu Boolean @default(true)
+  sortOrder  Int     @default(0)
 
   // Meta
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  createdBy       String?
-  updatedBy       String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
 
   @@index([slug])
   @@index([parentId, sortOrder])
@@ -3112,35 +3153,35 @@ model cms_categories {
 
 /// Media library for managing uploads
 model cms_media {
-  id              String    @id @default(cuid())
+  id String @id @default(cuid())
 
   // File info
-  filename        String
-  originalName    String
-  fileUrl         String
-  thumbnailUrl    String?
+  filename     String
+  originalName String
+  fileUrl      String
+  thumbnailUrl String?
 
   // File metadata
-  mimeType        String
-  fileSize        Int       // Bytes
-  width           Int?      // For images
-  height          Int?      // For images
-  duration        Int?      // For videos/audio in seconds
+  mimeType String
+  fileSize Int // Bytes
+  width    Int? // For images
+  height   Int? // For images
+  duration Int? // For videos/audio in seconds
 
   // Organization
-  folder          String    @default("/")
+  folder String @default("/")
 
   // Alt text and description
-  altText         String?
-  caption         String?
-  description     String?
+  altText     String?
+  caption     String?
+  description String?
 
   // Usage tracking
-  usageCount      Int       @default(0)
+  usageCount Int @default(0)
 
   // Meta
-  uploadedAt      DateTime  @default(now())
-  uploadedBy      String
+  uploadedAt DateTime @default(now())
+  uploadedBy String
 
   @@index([folder])
   @@index([mimeType])
@@ -3154,85 +3195,85 @@ model cms_media {
 
 /// Global SEO settings for the entire site
 model seo_global_settings {
-  id              String    @id @default(cuid())
+  id String @id @default(cuid())
 
   // Site identity
   siteName        String
   siteNameArabic  String?
   siteTagline     String?
-  siteDescription String?   @db.Text
+  siteDescription String? @db.Text
 
   // Default meta
-  defaultMetaTitle String?
+  defaultMetaTitle       String?
   defaultMetaDescription String? @db.Text
-  defaultMetaKeywords String?
+  defaultMetaKeywords    String?
 
   // Default Open Graph
-  defaultOgImage  String?
-  defaultOgType   String    @default("website")
+  defaultOgImage String?
+  defaultOgType  String  @default("website")
 
   // Social profiles for structured data
-  facebookAppId   String?
-  twitterHandle   String?
+  facebookAppId String?
+  twitterHandle String?
 
   // Verification codes
-  googleVerification String?
-  bingVerification String?
-  yandexVerification String?
+  googleVerification    String?
+  bingVerification      String?
+  yandexVerification    String?
   pinterestVerification String?
 
   // Analytics
-  googleAnalyticsId String?
+  googleAnalyticsId  String?
   googleTagManagerId String?
-  facebookPixelId String?
+  facebookPixelId    String?
 
   // Schema.org structured data (JSON-LD)
   organizationSchema String? @db.Text
-  websiteSchema   String?   @db.Text
+  websiteSchema      String? @db.Text
 
   // Robots.txt content
-  robotsTxt       String?   @db.Text
+  robotsTxt String? @db.Text
 
   // Default robots meta
-  defaultRobotsIndex Boolean @default(true)
+  defaultRobotsIndex  Boolean @default(true)
   defaultRobotsFollow Boolean @default(true)
 
   // Sitemap settings
-  sitemapEnabled  Boolean   @default(true)
+  sitemapEnabled    Boolean @default(true)
   sitemapChangefreq String  @default("weekly")
-  sitemapPriority Decimal   @db.Decimal(2, 1) @default(0.5)
+  sitemapPriority   Decimal @default(0.5) @db.Decimal(2, 1)
 
   // Meta
-  updatedAt       DateTime  @updatedAt
-  updatedBy       String?
+  updatedAt DateTime @updatedAt
+  updatedBy String?
 
   @@map("seo_global_settings")
 }
 
 /// Custom redirects for SEO management
 model seo_redirects {
-  id              String    @id @default(cuid())
+  id String @id @default(cuid())
 
   // Redirect details
-  fromPath        String    @unique
-  toPath          String
-  redirectType    Int       @default(301) // 301, 302, 307, 308
+  fromPath     String @unique
+  toPath       String
+  redirectType Int    @default(301) // 301, 302, 307, 308
 
   // Description
-  reason          String?
+  reason String?
 
   // Status
-  isActive        Boolean   @default(true)
+  isActive Boolean @default(true)
 
   // Analytics
-  hitCount        Int       @default(0)
-  lastHitAt       DateTime?
+  hitCount  Int       @default(0)
+  lastHitAt DateTime?
 
   // Meta
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  createdBy       String?
-  updatedBy       String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
 
   @@index([fromPath])
   @@index([isActive])
@@ -3241,30 +3282,30 @@ model seo_redirects {
 
 /// Sitemap entries for dynamic sitemap generation
 model seo_sitemap_entries {
-  id              String    @id @default(cuid())
+  id String @id @default(cuid())
 
   // URL details
-  loc             String    @unique // URL
-  changefreq      String    @default("weekly") // always, hourly, daily, weekly, monthly, yearly, never
-  priority        Decimal   @db.Decimal(2, 1) @default(0.5) // 0.0 to 1.0
-  lastmod         DateTime  @default(now())
+  loc        String   @unique // URL
+  changefreq String   @default("weekly") // always, hourly, daily, weekly, monthly, yearly, never
+  priority   Decimal  @default(0.5) @db.Decimal(2, 1) // 0.0 to 1.0
+  lastmod    DateTime @default(now())
 
   // Content type
-  contentType     String    // PAGE, ARTICLE, CATEGORY, INSTITUTION, etc.
-  contentId       String?   // ID of the content
+  contentType String // PAGE, ARTICLE, CATEGORY, INSTITUTION, etc.
+  contentId   String? // ID of the content
 
   // Language/alternate versions
-  alternates      String    @default("[]") // Array of {lang, url} objects
+  alternates String @default("[]") // Array of {lang, url} objects
 
   // Media (for image/video sitemaps)
-  images          String    @default("[]") // Array of image objects
-  videos          String    @default("[]") // Array of video objects
+  images String @default("[]") // Array of image objects
+  videos String @default("[]") // Array of video objects
 
   // Status
-  isActive        Boolean   @default(true)
+  isActive Boolean @default(true)
 
   // Meta
-  updatedAt       DateTime  @updatedAt
+  updatedAt DateTime @updatedAt
 
   @@index([contentType, isActive])
   @@index([lastmod])

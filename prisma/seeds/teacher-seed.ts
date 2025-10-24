@@ -2,7 +2,7 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-async function seedTeachers() {
+async function seedTeachers(): Promise<void> {
   console.log('🌱 Seeding teachers (Ustadz & Ustadzah)...');
 
   // Get first admin user for createdBy

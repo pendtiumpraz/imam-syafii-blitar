@@ -11,7 +11,7 @@ export async function GET(
     const { slug } = params
     
     // Find campaign first
-    const campaign = await prisma.donations_campaigns.findUnique({
+    const campaign = await prisma.donation_campaigns.findUnique({
       where: { slug },
       select: { id: true }
     })
@@ -66,7 +66,7 @@ export async function POST(
     const { title, content, images = [], isPublic = true } = body
 
     // Find campaign
-    const campaign = await prisma.donations_campaigns.findUnique({
+    const campaign = await prisma.donation_campaigns.findUnique({
       where: { slug },
       select: { id: true, createdBy: true }
     })

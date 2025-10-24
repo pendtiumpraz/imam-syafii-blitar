@@ -40,7 +40,7 @@ async function calculateBudgetActuals(budgetId: string, budget: any) {
   })
 
   // Get actual transactions for the budget period
-  const actualTransactions = await prisma.transactions.groupBy({
+  const actualTransactions = await prisma.transaction.groupBy({
     by: ['categoryId'],
     _sum: {
       amount: true,
@@ -272,7 +272,7 @@ export async function POST(request: NextRequest) {
 
     // Verify all categories exist and are active
     const categoryIds = data.items.map(item => item.categoryId)
-    const categories = await prisma.financial_categories.findMany({
+    const categories = await prisma.financialCategory.findMany({
       where: {
         id: { in: categoryIds },
         isActive: true,

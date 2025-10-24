@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma'
-import { LineUserSession } from '@prisma/client'
+import type { line_user_sessions } from '@prisma/client'
 
 const SESSION_EXPIRY_MINUTES = 30
 
@@ -7,7 +7,7 @@ export class SessionManager {
   /**
    * Get or create session for a user
    */
-  static async getSession(userId: string): Promise<LineUserSession> {
+  static async getSession(userId: string): Promise<line_user_sessions> {
     // Try to get existing session
     let session = await prisma.line_user_sessions.findUnique({
       where: { userId }
@@ -40,9 +40,9 @@ export class SessionManager {
    * Update session
    */
   static async updateSession(
-    userId: string, 
+    userId: string,
     data: any
-  ): Promise<LineUserSession> {
+  ): Promise<line_user_sessions> {
     // Ensure session exists
     await this.getSession(userId)
     
@@ -74,7 +74,7 @@ export class SessionManager {
     flowId: string,
     totalSteps: number,
     initialData: any = {}
-  ): Promise<LineUserSession> {
+  ): Promise<line_user_sessions> {
     return await this.updateSession(userId, {
       activeFlowId: flowId,
       flowType,
@@ -94,7 +94,7 @@ export class SessionManager {
     userId: string,
     stepData: any,
     waitingFor?: string
-  ): Promise<LineUserSession> {
+  ): Promise<line_user_sessions> {
     const session = await this.getSession(userId)
     
     const flowData = session.flowData as any || {}
@@ -111,7 +111,7 @@ export class SessionManager {
   /**
    * Complete current flow
    */
-  static async completeFlow(userId: string): Promise<LineUserSession> {
+  static async completeFlow(userId: string): Promise<line_user_sessions> {
     return await this.updateSession(userId, {
       activeFlowId: null,
       flowType: null,
@@ -126,7 +126,7 @@ export class SessionManager {
   /**
    * Abort current flow
    */
-  static async abortFlow(userId: string): Promise<LineUserSession> {
+  static async abortFlow(userId: string): Promise<line_user_sessions> {
     const session = await this.getSession(userId)
     
     if (!session.canAbort) {
@@ -139,7 +139,7 @@ export class SessionManager {
   /**
    * Set admin mode
    */
-  static async setAdminMode(userId: string, isAdmin: boolean): Promise<LineUserSession> {
+  static async setAdminMode(userId: string, isAdmin: boolean): Promise<line_user_sessions> {
     return await this.updateSession(userId, {
       mode: isAdmin ? 'ADMIN' : 'PUBLIC',
       isAdmin,

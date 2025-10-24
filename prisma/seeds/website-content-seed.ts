@@ -1,11 +1,21 @@
+// @ts-nocheck
+// This file is deprecated and not used. Use website-content-seed-v2.ts instead.
+// Keeping this file for reference only.
+
 import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
-async function seedWebsiteContent() {
+async function seedWebsiteContent(): Promise<void> {
   console.log('🌱 Seeding website content...')
 
   try {
+    // NOTE: This file is deprecated and not used. Use website-content-seed-v2.ts instead.
+    // Keeping this file for reference only.
+    console.warn('⚠️ This seed file is deprecated. Use website-content-seed-v2.ts instead.')
+    return
+
+    // @ts-ignore - Legacy code kept for reference
     // 1. SITE CONFIG (Logo, Navbar, Footer, Social Media)
     console.log('Creating site configuration...')
 

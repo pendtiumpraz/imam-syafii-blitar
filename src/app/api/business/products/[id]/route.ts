@@ -190,7 +190,7 @@ export async function PUT(
     let result
     if (data.stock !== undefined && data.stock !== existingProduct.stock) {
       result = await prisma.$transaction(async (tx) => {
-        const product = await tx.product.update({
+        const product = await tx.products.update({
           where: { id: params.id },
           data: updateData,
           include: {
@@ -201,7 +201,7 @@ export async function PUT(
         // Create inventory adjustment transaction
         const stockDiff = data.stock! - existingProduct.stock
         if (stockDiff !== 0) {
-          await tx.inventoryTransaction.create({
+          await tx.inventory_transactions.create({
             data: {
               productId: params.id,
               type: 'ADJUSTMENT',
@@ -337,12 +337,12 @@ export async function DELETE(
         })
 
         // Delete related inventory transactions
-        await tx.inventoryTransaction.deleteMany({
+        await tx.inventory_transactions.deleteMany({
           where: { productId: params.id },
         })
 
         // Delete the product
-        await tx.product.delete({
+        await tx.products.delete({
           where: { id: params.id },
         })
       })

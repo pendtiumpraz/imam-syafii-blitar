@@ -235,9 +235,9 @@ export const commonLoaders = {
 
   async loadStudents(ids: string[]) {
     const { default: prisma } = await import('@/lib/prisma')
+    // TODO: optimizedIncludes.student.minimal is empty - needs proper relations
     return prisma.students.findMany({
       where: { id: { in: ids } },
-      include: optimizedIncludes.student.minimal
     })
   },
 

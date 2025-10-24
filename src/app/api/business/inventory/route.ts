@@ -221,7 +221,7 @@ export async function POST(request: NextRequest) {
     // Perform stock adjustment in transaction
     const result = await prisma.$transaction(async (tx) => {
       // Create inventory transaction
-      const transaction = await tx.inventoryTransaction.create({
+      const transaction = await tx.inventory_transactions.create({
         data: {
           productId: data.productId,
           type: 'ADJUSTMENT',
@@ -288,7 +288,7 @@ export async function POST(request: NextRequest) {
         _sum: { quantity: true },
       })
 
-      await tx.product.update({
+      await tx.products.update({
         where: { id: data.productId },
         data: { stock: totalStock._sum.quantity || 0 },
       })
@@ -358,7 +358,7 @@ export async function PUT(request: NextRequest) {
     // Perform stock transfer
     const result = await prisma.$transaction(async (tx) => {
       // Create OUT transaction for source location
-      await tx.inventoryTransaction.create({
+      await tx.inventory_transactions.create({
         data: {
           productId: data.productId,
           type: 'TRANSFER',
@@ -372,7 +372,7 @@ export async function PUT(request: NextRequest) {
       })
 
       // Create IN transaction for destination location
-      await tx.inventoryTransaction.create({
+      await tx.inventory_transactions.create({
         data: {
           productId: data.productId,
           type: 'TRANSFER',

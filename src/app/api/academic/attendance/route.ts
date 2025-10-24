@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
         where: whereConditions,
         skip,
         take: limit,
-      include: {
+        include: {
         student: {
           select: {
             id: true,
@@ -102,13 +102,13 @@ export async function GET(request: NextRequest) {
           },
         },
       },
-      orderBy: [
-        { date: 'desc' },
-        { student: { fullName: 'asc' } },
-      ],
-    }),
-    prisma.attendances.count({ where: whereConditions })
-  ]);
+        orderBy: [
+          { date: 'desc' },
+          { student: { fullName: 'asc' } },
+        ],
+      }),
+      prisma.attendances.count({ where: whereConditions })
+    ]);
 
     const response: any = {
       attendances,

@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
 
     // Validate campaign exists if provided
     if (campaignId) {
-      const campaign = await prisma.donations_campaigns.findUnique({
+      const campaign = await prisma.donation_campaigns.findUnique({
         where: { id: campaignId },
         select: { id: true, status: true, endDate: true }
       })
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate category exists
-    const category = await prisma.donations_categories.findUnique({
+    const category = await prisma.donation_categories.findUnique({
       where: { id: categoryId },
       select: { id: true, isActive: true }
     })

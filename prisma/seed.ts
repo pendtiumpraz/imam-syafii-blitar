@@ -1,11 +1,11 @@
 import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcryptjs';
+import * as bcrypt from 'bcryptjs';
 import { seedBillingData } from '../src/lib/billing-seed';
 import seedWebsiteContent from './seeds/website-content-seed-v2';
 
 const prisma = new PrismaClient();
 
-async function main() {
+async function main(): Promise<void> {
   console.log('Starting database seed...');
 
   // Create admin user

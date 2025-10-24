@@ -48,7 +48,7 @@ export async function POST(
     }
 
     // Validate campaign exists and is active
-    const campaign = await prisma.donations_campaigns.findUnique({
+    const campaign = await prisma.donation_campaigns.findUnique({
       where: { id: campaignId },
       select: {
         id: true,
@@ -337,7 +337,7 @@ async function upsertDonorProfile(email: string, name: string, phone?: string, a
  *     }
  *   }),
  *   // Update campaign currentAmount
- *   prisma.donations_campaigns.update({
+ *   prisma.donation_campaigns.update({
  *     where: { id: campaignId },
  *     data: {
  *       currentAmount: {

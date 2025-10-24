@@ -2,7 +2,7 @@ import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
-async function seedWebsiteContent() {
+async function seedWebsiteContent(): Promise<void> {
   console.log('🌱 Seeding website content (v2 - adapted to schema)...')
 
   try {
@@ -65,34 +65,45 @@ async function seedWebsiteContent() {
     ]
 
     for (const item of navbarItems) {
-      await prisma.navbar_items.upsert({
-        where: { id: `navbar-${item.sortOrder}` },
-        update: {
-          label: item.label,
-          linkUrl: item.linkUrl,
-          sortOrder: item.sortOrder,
-          parentId: item.parentId,
-          level: item.level,
-          updatedAt: new Date()
-        },
-        create: {
-          id: `navbar-${item.sortOrder}`,
-          label: item.label,
-          linkUrl: item.linkUrl,
-          linkType: 'INTERNAL',
-          parentId: item.parentId,
-          level: item.level,
-          sortOrder: item.sortOrder,
-          icon: null,
-          isActive: true,
-          openInNewTab: false,
-          showOnMobile: true,
-          showOnDesktop: true,
-          requiresAuth: false,
-          cssClass: null,
-          updatedAt: new Date(),
-        },
+      const navbarId = `navbar-${item.sortOrder}`
+      // Check if exists first
+      const existing = await prisma.navbar_items.findUnique({
+        where: { id: navbarId }
       })
+
+      if (existing) {
+        await prisma.navbar_items.update({
+          where: { id: navbarId },
+          data: {
+            label: item.label,
+            linkUrl: item.linkUrl,
+            sortOrder: item.sortOrder,
+            parentId: item.parentId,
+            level: item.level,
+            updatedAt: new Date()
+          }
+        })
+      } else {
+        await prisma.navbar_items.create({
+          data: {
+            id: navbarId,
+            label: item.label,
+            linkUrl: item.linkUrl,
+            linkType: 'INTERNAL',
+            parentId: item.parentId,
+            level: item.level,
+            sortOrder: item.sortOrder,
+            icon: null,
+            isActive: true,
+            openInNewTab: false,
+            showOnMobile: true,
+            showOnDesktop: true,
+            requiresAuth: false,
+            cssClass: null,
+            updatedAt: new Date(),
+          }
+        })
+      }
     }
 
     // 3. FOOTER SECTIONS
@@ -225,22 +236,39 @@ async function seedWebsiteContent() {
     ]
 
     for (const person of structure) {
-      await prisma.organization_structure.upsert({
-        where: { id: `struktur-${person.sortOrder}` },
-        update: {
-          ...person,
-          updatedAt: new Date(),
-        },
-        create: {
-          id: `struktur-${person.sortOrder}`,
-          ...person,
-          parentId: null,
-          department: person.department || null,
-          isActive: true,
-          sortOrder: person.sortOrder,
-          updatedAt: new Date(),
-        },
+      const structureId = `struktur-${person.sortOrder}`
+      // Check if exists first
+      const existing = await prisma.organization_structure.findUnique({
+        where: { id: structureId }
       })
+
+      if (existing) {
+        await prisma.organization_structure.update({
+          where: { id: structureId },
+          data: {
+            personName: person.personName,
+            positionName: person.positionName,
+            level: person.level,
+            sortOrder: person.sortOrder,
+            department: person.department || null,
+            updatedAt: new Date(),
+          }
+        })
+      } else {
+        await prisma.organization_structure.create({
+          data: {
+            id: structureId,
+            personName: person.personName,
+            positionName: person.positionName,
+            level: person.level,
+            sortOrder: person.sortOrder,
+            parentId: null,
+            department: person.department || null,
+            isActive: true,
+            updatedAt: new Date(),
+          }
+        })
+      }
     }
 
     // 6. INSTITUTION INFO (TK, SD, PONDOK)
@@ -277,20 +305,40 @@ async function seedWebsiteContent() {
     ]
 
     for (const inst of institutions) {
-      await prisma.institution_info.upsert({
-        where: { id: inst.id },
-        update: {
-          ...inst,
-          updatedAt: new Date(),
-        },
-        create: {
-          ...inst,
-          address: 'Jl. Raya Imam Syafi\'i No. 123',
-          city: 'Kota Blitar',
-          province: 'Jawa Timur',
-          updatedAt: new Date(),
-        },
+      // Check if exists first
+      const existing = await prisma.institution_info.findUnique({
+        where: { id: inst.id }
       })
+
+      if (existing) {
+        await prisma.institution_info.update({
+          where: { id: inst.id },
+          data: {
+            type: inst.type,
+            name: inst.name,
+            shortName: inst.shortName,
+            accreditation: inst.accreditation,
+            establishmentDate: inst.establishmentDate,
+            updatedAt: new Date(),
+          }
+        })
+      } else {
+        await prisma.institution_info.create({
+          data: {
+            id: inst.id,
+            type: inst.type,
+            code: inst.code,
+            name: inst.name,
+            shortName: inst.shortName,
+            accreditation: inst.accreditation,
+            establishmentDate: inst.establishmentDate,
+            address: 'Jl. Raya Imam Syafi\'i No. 123',
+            city: 'Kota Blitar',
+            province: 'Jawa Timur',
+            updatedAt: new Date(),
+          }
+        })
+      }
     }
 
     console.log('✅ Website content seeding completed successfully!')

@@ -2,7 +2,7 @@ import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
-async function seedOTAData() {
+async function seedOTAData(): Promise<void> {
   console.log('🌱 Seeding OTA data...')
 
   try {
@@ -103,12 +103,19 @@ async function seedOTAData() {
     }
 
     // Create OTA programs for orphan students
-    const orphanStudents = await prisma.students.findMany({
-      where: { 
-        isOrphan: true,
-        ota_program: null // Students without existing programs
+    // First, get all orphan students
+    const allOrphanStudents = await prisma.students.findMany({
+      where: {
+        isOrphan: true
       }
     })
+
+    // Then filter out students who already have OTA programs
+    const existingProgramStudentIds = await prisma.ota_programs.findMany({
+      select: { studentId: true }
+    })
+    const existingIds = new Set(existingProgramStudentIds.map(p => p.studentId))
+    const orphanStudents = allOrphanStudents.filter(s => !existingIds.has(s.id))
 
     console.log(`Found ${orphanStudents.length} orphan students without OTA programs`)
 
@@ -193,13 +200,22 @@ async function seedOTAData() {
     }
 
     // Create sample hafalan progress for some students
-    const studentsNeedingHafalan = await prisma.students.findMany({
+    // First, get all orphan students
+    const potentialHafalanStudents = await prisma.students.findMany({
       where: {
-        isOrphan: true,
-        hafalan_progress: null
+        isOrphan: true
       },
-      take: 3
+      take: 10
     })
+
+    // Filter out students who already have hafalan progress
+    const existingHafalanStudentIds = await prisma.hafalan_progress.findMany({
+      select: { studentId: true }
+    })
+    const existingHafalanIds = new Set(existingHafalanStudentIds.map(h => h.studentId))
+    const studentsNeedingHafalan = potentialHafalanStudents
+      .filter(s => !existingHafalanIds.has(s.id))
+      .slice(0, 3)
 
     for (const student of studentsNeedingHafalan) {
       const totalSurah = Math.floor(Math.random() * 15) + 1 // 1-15 surah

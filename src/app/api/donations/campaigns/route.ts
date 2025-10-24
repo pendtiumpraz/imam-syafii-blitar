@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
 
     // Get campaigns with relations
     const [campaigns, total] = await Promise.all([
-      prisma.donations_campaigns.findMany({
+      prisma.donation_campaigns.findMany({
         where,
         include: {
           category: true,
@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
         skip,
         take: limit
       }),
-      prisma.donations_campaigns.count({ where })
+      prisma.donation_campaigns.count({ where })
     ])
 
     // Parse JSON fields
@@ -137,7 +137,7 @@ export async function POST(request: NextRequest) {
 
     // Check if slug already exists
     if (slug) {
-      const existingCampaign = await prisma.donations_campaigns.findUnique({
+      const existingCampaign = await prisma.donation_campaigns.findUnique({
         where: { slug }
       })
       
@@ -162,7 +162,7 @@ export async function POST(request: NextRequest) {
       // Ensure uniqueness
       let counter = 1
       let uniqueSlug = finalSlug
-      while (await prisma.donations_campaigns.findUnique({ where: { slug: uniqueSlug } })) {
+      while (await prisma.donation_campaigns.findUnique({ where: { slug: uniqueSlug } })) {
         uniqueSlug = `${finalSlug}-${counter}`
         counter++
       }
@@ -170,7 +170,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create campaign
-    const campaign = await prisma.donations_campaigns.create({
+    const campaign = await prisma.donation_campaigns.create({
       data: {
         title,
         slug: finalSlug,

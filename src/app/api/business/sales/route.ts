@@ -266,7 +266,7 @@ export async function POST(request: NextRequest) {
     // Create sale with items and update inventory
     const result = await prisma.$transaction(async (tx) => {
       // Create sale record
-      const sale = await tx.sale.create({
+      const sale = await tx.sales.create({
         data: {
           saleNo,
           customerName: data.customerName,
@@ -289,7 +289,7 @@ export async function POST(request: NextRequest) {
 
       // Create sale items and update inventory
       for (const itemData of data.items) {
-        const product = await tx.product.findUnique({
+        const product = await tx.products.findUnique({
           where: { id: itemData.productId },
         })
 
@@ -298,7 +298,7 @@ export async function POST(request: NextRequest) {
         const finalAmount = itemData.unitPrice * itemData.quantity - itemData.discountAmount
 
         // Create sale item
-        await tx.saleItem.create({
+        await tx.sale_items.create({
           data: {
             saleId: sale.id,
             productId: itemData.productId,
@@ -312,7 +312,7 @@ export async function POST(request: NextRequest) {
         })
 
         // Create inventory OUT transaction
-        await tx.inventoryTransaction.create({
+        await tx.inventory_transactions.create({
           data: {
             productId: itemData.productId,
             type: 'OUT',
@@ -358,7 +358,7 @@ export async function POST(request: NextRequest) {
           _sum: { quantity: true },
         })
 
-        await tx.product.update({
+        await tx.products.update({
           where: { id: itemData.productId },
           data: { stock: totalStock._sum.quantity || 0 },
         })

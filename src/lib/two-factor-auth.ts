@@ -113,20 +113,30 @@ export class TwoFactorAuthService {
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
 
       // Store OTP in database
-      await prisma.two_factor_verifications.upsert({
+      // TODO: userId is not a unique field in schema - need to use proper unique field
+      const existing = await prisma.two_factor_verifications.findFirst({
         where: { userId },
-        update: {
-          smsOtp: otp,
-          smsOtpExpiresAt: expiresAt,
-          smsAttempts: 0,
-        },
-        create: {
-          userId,
-          smsOtp: otp,
-          smsOtpExpiresAt: expiresAt,
-          smsAttempts: 0,
-        }
       })
+
+      if (existing) {
+        await prisma.two_factor_verifications.update({
+          where: { id: existing.id },
+          data: {
+            smsOtp: otp,
+            smsOtpExpiresAt: expiresAt,
+            smsAttempts: 0,
+          },
+        })
+      } else {
+        await prisma.two_factor_verifications.create({
+          data: {
+            userId,
+            smsOtp: otp,
+            smsOtpExpiresAt: expiresAt,
+            smsAttempts: 0,
+          },
+        })
+      }
 
       // Send SMS
       await twilioClient.messages.create({
@@ -156,7 +166,7 @@ export class TwoFactorAuthService {
    */
   static async verifySMSOTP(userId: string, otp: string): Promise<{ isValid: boolean; message: string }> {
     try {
-      const verification = await prisma.two_factor_verifications.findUnique({
+      const verification = await prisma.two_factor_verifications.findFirst({
         where: { userId }
       })
 
@@ -167,7 +177,7 @@ export class TwoFactorAuthService {
       // Check if OTP is expired
       if (new Date() > verification.smsOtpExpiresAt) {
         await prisma.two_factor_verifications.update({
-          where: { userId },
+          where: { id: verification.id },
           data: {
             smsOtp: null,
             smsOtpExpiresAt: null,
@@ -185,7 +195,7 @@ export class TwoFactorAuthService {
       if (verification.smsOtp === otp) {
         // Clear OTP after successful verification
         await prisma.two_factor_verifications.update({
-          where: { userId },
+          where: { id: verification.id },
           data: {
             smsOtp: null,
             smsOtpExpiresAt: null,
@@ -203,7 +213,7 @@ export class TwoFactorAuthService {
       } else {
         // Increment attempts
         await prisma.two_factor_verifications.update({
-          where: { userId },
+          where: { id: verification.id },
           data: {
             smsAttempts: verification.smsAttempts + 1
           }
@@ -481,7 +491,7 @@ export class TwoFactorAuthService {
    */
   static async checkRateLimit(userId: string, action: string): Promise<{ allowed: boolean; remainingAttempts: number; resetTime?: Date }> {
     try {
-      const verification = await prisma.two_factor_verifications.findUnique({
+      const verification = await prisma.two_factor_verifications.findFirst({
         where: { userId }
       })
 
@@ -520,9 +530,10 @@ export class TwoFactorAuthService {
         const updateData: any = {}
         updateData[`${action}Attempts`] = 0
         updateData[`${action}AttemptsResetAt`] = resetTime
-        
+
+
         await prisma.two_factor_verifications.update({
-          where: { userId },
+          where: { id: verification.id },
           data: updateData
         })
       }
@@ -554,14 +565,23 @@ export class TwoFactorAuthService {
       updateData[`${action}Attempts`] = { increment: 1 }
       updateData[`${action}AttemptsResetAt`] = resetTime
 
-      await prisma.two_factor_verifications.upsert({
+      const existing = await prisma.two_factor_verifications.findFirst({
         where: { userId },
-        update: updateData,
-        create: {
-          userId,
-          ...updateData
-        }
       })
+
+      if (existing) {
+        await prisma.two_factor_verifications.update({
+          where: { id: existing.id },
+          data: updateData,
+        })
+      } else {
+        await prisma.two_factor_verifications.create({
+          data: {
+            userId,
+            ...updateData
+          },
+        })
+      }
     } catch (error) {
       console.error('Increment attempts error:', error)
     }

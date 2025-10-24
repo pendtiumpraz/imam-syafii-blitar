@@ -128,14 +128,14 @@ export async function GET(request: NextRequest) {
       const studentCounts = await prisma.student_classes.groupBy({
         by: ['classId'],
         where: {
-          classId: { in: classes.map(c => c.id) },
+          classId: { in: classes.map((c: any) => c.id) },
           status: 'ACTIVE'
         },
         _count: { studentId: true }
       });
-      
+
       response.studentCounts = Object.fromEntries(
-        studentCounts.map(sc => [sc.classId, sc._count.studentId])
+        studentCounts.map((sc: any) => [sc.classId, sc._count.studentId])
       );
     }
 

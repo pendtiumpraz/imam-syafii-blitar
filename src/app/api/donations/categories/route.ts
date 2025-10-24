@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
       where.isActive = true
     }
 
-    const categories = await prisma.donations_categories.findMany({
+    const categories = await prisma.donation_categories.findMany({
       where,
       include: {
         _count: {
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if category name already exists
-    const existingCategory = await prisma.donations_categories.findUnique({
+    const existingCategory = await prisma.donation_categories.findUnique({
       where: { name }
     })
 
@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const category = await prisma.donations_categories.create({
+    const category = await prisma.donation_categories.create({
       data: {
         name,
         description: description || null,

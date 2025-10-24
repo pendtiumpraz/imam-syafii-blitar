@@ -14,7 +14,7 @@ export async function GET(
     const skip = (page - 1) * limit
     
     // Find campaign first
-    const campaign = await prisma.donations_campaigns.findUnique({
+    const campaign = await prisma.donation_campaigns.findUnique({
       where: { slug },
       select: { id: true }
     })

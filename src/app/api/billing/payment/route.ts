@@ -141,7 +141,7 @@ async function recordPayment(prisma: any, session: any, body: any) {
     const paymentNo = await generatePaymentNumber(tx);
 
     // Create payment
-    const payment = await tx.billPayment.create({
+    const payment = await tx.bill_payments.create({
       data: {
         paymentNo,
         billId: validated.billId,
@@ -187,7 +187,7 @@ async function recordPayment(prisma: any, session: any, body: any) {
         newStatus = 'PARTIAL';
       }
 
-      await tx.bill.update({
+      await tx.bills.update({
         where: { id: validated.billId },
         data: {
           paidAmount: newPaidAmount,
@@ -197,7 +197,7 @@ async function recordPayment(prisma: any, session: any, body: any) {
       });
 
       // Create payment history entry
-      await tx.paymentHistory.create({
+      await tx.payment_history.create({
         data: {
           billId: validated.billId,
           paymentId: payment.id,
@@ -218,7 +218,7 @@ async function recordPayment(prisma: any, session: any, body: any) {
       });
     } else {
       // Create payment history entry for pending payment
-      await tx.paymentHistory.create({
+      await tx.payment_history.create({
         data: {
           billId: validated.billId,
           paymentId: payment.id,
@@ -314,7 +314,7 @@ async function verifyPayment(prisma: any, session: any, body: any) {
     const isVerifying = validated.action === 'VERIFY';
     
     // Update payment verification status
-    const updatedPayment = await tx.billPayment.update({
+    const updatedPayment = await tx.bill_payments.update({
       where: { id: validated.paymentId },
       data: {
         verificationStatus: isVerifying ? 'VERIFIED' : 'REJECTED',
@@ -337,7 +337,7 @@ async function verifyPayment(prisma: any, session: any, body: any) {
         newStatus = 'PARTIAL';
       }
 
-      await tx.bill.update({
+      await tx.bills.update({
         where: { id: payment.billId },
         data: {
           paidAmount: newPaidAmount,
@@ -347,7 +347,7 @@ async function verifyPayment(prisma: any, session: any, body: any) {
       });
 
       // Create payment history entry for verification
-      await tx.paymentHistory.create({
+      await tx.payment_history.create({
         data: {
           billId: payment.billId,
           paymentId: payment.id,
@@ -366,7 +366,7 @@ async function verifyPayment(prisma: any, session: any, body: any) {
       });
     } else {
       // Create payment history entry for rejection
-      await tx.paymentHistory.create({
+      await tx.payment_history.create({
         data: {
           billId: payment.billId,
           paymentId: payment.id,

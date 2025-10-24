@@ -315,7 +315,7 @@ export async function POST(request: NextRequest) {
     // Start transaction
     const result = await prisma.$transaction(async (tx) => {
       // Create transaction
-      const transaction = await tx.transaction.create({
+      const transaction = await tx.transactions.create({
         data: {
           transactionNo,
           type: data.type,

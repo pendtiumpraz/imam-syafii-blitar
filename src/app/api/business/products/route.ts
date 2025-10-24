@@ -220,7 +220,7 @@ export async function POST(request: NextRequest) {
 
     // Create product with initial inventory record
     const result = await prisma.$transaction(async (tx) => {
-      const product = await tx.product.create({
+      const product = await tx.products.create({
         data: {
           ...data,
           tags: JSON.stringify(data.tags),
@@ -243,7 +243,7 @@ export async function POST(request: NextRequest) {
         })
 
         // Create inventory transaction for initial stock
-        await tx.inventoryTransaction.create({
+        await tx.inventory_transactions.create({
           data: {
             productId: product.id,
             type: 'IN',

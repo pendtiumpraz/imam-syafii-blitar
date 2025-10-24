@@ -49,9 +49,9 @@ export async function GET(request: NextRequest) {
       
       // Campaign statistics
       Promise.all([
-        prisma.donations_campaigns.count({ where: { status: 'ACTIVE' } }),
-        prisma.donations_campaigns.count({ where: { status: 'COMPLETED' } }),
-        prisma.donations_campaigns.count()
+        prisma.donation_campaigns.count({ where: { status: 'ACTIVE' } }),
+        prisma.donation_campaigns.count({ where: { status: 'COMPLETED' } }),
+        prisma.donation_campaigns.count()
       ]).then(([active, completed, total]) => ({
         active,
         completed,
@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
         _sum: { amount: true },
         _count: true
       }).then(async (results) => {
-        const categories = await prisma.donations_categories.findMany({
+        const categories = await prisma.donation_categories.findMany({
           where: {
             id: { in: results.map(r => r.categoryId) }
           }
@@ -105,7 +105,7 @@ export async function GET(request: NextRequest) {
       ).then(amounts => amounts.reverse()),
       
       // Top campaigns
-      prisma.donations_campaigns.findMany({
+      prisma.donation_campaigns.findMany({
         include: {
           _count: {
             select: {
