@@ -16,20 +16,10 @@ export const optimizedIncludes = {
   // Student optimized includes
   student: {
     minimal: {
-      creator: {
-        select: {
-          id: true,
-          name: true
-        }
-      }
+      // TODO: students model doesn't have a creator relation
+      // createdBy is just a string field, not a relation
     },
     withClass: {
-      creator: {
-        select: {
-          id: true,
-          name: true
-        }
-      },
       currentClass: {
         select: {
           id: true,
@@ -40,32 +30,10 @@ export const optimizedIncludes = {
       }
     },
     withParent: {
-      creator: {
-        select: {
-          id: true,
-          name: true
-        }
-      },
-      parentAccount: {
-        select: {
-          id: true,
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true
-            }
-          }
-        }
-      }
+      // TODO: students model doesn't have direct parentAccount relation
+      // Need to go through parent_students -> parent_accounts -> users
     },
     full: {
-      creator: {
-        select: {
-          id: true,
-          name: true
-        }
-      },
       currentClass: {
         select: {
           id: true,
@@ -73,38 +41,18 @@ export const optimizedIncludes = {
           grade: true,
           level: true
         }
-      },
-      parentAccount: {
-        include: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true
-            }
-          }
-        }
       }
+      // TODO: Add parent relations when schema is updated
     }
   },
 
   // Activity optimized includes
   activity: {
     minimal: {
-      creator: {
-        select: {
-          id: true,
-          name: true
-        }
-      }
+      // TODO: activities model may not have a creator relation
+      // Check actual schema structure
     },
     withParticipants: {
-      creator: {
-        select: {
-          id: true,
-          name: true
-        }
-      },
       participants: {
         select: {
           id: true,
@@ -169,12 +117,8 @@ export const optimizedIncludes = {
   // Finance/Transaction optimized includes
   transaction: {
     minimal: {
-      creator: {
-        select: {
-          id: true,
-          name: true
-        }
-      },
+      // TODO: transactions model may not have creator relation
+      // createdBy may just be a string field
       category: {
         select: {
           id: true,
@@ -184,12 +128,6 @@ export const optimizedIncludes = {
       }
     },
     withAccount: {
-      creator: {
-        select: {
-          id: true,
-          name: true
-        }
-      },
       category: {
         select: {
           id: true,

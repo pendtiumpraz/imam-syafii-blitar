@@ -64,11 +64,7 @@ class NotificationService {
     const notification = await prisma.notifications.findUnique({
       where: { id: notificationId },
       include: {
-        user: {
-          include: {
-            parentAccount: true,
-          },
-        },
+        user: true,
       },
     });
 
@@ -230,13 +226,16 @@ class NotificationService {
       // Try to get WhatsApp number from parent account
       const user = await prisma.users.findUnique({
         where: { id: userId },
-        include: {
-          parentAccount: true,
-        },
       });
 
-      if (user?.parentAccount?.whatsapp) {
-        return user.parentAccount.whatsapp;
+      // TODO: Add relation between users and parent_accounts in schema
+      // For now, try to find parent account by userId
+      const parentAccount = await prisma.parent_accounts.findFirst({
+        where: { userId },
+      });
+
+      if (parentAccount?.whatsapp) {
+        return parentAccount.whatsapp;
       }
 
       // If no WhatsApp number in parent account, try to get from student data
@@ -262,9 +261,11 @@ class NotificationService {
   async getUserPreferences(userId: string): Promise<NotificationPreferences> {
     const user = await prisma.users.findUnique({
       where: { id: userId },
-      include: {
-        parentAccount: true,
-      },
+    });
+
+    // TODO: Add relation between users and parent_accounts in schema
+    const parentAccount = await prisma.parent_accounts.findFirst({
+      where: { userId },
     });
 
     // Default preferences
@@ -288,9 +289,9 @@ class NotificationService {
       frequency: 'IMMEDIATE',
     };
 
-    if (user?.parentAccount?.notificationSettings) {
+    if (parentAccount?.notificationSettings) {
       try {
-        const settings = JSON.parse(user.parentAccount.notificationSettings);
+        const settings = JSON.parse(parentAccount.notificationSettings);
         return { ...defaults, ...settings };
       } catch (error) {
         console.error('Failed to parse notification settings:', error);
@@ -303,17 +304,21 @@ class NotificationService {
   async updateUserPreferences(userId: string, preferences: Partial<NotificationPreferences>) {
     const user = await prisma.users.findUnique({
       where: { id: userId },
-      include: { parentAccount: true },
     });
 
     if (!user) return;
 
+    // TODO: Add relation between users and parent_accounts in schema
+    const parentAccount = await prisma.parent_accounts.findFirst({
+      where: { userId },
+    });
+
     const currentPrefs = await this.getUserPreferences(userId);
     const newPrefs = { ...currentPrefs, ...preferences };
 
-    if (user.parentAccount) {
+    if (parentAccount) {
       await prisma.parent_accounts.update({
-        where: { userId },
+        where: { id: parentAccount.id },
         data: {
           notificationSettings: JSON.stringify(newPrefs),
         },
@@ -532,23 +537,39 @@ class NotificationService {
         break;
       case 'SPECIFIC_CLASS':
         // Implementation for specific class targeting
+        // TODO: Fix this - studentClasses relation doesn't exist on students model
+        // Need to check the actual relation structure in schema
         const targetClasses = JSON.parse(announcement.targetClasses || '[]');
         if (targetClasses.length > 0) {
           // Get students in specific classes
+          // For now, using currentClassId field
           const students = await prisma.students.findMany({
             where: {
-              studentClasses: {
-                some: {
-                  classId: { in: targetClasses },
-                  status: 'ACTIVE',
-                },
-              },
+              currentClassId: { in: targetClasses },
+              status: 'ACTIVE',
             },
-            include: { parentStudents: { include: { parent: { include: { user: true } } } } },
           });
-          
-          // Return parent users
-          return students.flatMap((s: any) => s.parentStudents.map((ps: any) => ps.parent.user));
+
+          // Get parent users from parent_students relation
+          const parentStudents = await prisma.parent_students.findMany({
+            where: {
+              studentId: { in: students.map(s => s.id) },
+            },
+          });
+
+          // Get parent accounts
+          const parentAccounts = await prisma.parent_accounts.findMany({
+            where: {
+              id: { in: parentStudents.map(ps => ps.parentId) },
+            },
+          });
+
+          // Get users
+          return await prisma.users.findMany({
+            where: {
+              id: { in: parentAccounts.map(pa => pa.userId) },
+            },
+          });
         }
         break;
       case 'ALL':

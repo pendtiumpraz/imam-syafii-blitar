@@ -501,7 +501,8 @@ class PaymentGateway {
       // Update payment status in database
       const payment = await prisma.payments.findFirst({
         where: { externalId: notification.order_id },
-        include: { registration: true, student: true }
+        // TODO: payments model doesn't have registration or student relations defined
+        // These are just ID fields (registrationId, studentId) without relations
       })
 
       if (!payment) {

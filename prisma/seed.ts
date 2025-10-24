@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { seedBillingData } from '../src/lib/billing-seed';
+import seedWebsiteContent from './seeds/website-content-seed-v2';
 
 const prisma = new PrismaClient();
 
@@ -533,6 +534,9 @@ async function main() {
 
   // Seed billing data
   await seedBillingData(prisma);
+
+  // Seed website content (navbar, footer, yayasan, struktur)
+  await seedWebsiteContent();
 
   console.log('Database seed completed successfully!');
 }
