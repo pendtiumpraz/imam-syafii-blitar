@@ -29,7 +29,6 @@ export async function GET(request: NextRequest) {
         _count: {
           select: {
             classes: true,
-            studentClasses: true,
           },
         },
       },
@@ -88,7 +87,6 @@ export async function POST(request: NextRequest) {
         _count: {
           select: {
             classes: true,
-            studentClasses: true,
           },
         },
       },
@@ -154,7 +152,6 @@ export async function PUT(request: NextRequest) {
         _count: {
           select: {
             classes: true,
-            studentClasses: true,
           },
         },
       },
@@ -209,7 +206,6 @@ export async function DELETE(request: NextRequest) {
         _count: {
           select: {
             classes: true,
-            studentClasses: true,
             semesters: true,
           },
         },
@@ -223,8 +219,8 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const { classes, studentClasses, semesters } = academicYear._count;
-    if (classes > 0 || studentClasses > 0 || semesters > 0) {
+    const { classes, semesters } = academicYear._count;
+    if (classes > 0 || semesters > 0) {
       return NextResponse.json(
         { error: 'Cannot delete academic year that has classes or students associated with it' },
         { status: 409 }

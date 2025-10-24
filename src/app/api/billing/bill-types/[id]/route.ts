@@ -100,7 +100,7 @@ export async function PUT(
 
     // Check if name already exists (if changing name)
     if (validated.name && validated.name !== existing.name) {
-      const nameExists = await prisma.bill_types.findUnique({
+      const nameExists = await prisma.bill_types.findFirst({
         where: { name: validated.name },
       });
 

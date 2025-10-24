@@ -37,47 +37,8 @@ export async function GET(request: NextRequest) {
 
     const reportCards = await prisma.report_cards.findMany({
       where: whereConditions,
-      include: {
-        student: {
-          select: {
-            id: true,
-            nis: true,
-            fullName: true,
-            photo: true,
-            birthDate: true,
-            birthPlace: true,
-          },
-        },
-        semester: {
-          select: {
-            id: true,
-            name: true,
-            academicYear: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-          },
-        },
-        class: {
-          select: {
-            id: true,
-            name: true,
-            grade: true,
-            level: true,
-            teacher: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-          },
-        },
-      },
       orderBy: [
-        { semester: { startDate: 'desc' } },
-        { student: { fullName: 'asc' } },
+        { createdAt: 'desc' },
       ],
     });
 
@@ -110,12 +71,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if report card already exists
-    const existingReportCard = await prisma.report_cards.findUnique({
+    const existingReportCard = await prisma.report_cards.findFirst({
       where: {
-        studentId_semesterId: {
-          studentId,
-          semesterId,
-        },
+        studentId,
+        semesterId,
       },
     });
 
@@ -133,7 +92,7 @@ export async function POST(request: NextRequest) {
         semesterId,
       },
       include: {
-        subject: {
+        subjects: {
           select: {
             id: true,
             name: true,
@@ -149,9 +108,9 @@ export async function POST(request: NextRequest) {
     let validGrades = 0;
 
     grades.forEach((grade) => {
-      if (grade.total !== null) {
-        totalScore += Number(grade.total) * grade.subject.credits;
-        totalCredits += grade.subject.credits;
+      if (grade.total !== null && grade.subjects) {
+        totalScore += Number(grade.total) * grade.subjects.credits;
+        totalCredits += grade.subjects.credits;
         validGrades++;
       }
     });
@@ -196,12 +155,7 @@ export async function POST(request: NextRequest) {
         semesterId,
       },
       include: {
-        student: {
-          select: {
-            id: true,
-          },
-        },
-        subject: {
+        subjects: {
           select: {
             credits: true,
           },
@@ -214,9 +168,9 @@ export async function POST(request: NextRequest) {
       if (!acc[grade.studentId]) {
         acc[grade.studentId] = { totalScore: 0, totalCredits: 0 };
       }
-      if (grade.total !== null) {
-        acc[grade.studentId].totalScore += Number(grade.total) * grade.subject.credits;
-        acc[grade.studentId].totalCredits += grade.subject.credits;
+      if (grade.total !== null && grade.subjects) {
+        acc[grade.studentId].totalScore += Number(grade.total) * grade.subjects.credits;
+        acc[grade.studentId].totalCredits += grade.subjects.credits;
       }
       return acc;
     }, {} as Record<string, { totalScore: number; totalCredits: number }>);
@@ -247,44 +201,6 @@ export async function POST(request: NextRequest) {
         attendancePercentage: parseFloat(attendancePercentage.toFixed(2)),
         generatedBy: session.user?.id,
         generatedAt: new Date(),
-      },
-      include: {
-        student: {
-          select: {
-            id: true,
-            nis: true,
-            fullName: true,
-            photo: true,
-            birthDate: true,
-            birthPlace: true,
-          },
-        },
-        semester: {
-          select: {
-            id: true,
-            name: true,
-            academicYear: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-          },
-        },
-        class: {
-          select: {
-            id: true,
-            name: true,
-            grade: true,
-            level: true,
-            teacher: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-          },
-        },
       },
     });
 
@@ -344,44 +260,6 @@ export async function PUT(request: NextRequest) {
         recommendations,
         parentNotes,
         status,
-      },
-      include: {
-        student: {
-          select: {
-            id: true,
-            nis: true,
-            fullName: true,
-            photo: true,
-            birthDate: true,
-            birthPlace: true,
-          },
-        },
-        semester: {
-          select: {
-            id: true,
-            name: true,
-            academicYear: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-          },
-        },
-        class: {
-          select: {
-            id: true,
-            name: true,
-            grade: true,
-            level: true,
-            teacher: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-          },
-        },
       },
     });
 

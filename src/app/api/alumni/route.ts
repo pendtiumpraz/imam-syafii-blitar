@@ -96,16 +96,10 @@ export async function GET(request: NextRequest) {
       ];
     }
 
+    // TODO: Add creator relation to schema - alumni model doesn't have a relation to users yet
     const [alumni, total] = await Promise.all([
       prisma.alumni.findMany({
         where,
-        include: {
-          creator: {
-            select: {
-              name: true,
-            },
-          },
-        },
         orderBy: [
           { graduationYear: 'desc' },
           { fullName: 'asc' },

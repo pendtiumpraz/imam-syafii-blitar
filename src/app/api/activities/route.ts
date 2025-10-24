@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
       prisma.activities.findMany({
         where: whereConditions,
         include: {
-          creator: {
+          users: {
             select: {
               id: true,
               name: true,
@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
         createdBy: session.user.id,
       },
       include: {
-        creator: {
+        users: {
           select: {
             id: true,
             name: true,
@@ -199,7 +199,7 @@ export async function PUT(request: NextRequest) {
         status,
       },
       include: {
-        creator: {
+        users: {
           select: {
             id: true,
             name: true,

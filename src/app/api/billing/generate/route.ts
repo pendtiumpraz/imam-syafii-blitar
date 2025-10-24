@@ -259,10 +259,10 @@ export async function POST(request: NextRequest) {
     const createdBills = await prisma.$transaction(async (tx: any) => {
       const bills = [];
       for (const billData of billsToCreate) {
-        const bill = await tx.bill.create({
+        const bill = await tx.bills.create({
           data: billData,
           include: {
-            student: {
+            students: {
               select: {
                 fullName: true,
                 nis: true,
@@ -270,7 +270,7 @@ export async function POST(request: NextRequest) {
                 grade: true,
               },
             },
-            billType: {
+            bill_types: {
               select: {
                 name: true,
                 category: true,
@@ -280,17 +280,17 @@ export async function POST(request: NextRequest) {
         });
 
         // Create payment history entry
-        await tx.paymentHistory.create({
+        await tx.payment_history.create({
           data: {
             billId: bill.id,
             studentId: bill.studentId,
             action: 'BILL_GENERATED',
-            description: `Bill generated for ${bill.billType.name} - ${validated.period}`,
+            description: `Bill generated for ${bill.bill_types.name} - ${validated.period}`,
             newAmount: bill.amount,
             performedBy: session.user.id,
             metadata: JSON.stringify({
               period: validated.period,
-              billType: bill.billType.name,
+              billType: bill.bill_types.name,
               originalAmount: bill.originalAmount,
               discountsApplied: bill.totalDiscount > 0,
             }),
@@ -312,7 +312,7 @@ export async function POST(request: NextRequest) {
         bills: createdBills.map(bill => ({
           id: bill.id,
           billNo: bill.billNo,
-          studentName: bill.student.fullName,
+          studentName: bill.students.fullName,
           amount: bill.amount,
           dueDate: bill.dueDate,
         })),

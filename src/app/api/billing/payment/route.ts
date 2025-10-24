@@ -157,15 +157,15 @@ async function recordPayment(prisma: any, session: any, body: any) {
         verifiedAt: validated.autoVerify ? new Date() : null,
       },
       include: {
-        bill: {
+        bills: {
           include: {
-            student: {
+            students: {
               select: {
                 fullName: true,
                 nis: true,
               },
             },
-            billType: {
+            bill_types: {
               select: {
                 name: true,
               },
@@ -254,13 +254,13 @@ async function recordPayment(prisma: any, session: any, body: any) {
         verificationStatus: result.verificationStatus,
       },
       bill: {
-        id: result.bill.id,
-        billNo: result.bill.billNo,
-        studentName: result.bill.student.fullName,
-        billType: result.bill.billType.name,
-        remainingAmount: validated.autoVerify 
-          ? Math.max(0, Number(result.bill.remainingAmount) - validated.amount)
-          : result.bill.remainingAmount,
+        id: result.bills.id,
+        billNo: result.bills.billNo,
+        studentName: result.bills.students.fullName,
+        billType: result.bills.bill_types.name,
+        remainingAmount: validated.autoVerify
+          ? Math.max(0, Number(result.bills.remainingAmount) - validated.amount)
+          : result.bills.remainingAmount,
       },
     },
   });
@@ -278,15 +278,15 @@ async function verifyPayment(prisma: any, session: any, body: any) {
   const payment = await prisma.bill_payments.findUnique({
     where: { id: validated.paymentId },
     include: {
-      bill: {
+      bills: {
         include: {
-          student: {
+          students: {
             select: {
               fullName: true,
               nis: true,
             },
           },
-          billType: {
+          bill_types: {
             select: {
               name: true,
             },
@@ -327,10 +327,10 @@ async function verifyPayment(prisma: any, session: any, body: any) {
 
     if (isVerifying) {
       // Update bill amounts
-      const newPaidAmount = Number(payment.bill.paidAmount) + Number(payment.amount);
-      const newRemainingAmount = Number(payment.bill.amount) - newPaidAmount;
-      
-      let newStatus = payment.bill.status;
+      const newPaidAmount = Number(payment.bills.paidAmount) + Number(payment.amount);
+      const newRemainingAmount = Number(payment.bills.amount) - newPaidAmount;
+
+      let newStatus = payment.bills.status;
       if (newRemainingAmount <= 0) {
         newStatus = 'PAID';
       } else if (newPaidAmount > 0) {
@@ -351,10 +351,10 @@ async function verifyPayment(prisma: any, session: any, body: any) {
         data: {
           billId: payment.billId,
           paymentId: payment.id,
-          studentId: payment.bill.studentId,
+          studentId: payment.bills.studentId,
           action: 'PAYMENT_VERIFIED',
           description: `Payment verified by ${session.user.name}`,
-          previousAmount: Number(payment.bill.remainingAmount),
+          previousAmount: Number(payment.bills.remainingAmount),
           newAmount: newRemainingAmount,
           changeAmount: -Number(payment.amount),
           performedBy: session.user.id,
@@ -370,7 +370,7 @@ async function verifyPayment(prisma: any, session: any, body: any) {
         data: {
           billId: payment.billId,
           paymentId: payment.id,
-          studentId: payment.bill.studentId,
+          studentId: payment.bills.studentId,
           action: 'PAYMENT_REJECTED',
           description: `Payment rejected: ${validated.rejectionReason}`,
           performedBy: session.user.id,
@@ -434,7 +434,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (studentId) {
-      where.bill = {
+      where.bills = {
         studentId: studentId,
       };
     }
@@ -443,16 +443,16 @@ export async function GET(request: NextRequest) {
       prisma.bill_payments.findMany({
         where,
         include: {
-          bill: {
+          bills: {
             include: {
-              student: {
+              students: {
                 select: {
                   fullName: true,
                   nis: true,
                   institutionType: true,
                 },
               },
-              billType: {
+              bill_types: {
                 select: {
                   name: true,
                   category: true,

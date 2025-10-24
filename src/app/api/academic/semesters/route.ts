@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
     const semesters = await prisma.semesters.findMany({
       where: whereConditions,
       include: {
-        academicYear: {
+        academic_years: {
           select: {
             id: true,
             name: true,
@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
         },
       },
       orderBy: [
-        { academicYear: { startDate: 'desc' } },
+        { academic_years: { startDate: 'desc' } },
         { startDate: 'asc' },
       ],
     });
@@ -122,7 +122,7 @@ export async function POST(request: NextRequest) {
         isActive: Boolean(isActive),
       },
       include: {
-        academicYear: {
+        academic_years: {
           select: {
             id: true,
             name: true,
@@ -221,7 +221,7 @@ export async function PUT(request: NextRequest) {
         isActive: Boolean(isActive),
       },
       include: {
-        academicYear: {
+        academic_years: {
           select: {
             id: true,
             name: true,

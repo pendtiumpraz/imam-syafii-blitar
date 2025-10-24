@@ -130,44 +130,23 @@ export async function GET(request: NextRequest) {
         where: whereConditions,
         skip,
         take: limit,
-      include: {
-        student: {
-          select: {
-            id: true,
-            nis: true,
-            fullName: true,
-            photo: true,
-          },
-        },
-        subject: {
-          select: {
-            id: true,
-            code: true,
-            name: true,
-            nameArabic: true,
-            credits: true,
-          },
-        },
-        semester: {
-          select: {
-            id: true,
-            name: true,
-            academicYear: {
-              select: {
-                name: true,
-              },
+        include: {
+          subjects: {
+            select: {
+              id: true,
+              code: true,
+              name: true,
+              nameArabic: true,
+              credits: true,
             },
           },
         },
-      },
-      orderBy: [
-        { semester: { startDate: 'desc' } },
-        { student: { fullName: 'asc' } },
-        { subject: { name: 'asc' } },
-      ],
-    }),
-    prisma.grades.count({ where: whereConditions })
-  ]);
+        orderBy: [
+          { createdAt: 'desc' },
+        ],
+      }),
+      prisma.grades.count({ where: whereConditions })
+    ]);
 
     const response: any = {
       grades,
@@ -299,32 +278,13 @@ export async function POST(request: NextRequest) {
         enteredAt: new Date(),
       },
       include: {
-        student: {
-          select: {
-            id: true,
-            nis: true,
-            fullName: true,
-            photo: true,
-          },
-        },
-        subject: {
+        subjects: {
           select: {
             id: true,
             code: true,
             name: true,
             nameArabic: true,
             credits: true,
-          },
-        },
-        semester: {
-          select: {
-            id: true,
-            name: true,
-            academicYear: {
-              select: {
-                name: true,
-              },
-            },
           },
         },
       },
@@ -437,32 +397,13 @@ export async function PUT(request: NextRequest) {
         enteredAt: new Date(),
       },
       include: {
-        student: {
-          select: {
-            id: true,
-            nis: true,
-            fullName: true,
-            photo: true,
-          },
-        },
-        subject: {
+        subjects: {
           select: {
             id: true,
             code: true,
             name: true,
             nameArabic: true,
             credits: true,
-          },
-        },
-        semester: {
-          select: {
-            id: true,
-            name: true,
-            academicYear: {
-              select: {
-                name: true,
-              },
-            },
           },
         },
       },

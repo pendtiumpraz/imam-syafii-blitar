@@ -41,9 +41,9 @@ export async function GET(request: NextRequest) {
           verificationStatus: status,
         },
         include: {
-          bill: {
+          bills: {
             include: {
-              student: {
+              students: {
                 select: {
                   fullName: true,
                   nis: true,
@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
                   motherPhone: true,
                 },
               },
-              billType: {
+              bill_types: {
                 select: {
                   name: true,
                   category: true,
@@ -140,7 +140,7 @@ export async function POST(request: NextRequest) {
         verificationStatus: 'PENDING',
       },
       include: {
-        bill: {
+        bills: {
           select: {
             id: true,
             studentId: true,
@@ -174,9 +174,9 @@ export async function POST(request: NextRequest) {
 
       for (const payment of payments) {
         const isVerifying = validated.action === 'VERIFY';
-        
+
         // Update payment verification status
-        const updatedPayment = await tx.billPayment.update({
+        const updatedPayment = await tx.bill_payments.update({
           where: { id: payment.id },
           data: {
             verificationStatus: isVerifying ? 'VERIFIED' : 'REJECTED',
@@ -189,17 +189,17 @@ export async function POST(request: NextRequest) {
 
         if (isVerifying) {
           // Update bill amounts
-          const newPaidAmount = Number(payment.bill.paidAmount) + Number(payment.amount);
-          const newRemainingAmount = Number(payment.bill.amount) - newPaidAmount;
-          
-          let newStatus = payment.bill.status;
+          const newPaidAmount = Number(payment.bills.paidAmount) + Number(payment.amount);
+          const newRemainingAmount = Number(payment.bills.amount) - newPaidAmount;
+
+          let newStatus = payment.bills.status;
           if (newRemainingAmount <= 0) {
             newStatus = 'PAID';
           } else if (newPaidAmount > 0) {
             newStatus = 'PARTIAL';
           }
 
-          const updatedBill = await tx.bill.update({
+          const updatedBill = await tx.bills.update({
             where: { id: payment.billId },
             data: {
               paidAmount: newPaidAmount,
@@ -211,14 +211,14 @@ export async function POST(request: NextRequest) {
           updatedBills.push(updatedBill);
 
           // Create payment history entry for verification
-          await tx.paymentHistory.create({
+          await tx.payment_history.create({
             data: {
               billId: payment.billId,
               paymentId: payment.id,
-              studentId: payment.bill.studentId,
+              studentId: payment.bills.studentId,
               action: 'PAYMENT_VERIFIED',
               description: `Payment verified by ${session.user.name}`,
-              previousAmount: Number(payment.bill.remainingAmount),
+              previousAmount: Number(payment.bills.remainingAmount),
               newAmount: newRemainingAmount,
               changeAmount: -Number(payment.amount),
               performedBy: session.user.id,
@@ -231,11 +231,11 @@ export async function POST(request: NextRequest) {
           });
         } else {
           // Create payment history entry for rejection
-          await tx.paymentHistory.create({
+          await tx.payment_history.create({
             data: {
               billId: payment.billId,
               paymentId: payment.id,
-              studentId: payment.bill.studentId,
+              studentId: payment.bills.studentId,
               action: 'PAYMENT_REJECTED',
               description: `Payment rejected: ${validated.rejectionReason}`,
               performedBy: session.user.id,

@@ -67,44 +67,8 @@ export async function GET(request: NextRequest) {
         where: whereConditions,
         skip,
         take: limit,
-        include: {
-        student: {
-          select: {
-            id: true,
-            nis: true,
-            fullName: true,
-            photo: true,
-          },
-        },
-        class: {
-          select: {
-            id: true,
-            name: true,
-            grade: true,
-            level: true,
-          },
-        },
-        semester: {
-          select: {
-            id: true,
-            name: true,
-            academicYear: {
-              select: {
-                name: true,
-              },
-            },
-          },
-        },
-        marker: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-      },
         orderBy: [
           { date: 'desc' },
-          { student: { fullName: 'asc' } },
         ],
       }),
       prisma.attendances.count({ where: whereConditions })
@@ -199,41 +163,6 @@ export async function POST(request: NextRequest) {
         notes,
         markedBy: session.user?.id,
       },
-      include: {
-        student: {
-          select: {
-            id: true,
-            nis: true,
-            fullName: true,
-            photo: true,
-          },
-        },
-        class: {
-          select: {
-            id: true,
-            name: true,
-            grade: true,
-            level: true,
-          },
-        },
-        semester: {
-          select: {
-            id: true,
-            name: true,
-            academicYear: {
-              select: {
-                name: true,
-              },
-            },
-          },
-        },
-        marker: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-      },
     });
 
     return NextResponse.json(attendance, { status: 201 });
@@ -300,41 +229,6 @@ export async function PUT(request: NextRequest) {
         markedBy: session.user?.id,
         markedAt: new Date(),
       },
-      include: {
-        student: {
-          select: {
-            id: true,
-            nis: true,
-            fullName: true,
-            photo: true,
-          },
-        },
-        class: {
-          select: {
-            id: true,
-            name: true,
-            grade: true,
-            level: true,
-          },
-        },
-        semester: {
-          select: {
-            id: true,
-            name: true,
-            academicYear: {
-              select: {
-                name: true,
-              },
-            },
-          },
-        },
-        marker: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-      },
     });
 
     return NextResponse.json(attendance);
@@ -387,41 +281,43 @@ export async function PATCH(request: NextRequest) {
 
     for (const attendance of attendances) {
       try {
-        const result = await prisma.attendances.upsert({
+        // Find existing attendance record
+        const existing = await prisma.attendances.findFirst({
           where: {
-            studentId_classId_date: {
-              studentId: attendance.studentId,
-              classId,
-              date: new Date(date),
-            },
-          },
-          update: {
-            status: attendance.status,
-            timeIn: attendance.timeIn ? new Date(attendance.timeIn) : null,
-            notes: attendance.notes,
-            markedBy: session.user?.id,
-            markedAt: new Date(),
-          },
-          create: {
             studentId: attendance.studentId,
             classId,
-            semesterId,
             date: new Date(date),
-            status: attendance.status,
-            timeIn: attendance.timeIn ? new Date(attendance.timeIn) : null,
-            notes: attendance.notes,
-            markedBy: session.user?.id,
-          },
-          include: {
-            student: {
-              select: {
-                id: true,
-                nis: true,
-                fullName: true,
-              },
-            },
           },
         });
+
+        let result;
+        if (existing) {
+          // Update existing record
+          result = await prisma.attendances.update({
+            where: { id: existing.id },
+            data: {
+              status: attendance.status,
+              timeIn: attendance.timeIn ? new Date(attendance.timeIn) : null,
+              notes: attendance.notes,
+              markedBy: session.user?.id,
+              markedAt: new Date(),
+            },
+          });
+        } else {
+          // Create new record
+          result = await prisma.attendances.create({
+            data: {
+              studentId: attendance.studentId,
+              classId,
+              semesterId,
+              date: new Date(date),
+              status: attendance.status,
+              timeIn: attendance.timeIn ? new Date(attendance.timeIn) : null,
+              notes: attendance.notes,
+              markedBy: session.user?.id,
+            },
+          });
+        }
 
         results.push(result);
       } catch (error) {

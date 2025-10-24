@@ -51,18 +51,18 @@ export async function GET(request: NextRequest) {
 
     // Student-related filters
     if (institutionType || grade || search) {
-      where.student = {};
-      
+      where.students = {};
+
       if (institutionType) {
-        where.student.institutionType = institutionType;
+        where.students.institutionType = institutionType;
       }
-      
+
       if (grade) {
-        where.student.grade = grade;
+        where.students.grade = grade;
       }
-      
+
       if (search) {
-        where.student.OR = [
+        where.students.OR = [
           { fullName: { contains: search, mode: 'insensitive' } },
           { nis: { contains: search, mode: 'insensitive' } },
           { nisn: { contains: search, mode: 'insensitive' } },
@@ -75,7 +75,7 @@ export async function GET(request: NextRequest) {
       prisma.bills.findMany({
         where,
         include: {
-          student: {
+          students: {
             select: {
               id: true,
               fullName: true,
@@ -89,7 +89,7 @@ export async function GET(request: NextRequest) {
               motherPhone: true,
             },
           },
-          billType: {
+          bill_types: {
             select: {
               name: true,
               category: true,
@@ -98,7 +98,7 @@ export async function GET(request: NextRequest) {
               gracePeriodDays: true,
             },
           },
-          payments: {
+          bill_payments: {
             select: {
               id: true,
               amount: true,
@@ -114,8 +114,7 @@ export async function GET(request: NextRequest) {
           },
           _count: {
             select: {
-              payments: true,
-              paymentHistory: true,
+              bill_payments: true,
             },
           },
         },
@@ -137,7 +136,7 @@ export async function GET(request: NextRequest) {
     for (const bill of bills) {
       const dueDate = new Date(bill.dueDate);
       const daysPastDue = Math.max(0, Math.floor((currentDate.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)));
-      const gracePeriodDays = bill.billType.gracePeriodDays || 0;
+      const gracePeriodDays = bill.bill_types.gracePeriodDays || 0;
       const isCurrentlyOverdue = daysPastDue > gracePeriodDays && Number(bill.remainingAmount) > 0;
 
       // Update overdue status if it has changed
@@ -155,11 +154,11 @@ export async function GET(request: NextRequest) {
 
       // Calculate late penalty if applicable
       let latePenalty = 0;
-      if (isCurrentlyOverdue && bill.billType.latePenaltyType !== 'NONE') {
-        if (bill.billType.latePenaltyType === 'FIXED') {
-          latePenalty = Number(bill.billType.latePenaltyAmount || 0);
-        } else if (bill.billType.latePenaltyType === 'PERCENTAGE') {
-          latePenalty = (Number(bill.originalAmount) * Number(bill.billType.latePenaltyAmount || 0)) / 100;
+      if (isCurrentlyOverdue && bill.bill_types.latePenaltyType !== 'NONE') {
+        if (bill.bill_types.latePenaltyType === 'FIXED') {
+          latePenalty = Number(bill.bill_types.latePenaltyAmount || 0);
+        } else if (bill.bill_types.latePenaltyType === 'PERCENTAGE') {
+          latePenalty = (Number(bill.originalAmount) * Number(bill.bill_types.latePenaltyAmount || 0)) / 100;
         }
       }
 
@@ -169,8 +168,8 @@ export async function GET(request: NextRequest) {
         isCurrentlyOverdue,
         latePenalty,
         totalAmountDue: Number(bill.remainingAmount) + latePenalty,
-        lastPaymentDate: bill.payments[0]?.paymentDate || null,
-        paymentCount: bill._count.payments,
+        lastPaymentDate: bill.bill_payments[0]?.paymentDate || null,
+        paymentCount: bill._count.bill_payments,
       });
     }
 
@@ -190,7 +189,7 @@ export async function GET(request: NextRequest) {
 
     // Group by institution type for additional insights
     const byInstitution = processedBills.reduce((acc: any, bill) => {
-      const type = bill.student.institutionType;
+      const type = bill.students.institutionType;
       if (!acc[type]) {
         acc[type] = {
           count: 0,

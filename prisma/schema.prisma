@@ -235,6 +235,8 @@ model bill_payments {
   deletedAt          DateTime?
   isDeleted          Boolean   @default(false)
   deletedBy          String?
+
+  bills bills @relation(fields: [billId], references: [id])
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
@@ -262,6 +264,8 @@ model bill_types {
   deleted_at               DateTime? @db.Timestamp(6)
   is_deleted               Boolean?  @default(false)
   deleted_by               String?   @db.VarChar(255)
+
+  bills bills[]
 
   @@index([is_deleted, deleted_at], map: "idx_bill_types_deleted")
 }
@@ -335,6 +339,10 @@ model bills {
   deleted_at       DateTime? @db.Timestamp(6)
   is_deleted       Boolean?  @default(false)
   deleted_by       String?   @db.VarChar(255)
+
+  students       students        @relation(fields: [studentId], references: [id])
+  bill_types     bill_types      @relation(fields: [billTypeId], references: [id])
+  bill_payments  bill_payments[]
 
   @@index([is_deleted, deleted_at], map: "idx_bills_deleted")
 }
@@ -2210,6 +2218,8 @@ model students {
   deleted_at       DateTime? @db.Timestamp(6)
   is_deleted       Boolean?  @default(false)
   deleted_by       String?   @db.VarChar(255)
+
+  bills bills[]
 
   @@index([is_deleted, deleted_at], map: "idx_students_deleted")
   @@index([enrollmentYear])

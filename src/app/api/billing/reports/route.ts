@@ -263,15 +263,15 @@ async function generateMonthlyCollectionReport(prisma: any, startDate: Date, end
   const payments = await prisma.bill_payments.findMany({
     where,
     include: {
-      bill: {
+      bills: {
         include: {
-          student: {
+          students: {
             select: {
               institutionType: true,
               grade: true,
             },
           },
-          billType: {
+          bill_types: {
             select: {
               name: true,
               category: true,
@@ -288,7 +288,7 @@ async function generateMonthlyCollectionReport(prisma: any, startDate: Date, end
   // Group by month
   const monthlyData = payments.reduce((acc: any, payment: any) => {
     const monthKey = payment.paymentDate.toISOString().substring(0, 7); // YYYY-MM
-    
+
     if (!acc[monthKey]) {
       acc[monthKey] = {
         month: monthKey,
@@ -304,11 +304,11 @@ async function generateMonthlyCollectionReport(prisma: any, startDate: Date, end
     acc[monthKey].totalPayments++;
 
     // Group by institution
-    const institution = payment.bill.student.institutionType;
+    const institution = payment.bills.students.institutionType;
     acc[monthKey].byInstitution[institution] = (acc[monthKey].byInstitution[institution] || 0) + Number(payment.amount);
 
     // Group by bill type
-    const billType = payment.bill.billType.name;
+    const billType = payment.bills.bill_types.name;
     acc[monthKey].byBillType[billType] = (acc[monthKey].byBillType[billType] || 0) + Number(payment.amount);
 
     // Group by payment method
@@ -335,19 +335,19 @@ async function generateOutstandingBillsReport(prisma: any, startDate: Date, endD
   }
 
   if (filters.institutionTypes?.length > 0 || filters.grades?.length > 0) {
-    where.student = {};
+    where.students = {};
     if (filters.institutionTypes?.length > 0) {
-      where.student.institutionType = { in: filters.institutionTypes };
+      where.students.institutionType = { in: filters.institutionTypes };
     }
     if (filters.grades?.length > 0) {
-      where.student.grade = { in: filters.grades };
+      where.students.grade = { in: filters.grades };
     }
   }
 
   const bills = await prisma.bills.findMany({
     where,
     include: {
-      student: {
+      students: {
         select: {
           fullName: true,
           nis: true,
@@ -357,13 +357,13 @@ async function generateOutstandingBillsReport(prisma: any, startDate: Date, endD
           motherPhone: true,
         },
       },
-      billType: {
+      bill_types: {
         select: {
           name: true,
           category: true,
         },
       },
-      payments: {
+      bill_payments: {
         where: {
           verificationStatus: 'VERIFIED',
         },
@@ -381,11 +381,11 @@ async function generateOutstandingBillsReport(prisma: any, startDate: Date, endD
 
   return bills.map((bill: any) => ({
     billNo: bill.billNo,
-    studentName: bill.student.fullName,
-    studentNis: bill.student.nis,
-    institutionType: bill.student.institutionType,
-    grade: bill.student.grade,
-    billType: bill.billType.name,
+    studentName: bill.students.fullName,
+    studentNis: bill.students.nis,
+    institutionType: bill.students.institutionType,
+    grade: bill.students.grade,
+    billType: bill.bill_types.name,
     originalAmount: Number(bill.originalAmount),
     paidAmount: Number(bill.paidAmount),
     remainingAmount: Number(bill.remainingAmount),
@@ -393,10 +393,10 @@ async function generateOutstandingBillsReport(prisma: any, startDate: Date, endD
     status: bill.status,
     isOverdue: bill.isOverdue,
     daysPastDue: bill.daysPastDue,
-    lastPaymentDate: bill.payments[0]?.paymentDate || null,
+    lastPaymentDate: bill.bill_payments[0]?.paymentDate || null,
     contactInfo: {
-      fatherPhone: bill.student.fatherPhone,
-      motherPhone: bill.student.motherPhone,
+      fatherPhone: bill.students.fatherPhone,
+      motherPhone: bill.students.motherPhone,
     },
   }));
 }

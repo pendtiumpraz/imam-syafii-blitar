@@ -133,15 +133,15 @@ export async function GET(request: NextRequest) {
         verificationStatus: 'VERIFIED',
       },
       include: {
-        bill: {
+        bills: {
           include: {
-            student: {
+            students: {
               select: {
                 fullName: true,
                 nis: true,
               },
             },
-            billType: {
+            bill_types: {
               select: {
                 name: true,
               },
@@ -180,8 +180,8 @@ export async function GET(request: NextRequest) {
         amount: Number(payment.amount),
         paymentDate: payment.paymentDate,
         method: payment.method,
-        studentName: payment.bill.student.fullName,
-        billType: payment.bill.billType.name,
+        studentName: payment.bills.students.fullName,
+        billType: payment.bills.bill_types.name,
       })),
     };
 

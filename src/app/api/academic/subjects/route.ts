@@ -101,30 +101,17 @@ export async function GET(request: NextRequest) {
           isActive: true
         },
         include: {
-          teacher: {
-            select: {
-              id: true,
-              name: true,
-              email: true
-            }
-          },
-          class: {
+          classes: {
             select: {
               id: true,
               name: true,
               grade: true,
               level: true
             }
-          },
-          semester: {
-            select: {
-              id: true,
-              name: true
-            }
           }
         }
       });
-      
+
       response.teacherAssignments = teacherSubjects.reduce((acc: any, ts: any) => {
         if (!acc[ts.subjectId]) acc[ts.subjectId] = [];
         acc[ts.subjectId].push(ts);

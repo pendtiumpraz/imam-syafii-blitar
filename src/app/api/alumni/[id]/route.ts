@@ -60,15 +60,9 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // TODO: Add creator relation to schema - alumni model doesn't have a relation to users yet
     const alumni = await prisma.alumni.findUnique({
       where: { id: params.id },
-      include: {
-        creator: {
-          select: {
-            name: true,
-          },
-        },
-      },
     });
 
     if (!alumni) {
@@ -116,19 +110,13 @@ export async function PUT(
     }
 
     // Update alumni
+    // TODO: Add creator relation to schema - alumni model doesn't have a relation to users yet
     const updatedAlumni = await prisma.alumni.update({
       where: { id: params.id },
       data: {
         ...validated,
         birthDate: new Date(validated.birthDate),
         updatedAt: new Date(),
-      },
-      include: {
-        creator: {
-          select: {
-            name: true,
-          },
-        },
       },
     });
 

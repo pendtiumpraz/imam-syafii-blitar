@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
     const exams = await prisma.exams.findMany({
       where: whereConditions,
       include: {
-        subject: {
+        subjects: {
           select: {
             id: true,
             code: true,
@@ -58,35 +58,12 @@ export async function GET(request: NextRequest) {
             nameArabic: true,
           },
         },
-        class: {
+        classes: {
           select: {
             id: true,
             name: true,
             grade: true,
             level: true,
-          },
-        },
-        semester: {
-          select: {
-            id: true,
-            name: true,
-            academicYear: {
-              select: {
-                name: true,
-              },
-            },
-          },
-        },
-        teacher: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-        _count: {
-          select: {
-            results: true,
           },
         },
       },
@@ -172,7 +149,7 @@ export async function POST(request: NextRequest) {
         materials: JSON.stringify(materials || []),
       },
       include: {
-        subject: {
+        subjects: {
           select: {
             id: true,
             code: true,
@@ -180,35 +157,12 @@ export async function POST(request: NextRequest) {
             nameArabic: true,
           },
         },
-        class: {
+        classes: {
           select: {
             id: true,
             name: true,
             grade: true,
             level: true,
-          },
-        },
-        semester: {
-          select: {
-            id: true,
-            name: true,
-            academicYear: {
-              select: {
-                name: true,
-              },
-            },
-          },
-        },
-        teacher: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-        _count: {
-          select: {
-            results: true,
           },
         },
       },
@@ -278,7 +232,7 @@ export async function PUT(request: NextRequest) {
         isPublished: Boolean(isPublished),
       },
       include: {
-        subject: {
+        subjects: {
           select: {
             id: true,
             code: true,
@@ -286,35 +240,12 @@ export async function PUT(request: NextRequest) {
             nameArabic: true,
           },
         },
-        class: {
+        classes: {
           select: {
             id: true,
             name: true,
             grade: true,
             level: true,
-          },
-        },
-        semester: {
-          select: {
-            id: true,
-            name: true,
-            academicYear: {
-              select: {
-                name: true,
-              },
-            },
-          },
-        },
-        teacher: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-        _count: {
-          select: {
-            results: true,
           },
         },
       },
@@ -355,16 +286,9 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // Check if exam has results
+    // Check if exam exists
     const exam = await prisma.exams.findUnique({
       where: { id },
-      include: {
-        _count: {
-          select: {
-            results: true,
-          },
-        },
-      },
     });
 
     if (!exam) {
@@ -374,7 +298,12 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    if (exam._count.results > 0) {
+    // Check if exam has results
+    const resultsCount = await prisma.exam_results.count({
+      where: { examId: id },
+    });
+
+    if (resultsCount > 0) {
       return NextResponse.json(
         { error: 'Cannot delete exam that has results' },
         { status: 409 }
