@@ -1,12 +1,13 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { 
-  Users, 
-  Building2, 
-  BookOpen, 
-  Heart, 
+import {
+  Users,
+  Building2,
+  BookOpen,
+  Heart,
   Briefcase,
   Home,
   ArrowLeft,
@@ -17,13 +18,53 @@ import {
   Store,
   Megaphone,
   GraduationCap,
-  MessageCircle
+  MessageCircle,
+  Loader2
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import PublicLayout from '@/components/layout/PublicLayout'
 
+interface OrgStructure {
+  dewanSyuro: string[]
+  dewanPembina: string[]
+  dewanPengawas: string[]
+  pengurusInti: {
+    ketua: string
+    sekretaris: string
+    bendahara: string
+    adminKeuangan: string
+  }
+  divisi: Array<{
+    name: string
+    head: string
+    units: Array<{ name: string; pic: string }>
+  }>
+}
+
 export default function StrukturOrganisasiPage() {
+  const [orgData, setOrgData] = useState<OrgStructure | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetchOrganizationStructure()
+  }, [])
+
+  const fetchOrganizationStructure = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch('/api/organization/structure')
+      if (response.ok) {
+        const data = await response.json()
+        setOrgData(data)
+      }
+    } catch (error) {
+      console.error('Error fetching organization structure:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const fadeInUp = {
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0 }
@@ -37,83 +78,30 @@ export default function StrukturOrganisasiPage() {
     }
   }
 
-  // Organizational structure data
-  const dewanSyuro = [
-    'Bpk. Syamsul',
-    'Bpk. Syaiful',
-    'Bpk. Bowo',
-    'Ust. Fuad'
-  ]
-
-  const dewanPembina = [
-    'Bpk. Hadi',
-    'Bpk. Syamsul',
-    'Ust. Anwar Zen',
-    'Ust. Fuad'
-  ]
-
-  const dewanPengawas = [
-    'Bu Umi',
-    'Bpk. Fadhli'
-  ]
-
-  const pengurusInti = {
-    ketua: 'Ust. Abu Haitsami Iqbal',
-    sekretaris: 'Bpk. Bowo',
-    bendahara: 'Bpk. Syaiful',
-    adminKeuangan: 'Ummu Rafa'
+  // Icon mapping for divisions
+  const divisionIcons: Record<string, any> = {
+    'BMT & Unit Usaha': Store,
+    'Divisi Dakwah': Megaphone,
+    'Divisi Pendidikan': GraduationCap,
+    'Divisi Lain-lain': MessageCircle,
   }
 
-  const divisi = [
-    {
-      name: 'BMT & Unit Usaha',
-      icon: Store,
-      color: 'from-blue-500 to-blue-600',
-      head: 'Bpk. Bowo',
-      units: [
-        { name: 'Gunung Gamping', pic: 'Bpk. Syaiful' },
-        { name: 'Koperasi', pic: 'Ummu Rafa' },
-        { name: 'Barang Bekas & Rosok', pic: 'Bpk. Warno' },
-        { name: 'Donasi', pic: 'Bpk. Hamzah' },
-        { name: 'Sarpras & Logistik', pic: 'Bpk. Irfan' }
-      ]
-    },
-    {
-      name: 'Divisi Dakwah',
-      icon: Megaphone,
-      color: 'from-green-500 to-green-600',
-      head: 'Ust. Abu Haitsami',
-      units: [
-        { name: 'Masjid', pic: 'Bpk. Budi' },
-        { name: 'Kajian Rutin', pic: 'Akh Sofwan' },
-        { name: 'Medsos', pic: 'Ust. Ahmad' },
-        { name: 'MTU', pic: 'Ummu Dzakiyah' }
-      ]
-    },
-    {
-      name: 'Divisi Pendidikan',
-      icon: GraduationCap,
-      color: 'from-purple-500 to-purple-600',
-      head: 'Bpk. Syamsul',
-      units: [
-        { name: 'RA & TK', pic: 'Ummu Dzakiyah' },
-        { name: 'MTQ', pic: 'Ust. Syamsul' },
-        { name: 'MSW Ikhwan', pic: 'Ust. Imam' },
-        { name: 'MSW Akhwat', pic: 'Ummu Dzakiyah' }
-      ]
-    },
-    {
-      name: 'Divisi Lain-lain',
-      icon: MessageCircle,
-      color: 'from-orange-500 to-orange-600',
-      head: 'Ust. Fuad',
-      units: [
-        { name: 'Humas', pic: 'Ust. Fuad' },
-        { name: 'Komunikasi', pic: 'Ust. Fuad' },
-        { name: 'Baksos', pic: 'Bpk. Syamsul' }
-      ]
-    }
-  ]
+  const divisionColors: Record<string, string> = {
+    'BMT & Unit Usaha': 'from-blue-500 to-blue-600',
+    'Divisi Dakwah': 'from-green-500 to-green-600',
+    'Divisi Pendidikan': 'from-purple-500 to-purple-600',
+    'Divisi Lain-lain': 'from-orange-500 to-orange-600',
+  }
+
+  if (loading || !orgData) {
+    return (
+      <PublicLayout>
+        <div className="flex items-center justify-center min-h-screen">
+          <Loader2 className="w-8 h-8 animate-spin text-green-600" />
+        </div>
+      </PublicLayout>
+    )
+  }
 
   return (
     <PublicLayout>
@@ -162,7 +150,7 @@ export default function StrukturOrganisasiPage() {
                 </CardHeader>
                 <CardContent className="pt-6">
                   <div className="space-y-3">
-                    {dewanSyuro.map((name, index) => (
+                    {orgData.dewanSyuro.map((name, index) => (
                       <div key={index} className="flex items-center gap-3">
                         <UserCircle className="w-5 h-5 text-amber-600" />
                         <span className="font-medium text-gray-700">{name}</span>
@@ -189,7 +177,7 @@ export default function StrukturOrganisasiPage() {
                 </CardHeader>
                 <CardContent className="pt-6">
                   <div className="space-y-3">
-                    {dewanPembina.map((name, index) => (
+                    {orgData.dewanPembina.map((name, index) => (
                       <div key={index} className="flex items-center gap-3">
                         <UserCircle className="w-5 h-5 text-blue-600" />
                         <span className="font-medium text-gray-700">{name}</span>
@@ -216,7 +204,7 @@ export default function StrukturOrganisasiPage() {
                 </CardHeader>
                 <CardContent className="pt-6">
                   <div className="space-y-3">
-                    {dewanPengawas.map((name, index) => (
+                    {orgData.dewanPengawas.map((name, index) => (
                       <div key={index} className="flex items-center gap-3">
                         <UserCircle className="w-5 h-5 text-purple-600" />
                         <span className="font-medium text-gray-700">{name}</span>
@@ -253,7 +241,7 @@ export default function StrukturOrganisasiPage() {
                         <Users className="w-10 h-10 text-white" />
                       </div>
                       <Badge className="bg-green-600 text-white mb-2">Ketua Yayasan</Badge>
-                      <h3 className="text-xl font-bold text-gray-800">{pengurusInti.ketua}</h3>
+                      <h3 className="text-xl font-bold text-gray-800">{orgData.pengurusInti.ketua}</h3>
                     </div>
                   </div>
 
@@ -264,7 +252,7 @@ export default function StrukturOrganisasiPage() {
                         <Briefcase className="w-8 h-8 text-white" />
                       </div>
                       <Badge variant="secondary" className="mb-2">Sekretaris</Badge>
-                      <h3 className="text-lg font-bold text-gray-800">{pengurusInti.sekretaris}</h3>
+                      <h3 className="text-lg font-bold text-gray-800">{orgData.pengurusInti.sekretaris}</h3>
                     </div>
                   </div>
 
@@ -274,7 +262,7 @@ export default function StrukturOrganisasiPage() {
                         <Landmark className="w-8 h-8 text-white" />
                       </div>
                       <Badge variant="secondary" className="mb-2">Bendahara</Badge>
-                      <h3 className="text-lg font-bold text-gray-800">{pengurusInti.bendahara}</h3>
+                      <h3 className="text-lg font-bold text-gray-800">{orgData.pengurusInti.bendahara}</h3>
                     </div>
                   </div>
 
@@ -285,7 +273,7 @@ export default function StrukturOrganisasiPage() {
                         <Building2 className="w-7 h-7 text-white" />
                       </div>
                       <Badge variant="outline" className="mb-2">Admin Keuangan</Badge>
-                      <h3 className="text-lg font-semibold text-gray-700">{pengurusInti.adminKeuangan}</h3>
+                      <h3 className="text-lg font-semibold text-gray-700">{orgData.pengurusInti.adminKeuangan}</h3>
                     </div>
                   </div>
                 </div>
@@ -300,8 +288,9 @@ export default function StrukturOrganisasiPage() {
 
           {/* Divisi-divisi */}
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {divisi.map((div, index) => {
-              const Icon = div.icon
+            {orgData.divisi.map((div, index) => {
+              const Icon = divisionIcons[div.name] || MessageCircle
+              const color = divisionColors[div.name] || 'from-gray-500 to-gray-600'
               return (
                 <motion.div
                   key={index}
@@ -311,7 +300,7 @@ export default function StrukturOrganisasiPage() {
                   transition={{ delay: index * 0.1 }}
                 >
                   <Card className="h-full hover:shadow-xl transition-shadow">
-                    <CardHeader className={`bg-gradient-to-r ${div.color} text-white`}>
+                    <CardHeader className={`bg-gradient-to-r ${color} text-white`}>
                       <CardTitle className="flex items-center gap-2 text-lg">
                         <Icon className="w-5 h-5" />
                         {div.name}
