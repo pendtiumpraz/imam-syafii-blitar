@@ -80,12 +80,13 @@ export async function POST(request: NextRequest) {
 
     const updatedRegistration = await prisma.registrations.update({
       where: { id: registrationId },
-      data: updateData,
-      include: {
-        payments: {
-          orderBy: { createdAt: 'desc' }
-        }
-      }
+      data: updateData
+    })
+
+    // Fetch payments separately
+    const payments = await prisma.payments.findMany({
+      where: { registrationId: registrationId },
+      orderBy: { createdAt: 'desc' }
     })
 
     // Log the action
@@ -107,7 +108,7 @@ export async function POST(request: NextRequest) {
           updatedAt: new Date()
         }
       })
-      
+
       // Create student record if not exists
       await createStudentFromRegistration(registrationId, session.user.id)
     }
@@ -116,7 +117,8 @@ export async function POST(request: NextRequest) {
     const responseData = {
       ...updatedRegistration,
       documents: JSON.parse(updatedRegistration.documents || '[]'),
-      testScore: JSON.parse(updatedRegistration.testScore || 'null')
+      testScore: JSON.parse(updatedRegistration.testScore || 'null'),
+      payments
     }
 
     return NextResponse.json({

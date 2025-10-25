@@ -126,12 +126,8 @@ export async function POST(request: NextRequest) {
 
     // Find payment record
     const payment = await prisma.payments.findFirst({
-      where: { 
-        externalId: notification.order_id 
-      },
-      include: {
-        registration: true,
-        student: true
+      where: {
+        externalId: notification.order_id
       }
     })
 
@@ -142,6 +138,19 @@ export async function POST(request: NextRequest) {
         { status: 404 }
       )
     }
+
+    // Fetch related registration data if needed
+    const registration = payment.registrationId
+      ? await prisma.ppdb_registrations.findUnique({
+          where: { id: payment.registrationId },
+          select: {
+            id: true,
+            registrationNo: true,
+            status: true,
+            paymentStatus: true
+          }
+        })
+      : null
 
     // Determine payment status based on Midtrans status
     let status: string
@@ -202,16 +211,15 @@ export async function POST(request: NextRequest) {
       console.log(`Payment ${payment.paymentNo} successfully completed`)
 
       // Update registration payment status if applicable
-      if (payment.registrationId && payment.registration) {
-        await prisma.registrations.update({
+      if (payment.registrationId && registration) {
+        await prisma.ppdb_registrations.update({
           where: { id: payment.registrationId },
           data: {
             paymentStatus: 'PAID',
-            paymentDate: paidAt,
             updatedAt: new Date()
           }
         })
-        console.log(`Registration ${payment.registration.registrationNo} payment status updated to PAID`)
+        console.log(`Registration ${registration.registrationNo} payment status updated to PAID`)
       }
 
       // TODO: Send notification to student/parent

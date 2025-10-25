@@ -47,7 +47,7 @@ export async function POST(
     // Create transaction to update student and create alumni record
     const result = await prisma.$transaction(async (tx) => {
       // Update student status to GRADUATED
-      const updatedStudent = await tx.student.update({
+      const updatedStudent = await tx.students.update({
         where: { id: params.id },
         data: {
           status: 'GRADUATED',

@@ -101,14 +101,6 @@ export async function GET(request: NextRequest) {
     const [students, total] = await Promise.all([
       prisma.students.findMany({
         where,
-        include: {
-          creator: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-        },
         orderBy: {
           [paginationParams.orderBy as string]: paginationParams.sortOrder,
         },
@@ -118,7 +110,21 @@ export async function GET(request: NextRequest) {
       prisma.students.count({ where }),
     ]);
 
-    const result = createPaginationResult(students, total, paginationParams);
+    // Fetch creators separately if needed
+    const creatorIds = [...new Set(students.map(s => s.createdBy).filter(Boolean))];
+    const creators = creatorIds.length > 0 ? await prisma.users.findMany({
+      where: { id: { in: creatorIds } },
+      select: { id: true, name: true }
+    }) : [];
+    const creatorsMap = new Map(creators.map(c => [c.id, c]));
+
+    // Attach creator info to students
+    const studentsWithCreators = students.map(s => ({
+      ...s,
+      creator: s.createdBy ? creatorsMap.get(s.createdBy) : null
+    }));
+
+    const result = createPaginationResult(studentsWithCreators, total, paginationParams);
     
     // Cache the result
     cache.set(cacheKey, result, 5 * 60 * 1000); // 5 minutes

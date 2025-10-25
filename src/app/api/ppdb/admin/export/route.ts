@@ -29,11 +29,6 @@ export async function POST(request: NextRequest) {
     // Get registrations
     const registrations = await prisma.registrations.findMany({
       where,
-      include: {
-        payments: {
-          orderBy: { createdAt: 'desc' }
-        }
-      },
       orderBy: [
         { level: 'asc' },
         { ranking: 'asc' },
@@ -48,11 +43,28 @@ export async function POST(request: NextRequest) {
       }, { status: 404 })
     }
 
+    // Fetch payments for all registrations
+    const registrationIds = registrations.map(reg => reg.id)
+    const allPayments = await prisma.payments.findMany({
+      where: { registrationId: { in: registrationIds } },
+      orderBy: { createdAt: 'desc' }
+    })
+
+    // Create a map of registrationId to payments
+    const paymentsMap = new Map<string, typeof allPayments>()
+    allPayments.forEach(payment => {
+      if (payment.registrationId) {
+        const existing = paymentsMap.get(payment.registrationId) || []
+        paymentsMap.set(payment.registrationId, [...existing, payment])
+      }
+    })
+
     // Transform data for export
     const exportData = registrations.map((reg, index) => {
       const testScore = reg.testScore ? JSON.parse(reg.testScore) : {}
       const documents = JSON.parse(reg.documents || '[]')
-      const latestPayment = reg.payments[0]
+      const payments = paymentsMap.get(reg.id) || []
+      const latestPayment = payments[0]
 
       return {
         'No': index + 1,

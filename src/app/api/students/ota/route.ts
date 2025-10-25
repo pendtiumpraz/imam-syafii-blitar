@@ -25,8 +25,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const student = await prisma.students.findUnique({
-      where: { id: studentId },
-      include: { ota_program: true }
+      where: { id: studentId }
     });
 
     if (!student) {
@@ -53,18 +52,7 @@ export async function PUT(request: NextRequest) {
 
     const updatedStudent = await prisma.students.update({
       where: { id: studentId },
-      data: updateData,
-      include: {
-        ota_program: true,
-        hafalan_progress: {
-          select: {
-            totalSurah: true,
-            totalAyat: true,
-            totalJuz: true,
-            level: true,
-          }
-        }
-      }
+      data: updateData
     });
 
     return NextResponse.json({ student: updatedStudent });
@@ -132,25 +120,6 @@ export async function GET(request: NextRequest) {
     const [students, total] = await Promise.all([
       prisma.students.findMany({
         where: whereConditions,
-        include: {
-          ota_program: {
-            select: {
-              id: true,
-              monthlyTarget: true,
-              currentMonth: true,
-              totalCollected: true,
-              isActive: true,
-            }
-          },
-          hafalan_progress: {
-            select: {
-              totalSurah: true,
-              totalAyat: true,
-              totalJuz: true,
-              level: true,
-            }
-          }
-        },
         orderBy: [
           { isOrphan: 'desc' }, // Orphans first
           { fullName: 'asc' }

@@ -331,11 +331,11 @@ export default function OTAPublicPage() {
 
                   {/* Achievements */}
                   <div className="space-y-2">
-                    {program.student.hafalanProgress && (
+                    {program.student.hafalan_progress && (
                       <div className="flex items-center gap-2 text-sm">
                         <BookOpen className="w-4 h-4 text-green-600" />
                         <span className="text-gray-700">
-                          {program.student.hafalanProgress.totalSurah} Surah • {program.student.hafalanProgress.level}
+                          {program.student.hafalan_progress.totalSurah} Surah • {program.student.hafalan_progress.level}
                         </span>
                       </div>
                     )}

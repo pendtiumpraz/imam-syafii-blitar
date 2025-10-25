@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
       whereConditions.unitId = unitId;
     } else if (unitCode) {
       // Get unit by code first
-      const unit = await prisma.business_units.findUnique({
+      const unit = await prisma.business_units.findFirst({
         where: { code: unitCode }
       });
       if (unit) {
@@ -139,7 +139,7 @@ export async function POST(request: NextRequest) {
     // Get unit if code provided
     let actualUnitId = unitId;
     if (!actualUnitId && unitCode) {
-      const unit = await prisma.business_units.findUnique({
+      const unit = await prisma.business_units.findFirst({
         where: { code: unitCode }
       });
       if (!unit) {
@@ -152,13 +152,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if report already exists
-    const existing = await prisma.business_unit_reports.findUnique({
+    const existing = await prisma.business_unit_reports.findFirst({
       where: {
-        unitId_year_month: {
-          unitId: actualUnitId,
-          year: parseInt(year),
-          month: parseInt(month)
-        }
+        unitId: actualUnitId,
+        year: parseInt(year),
+        month: parseInt(month)
       }
     });
 

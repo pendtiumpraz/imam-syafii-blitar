@@ -21,26 +21,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           { externalId: id },
           { paymentNo: id }
         ]
-      },
-      include: {
-        registration: {
-          select: {
-            id: true,
-            registrationNo: true,
-            fullName: true,
-            email: true,
-            phoneNumber: true
-          }
-        },
-        student: {
-          select: {
-            id: true,
-            nis: true,
-            fullName: true,
-            email: true,
-            phone: true
-          }
-        }
       }
     })
 
@@ -50,6 +30,34 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         { status: 404 }
       )
     }
+
+    // Fetch related registration and student data separately
+    const [registration, student] = await Promise.all([
+      payment.registrationId
+        ? prisma.ppdb_registrations.findUnique({
+            where: { id: payment.registrationId },
+            select: {
+              id: true,
+              registrationNo: true,
+              fullName: true,
+              email: true,
+              phone: true
+            }
+          })
+        : null,
+      payment.studentId
+        ? prisma.students.findUnique({
+            where: { id: payment.studentId },
+            select: {
+              id: true,
+              nis: true,
+              fullName: true,
+              email: true,
+              phone: true
+            }
+          })
+        : null
+    ])
 
     // Check if payment has external ID (gateway payment)
     let gatewayStatus = null
@@ -136,8 +144,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       createdAt: payment.createdAt,
       updatedAt: payment.updatedAt,
       // Related data
-      registration: payment.registration,
-      student: payment.student,
+      registration,
+      student,
       // Gateway data
       gatewayStatus,
       gatewayData

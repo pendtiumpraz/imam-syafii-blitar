@@ -325,7 +325,7 @@ export default function ParentDashboard() {
                 <div>
                   <p className="text-sm font-medium text-gray-600">Hafalan</p>
                   <p className="text-2xl font-bold text-purple-600">
-                    {filteredStats.hafalanProgress} Surah
+                    {filteredStats.hafalan_progress} Surah
                   </p>
                 </div>
               </div>

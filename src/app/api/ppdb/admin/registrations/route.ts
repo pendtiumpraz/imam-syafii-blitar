@@ -52,22 +52,31 @@ export async function GET(request: NextRequest) {
         where,
         skip,
         take: limit,
-        orderBy,
-        include: {
-          payments: {
-            orderBy: { createdAt: 'desc' },
-            take: 1
-          }
-        }
+        orderBy
       }),
       prisma.registrations.count({ where })
     ])
+
+    // Fetch payments for all registrations (only latest payment per registration)
+    const registrationIds = registrations.map(reg => reg.id)
+    const allPayments = await prisma.payments.findMany({
+      where: { registrationId: { in: registrationIds } },
+      orderBy: { createdAt: 'desc' }
+    })
+
+    // Create a map of registrationId to latest payment
+    const paymentsMap = new Map<string, typeof allPayments[0]>()
+    allPayments.forEach(payment => {
+      if (payment.registrationId && !paymentsMap.has(payment.registrationId)) {
+        paymentsMap.set(payment.registrationId, payment)
+      }
+    })
 
     // Parse JSON fields and add computed fields
     const processedRegistrations = registrations.map(reg => {
       const documents = JSON.parse(reg.documents || '[]')
       const testScore = reg.testScore ? JSON.parse(reg.testScore) : null
-      
+
       return {
         id: reg.id,
         registrationNo: reg.registrationNo,
@@ -102,7 +111,7 @@ export async function GET(request: NextRequest) {
         rejectionReason: reg.rejectionReason,
         createdAt: reg.createdAt.toISOString(),
         updatedAt: reg.updatedAt.toISOString(),
-        latestPayment: reg.payments[0] || null,
+        latestPayment: paymentsMap.get(reg.id) || null,
         age: calculateAge(reg.birthDate)
       }
     })

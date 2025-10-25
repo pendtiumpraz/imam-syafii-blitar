@@ -98,12 +98,8 @@ async function processPaymentNotification(notification: PaymentNotification): Pr
   try {
     // Find payment by external ID (order ID)
     const payment = await prisma.payments.findFirst({
-      where: { 
-        externalId: notification.order_id 
-      },
-      include: {
-        registration: true,
-        student: true
+      where: {
+        externalId: notification.order_id
       }
     })
 
@@ -217,12 +213,10 @@ async function handleSuccessfulPayment(payment: any, notification: PaymentNotifi
   try {
     // Update registration payment status if this is a registration payment
     if (payment.registrationId) {
-      await prisma.registrations.update({
+      await prisma.ppdb_registrations.update({
         where: { id: payment.registrationId },
         data: {
           paymentStatus: 'PAID',
-          paymentDate: payment.paidAt,
-          paymentMethod: notification.payment_type,
           updatedAt: new Date()
         }
       })
@@ -231,12 +225,12 @@ async function handleSuccessfulPayment(payment: any, notification: PaymentNotifi
 
       // If this is registration fee payment, consider moving status forward
       if (payment.paymentType === 'REGISTRATION') {
-        const registration = await prisma.registrations.findUnique({
+        const registration = await prisma.ppdb_registrations.findUnique({
           where: { id: payment.registrationId }
         })
 
         if (registration && registration.status === 'SUBMITTED') {
-          await prisma.registrations.update({
+          await prisma.ppdb_registrations.update({
             where: { id: payment.registrationId },
             data: {
               status: 'DOCUMENT_CHECK',

@@ -296,34 +296,60 @@ export async function GET(request: NextRequest) {
       where.method = method
     }
 
-    // Get payments with related data
+    // Get payments
     const payments = await prisma.payments.findMany({
       where,
-      include: {
-        registration: {
-          select: {
-            id: true,
-            registrationNo: true,
-            fullName: true,
-            email: true,
-            phoneNumber: true
-          }
-        },
-        student: {
-          select: {
-            id: true,
-            nis: true,
-            fullName: true,
-            email: true,
-            phone: true
-          }
-        }
-      },
       orderBy: { createdAt: 'desc' },
       take: 50
     })
 
-    return NextResponse.json({ payments })
+    // Fetch related registration and student data separately
+    const registrationIds = payments
+      .map(p => p.registrationId)
+      .filter((id): id is string => id !== null)
+    const studentIds = payments
+      .map(p => p.studentId)
+      .filter((id): id is string => id !== null)
+
+    const [registrations, students] = await Promise.all([
+      registrationIds.length > 0
+        ? prisma.ppdb_registrations.findMany({
+            where: { id: { in: registrationIds } },
+            select: {
+              id: true,
+              registrationNo: true,
+              fullName: true,
+              email: true,
+              phone: true
+            }
+          })
+        : [],
+      studentIds.length > 0
+        ? prisma.students.findMany({
+            where: { id: { in: studentIds } },
+            select: {
+              id: true,
+              nis: true,
+              fullName: true,
+              email: true,
+              phone: true
+            }
+          })
+        : []
+    ])
+
+    // Create lookup maps for O(1) access
+    const registrationMap = new Map(registrations.map(r => [r.id, r]))
+    const studentMap = new Map(students.map(s => [s.id, s]))
+
+    // Combine data
+    const paymentsWithRelations = payments.map(payment => ({
+      ...payment,
+      registration: payment.registrationId ? registrationMap.get(payment.registrationId) : null,
+      student: payment.studentId ? studentMap.get(payment.studentId) : null
+    }))
+
+    return NextResponse.json({ payments: paymentsWithRelations })
 
   } catch (error: any) {
     console.error('Error fetching payments:', error)

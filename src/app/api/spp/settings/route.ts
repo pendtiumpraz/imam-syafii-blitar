@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     
     if (level) {
       // Get specific level settings
-      let settings = await prisma.spp_settings.findUnique({
+      let settings = await prisma.spp_settings.findFirst({
         where: { level }
       });
       
@@ -146,15 +146,28 @@ export async function PUT(request: NextRequest) {
       updateData.reminderChannels = JSON.stringify(updateData.reminderChannels);
     }
     
-    const settings = await prisma.spp_settings.upsert({
-      where: { level },
-      update: updateData,
-      create: {
-        level,
-        monthlyFee: new Decimal(updateData.monthlyFee || 150000),
-        ...updateData
-      }
+    // Find existing settings
+    const existing = await prisma.spp_settings.findFirst({
+      where: { level }
     });
+
+    let settings;
+    if (existing) {
+      // Update existing settings
+      settings = await prisma.spp_settings.update({
+        where: { id: existing.id },
+        data: updateData
+      });
+    } else {
+      // Create new settings
+      settings = await prisma.spp_settings.create({
+        data: {
+          level,
+          monthlyFee: new Decimal(updateData.monthlyFee || 150000),
+          ...updateData
+        }
+      });
+    }
     
     return NextResponse.json(settings);
   } catch (error) {

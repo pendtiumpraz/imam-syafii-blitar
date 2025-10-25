@@ -60,21 +60,27 @@ export async function GET(
     }
 
     const student = await prisma.students.findUnique({
-      where: { id: params.id },
-      include: {
-        creator: {
-          select: {
-            name: true,
-          },
-        },
-      },
+      where: { id: params.id }
     });
 
     if (!student) {
       return NextResponse.json({ error: 'Student not found' }, { status: 404 });
     }
 
-    return NextResponse.json(student);
+    // Fetch creator separately if needed
+    let creatorName = null;
+    if (student.createdBy) {
+      const creator = await prisma.users.findUnique({
+        where: { id: student.createdBy },
+        select: { name: true }
+      });
+      creatorName = creator?.name;
+    }
+
+    return NextResponse.json({
+      ...student,
+      creator: creatorName ? { name: creatorName } : null
+    });
   } catch (error) {
     console.error('Error fetching student:', error);
     return NextResponse.json(
@@ -122,17 +128,23 @@ export async function PUT(
         birthDate: new Date(validated.birthDate),
         enrollmentDate: new Date(validated.enrollmentDate),
         updatedAt: new Date(),
-      },
-      include: {
-        creator: {
-          select: {
-            name: true,
-          },
-        },
-      },
+      }
     });
 
-    return NextResponse.json(updatedStudent);
+    // Fetch creator separately if needed
+    let creatorName = null;
+    if (updatedStudent.createdBy) {
+      const creator = await prisma.users.findUnique({
+        where: { id: updatedStudent.createdBy },
+        select: { name: true }
+      });
+      creatorName = creator?.name;
+    }
+
+    return NextResponse.json({
+      ...updatedStudent,
+      creator: creatorName ? { name: creatorName } : null
+    });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(

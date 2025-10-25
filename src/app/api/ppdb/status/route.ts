@@ -16,35 +16,37 @@ export async function POST(request: NextRequest) {
     }
     
     const { default: prisma } = await import('@/lib/prisma');
-    
+
     // Find registration by registration number and whatsapp
     const registration = await prisma.registrations.findFirst({
       where: {
         registrationNo,
         whatsapp
-      },
-      include: {
-        payments: {
-          orderBy: { createdAt: 'desc' }
-        }
       }
     });
-    
+
     if (!registration) {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: 'Data pendaftaran tidak ditemukan. Periksa kembali nomor pendaftaran dan WhatsApp Anda.' 
+        {
+          success: false,
+          error: 'Data pendaftaran tidak ditemukan. Periksa kembali nomor pendaftaran dan WhatsApp Anda.'
         },
         { status: 404 }
       );
     }
-    
+
+    // Fetch payments separately
+    const payments = await prisma.payments.findMany({
+      where: { registrationId: registration.id },
+      orderBy: { createdAt: 'desc' }
+    })
+
     // Parse JSON fields
     const parsedRegistration = {
       ...registration,
       documents: JSON.parse(registration.documents),
-      testScore: registration.testScore ? JSON.parse(registration.testScore) : null
+      testScore: registration.testScore ? JSON.parse(registration.testScore) : null,
+      payments
     };
     
     // Get status description

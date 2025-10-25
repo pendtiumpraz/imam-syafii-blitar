@@ -40,10 +40,6 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           { externalId: id },
           { paymentNo: id }
         ]
-      },
-      include: {
-        registration: true,
-        student: true
       }
     })
 
@@ -53,6 +49,13 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         { status: 404 }
       )
     }
+
+    // Fetch related registration data if needed
+    const registration = payment.registrationId
+      ? await prisma.ppdb_registrations.findUnique({
+          where: { id: payment.registrationId }
+        })
+      : null
 
     // Check if payment can be cancelled
     if (payment.status === 'SUCCESS') {
@@ -99,8 +102,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     })
 
     // Update registration status if applicable
-    if (payment.registrationId && payment.registration) {
-      await prisma.registrations.update({
+    if (payment.registrationId && registration) {
+      await prisma.ppdb_registrations.update({
         where: { id: payment.registrationId },
         data: {
           paymentStatus: 'UNPAID',

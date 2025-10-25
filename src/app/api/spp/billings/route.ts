@@ -202,16 +202,15 @@ export async function POST(request: NextRequest) {
     }
     
     // Check if billing already exists for this student and period
-    const existing = await prisma.spp_billings.findUnique({
+    const existing = await prisma.spp_billings.findFirst({
       where: {
-        studentId_month_year: {
-          studentId,
-          month: parseInt(month),
-          year: parseInt(year)
-        }
+        studentId,
+        month: parseInt(month),
+        year: parseInt(year),
+        isDeleted: false
       }
     });
-    
+
     if (existing) {
       return NextResponse.json(
         { error: 'Billing already exists for this student and period' },
@@ -368,14 +367,6 @@ export async function PATCH(request: NextRequest) {
       where: {
         classId,
         status: 'ACTIVE'
-      },
-      include: {
-        student: {
-          select: {
-            id: true,
-            institutionType: true
-          }
-        }
       }
     });
     
@@ -392,7 +383,7 @@ export async function PATCH(request: NextRequest) {
       );
     }
     
-    const sppSettings = await prisma.spp_settings.findUnique({
+    const sppSettings = await prisma.spp_settings.findFirst({
       where: { level: classData.level }
     });
     
@@ -409,16 +400,15 @@ export async function PATCH(request: NextRequest) {
     for (const sc of studentClasses) {
       try {
         // Check if billing already exists
-        const existing = await prisma.spp_billings.findUnique({
+        const existing = await prisma.spp_billings.findFirst({
           where: {
-            studentId_month_year: {
-              studentId: sc.studentId,
-              month: parseInt(month),
-              year: parseInt(year)
-            }
+            studentId: sc.studentId,
+            month: parseInt(month),
+            year: parseInt(year),
+            isDeleted: false
           }
         });
-        
+
         if (existing) {
           errors.push({
             studentId: sc.studentId,

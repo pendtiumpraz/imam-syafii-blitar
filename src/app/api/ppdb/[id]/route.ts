@@ -9,31 +9,38 @@ export async function GET(
 ) {
   try {
     const { default: prisma } = await import('@/lib/prisma');
-    
+
     const registration = await prisma.registrations.findUnique({
-      where: { id: params.id },
-      include: {
-        payments: {
-          orderBy: { createdAt: 'desc' }
-        },
-        student: true
-      }
+      where: { id: params.id }
     });
-    
+
     if (!registration) {
       return NextResponse.json(
         { success: false, error: 'Pendaftaran tidak ditemukan' },
         { status: 404 }
       );
     }
-    
+
+    // Fetch related data separately
+    const [payments, student] = await Promise.all([
+      prisma.payments.findMany({
+        where: { registrationId: registration.id },
+        orderBy: { createdAt: 'desc' }
+      }),
+      registration.id ? prisma.students.findUnique({
+        where: { registrationId: registration.id }
+      }) : null
+    ]);
+
     // Parse JSON fields
     const parsedRegistration = {
       ...registration,
       documents: JSON.parse(registration.documents),
-      testScore: registration.testScore ? JSON.parse(registration.testScore) : null
+      testScore: registration.testScore ? JSON.parse(registration.testScore) : null,
+      payments,
+      student
     };
-    
+
     return NextResponse.json({
       success: true,
       data: parsedRegistration
@@ -112,22 +119,26 @@ export async function DELETE(
     }
 
     const { default: prisma } = await import('@/lib/prisma');
-    
+
     // Check if registration exists
     const registration = await prisma.registrations.findUnique({
-      where: { id: params.id },
-      include: { payments: true }
+      where: { id: params.id }
     });
-    
+
     if (!registration) {
       return NextResponse.json(
         { success: false, error: 'Pendaftaran tidak ditemukan' },
         { status: 404 }
       );
     }
-    
+
+    // Check if there are payments
+    const payments = await prisma.payments.findMany({
+      where: { registrationId: params.id }
+    });
+
     // Don't delete if there are payments
-    if (registration.payments.length > 0) {
+    if (payments.length > 0) {
       return NextResponse.json(
         { success: false, error: 'Tidak dapat menghapus pendaftaran yang sudah memiliki pembayaran' },
         { status: 400 }

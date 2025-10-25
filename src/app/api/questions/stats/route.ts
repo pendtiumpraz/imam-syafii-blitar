@@ -51,25 +51,31 @@ export async function GET(request: NextRequest) {
     // Calculate average response time for answered questions
     const answeredQuestionsWithTime = await prisma.questions.findMany({
       where: {
-        status: 'answered',
-        answer: {
-          isNot: null
-        }
-      },
-      include: {
-        answer: true
+        status: 'answered'
       }
     })
 
     let averageResponseTime = 0
     if (answeredQuestionsWithTime.length > 0) {
+      // Fetch answers for these questions
+      const questionIds = answeredQuestionsWithTime.map(q => q.id);
+      const answersForQuestions = await prisma.answers.findMany({
+        where: {
+          questionId: { in: questionIds }
+        }
+      });
+
+      // Create a map of questionId to answer
+      const answerMap = new Map(answersForQuestions.map(a => [a.questionId, a]));
+
       const responseTimes = answeredQuestionsWithTime.map(q => {
-        if (q.answer) {
-          return q.answer.createdAt.getTime() - q.createdAt.getTime()
+        const answer = answerMap.get(q.id);
+        if (answer) {
+          return answer.createdAt.getTime() - q.createdAt.getTime()
         }
         return 0
       }).filter(time => time > 0)
-      
+
       if (responseTimes.length > 0) {
         averageResponseTime = responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length
         // Convert to hours

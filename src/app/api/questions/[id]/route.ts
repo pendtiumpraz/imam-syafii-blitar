@@ -13,19 +13,7 @@ export async function GET(
 ) {
   try {
     const question = await prisma.questions.findUnique({
-      where: { id: params.id },
-      include: {
-        answer: {
-          include: {
-            ustadz: {
-              select: {
-                id: true,
-                name: true
-              }
-            }
-          }
-        }
-      }
+      where: { id: params.id }
     })
 
     if (!question) {
@@ -35,11 +23,35 @@ export async function GET(
       }, { status: 404 })
     }
 
+    // Fetch answer separately if question has been answered
+    let answerData = null;
+    if (question.status === 'answered') {
+      const answer = await prisma.answers.findFirst({
+        where: { questionId: question.id }
+      });
+
+      if (answer) {
+        // Fetch ustadz info
+        const ustadz = await prisma.users.findUnique({
+          where: { id: answer.ustadzId },
+          select: { id: true, name: true }
+        });
+
+        answerData = {
+          ...answer,
+          ustadz
+        };
+      }
+    }
+
     return NextResponse.json({
       success: true,
-      data: question
+      data: {
+        ...question,
+        answer: answerData
+      }
     }, { status: 200 })
-    
+
   } catch (error) {
     console.error('Error fetching question:', error)
     return NextResponse.json({
@@ -77,10 +89,7 @@ export async function DELETE(
     
     // Check if question exists
     const question = await prisma.questions.findUnique({
-      where: { id: params.id },
-      include: {
-        answer: true
-      }
+      where: { id: params.id }
     })
 
     if (!question) {
@@ -90,6 +99,11 @@ export async function DELETE(
       }, { status: 404 })
     }
 
+    // Check if question has an answer
+    const answer = await prisma.answers.findFirst({
+      where: { questionId: params.id }
+    });
+
     // Soft delete the question
     await softDelete(prisma.questions, { id: params.id }, session.user?.id)
 
@@ -98,7 +112,7 @@ export async function DELETE(
       message: 'Pertanyaan berhasil dihapus',
       data: {
         deletedId: params.id,
-        hadAnswer: !!question.answer
+        hadAnswer: !!answer
       }
     }, { status: 200 })
     

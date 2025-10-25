@@ -21,21 +21,7 @@ export async function GET(
 
     // Get detailed registration data
     const registration = await prisma.registrations.findUnique({
-      where: { id: registrationId },
-      include: {
-        payments: {
-          orderBy: { createdAt: 'desc' }
-        },
-        student: {
-          select: {
-            id: true,
-            nis: true,
-            nisn: true,
-            status: true,
-            enrollmentDate: true
-          }
-        }
-      }
+      where: { id: registrationId }
     })
 
     if (!registration) {
@@ -45,21 +31,34 @@ export async function GET(
       )
     }
 
+    // Fetch related data separately
+    const [payments, student, verifiedByAdmin] = await Promise.all([
+      prisma.payments.findMany({
+        where: { registrationId: registration.id },
+        orderBy: { createdAt: 'desc' }
+      }),
+      prisma.students.findUnique({
+        where: { registrationId: registration.id },
+        select: {
+          id: true,
+          nis: true,
+          nisn: true,
+          status: true,
+          enrollmentDate: true
+        }
+      }).catch(() => null),
+      registration.verifiedBy ? prisma.users.findUnique({
+        where: { id: registration.verifiedBy },
+        select: { id: true, name: true, username: true }
+      }) : null
+    ])
+
     // Parse JSON fields
     const documents = JSON.parse(registration.documents || '[]')
     const testScore = registration.testScore ? JSON.parse(registration.testScore) : null
 
     // Calculate additional fields
     const age = calculateAge(registration.birthDate)
-    
-    // Get admin who verified (if exists)
-    let verifiedByAdmin = null
-    if (registration.verifiedBy) {
-      verifiedByAdmin = await prisma.users.findUnique({
-        where: { id: registration.verifiedBy },
-        select: { id: true, name: true, username: true }
-      })
-    }
 
     const responseData = {
       id: registration.id,
@@ -132,8 +131,8 @@ export async function GET(
       submittedAt: registration.submittedAt?.toISOString(),
       createdAt: registration.createdAt.toISOString(),
       updatedAt: registration.updatedAt.toISOString(),
-      payments: registration.payments,
-      student: registration.student
+      payments,
+      student
     }
 
     return NextResponse.json({
@@ -216,12 +215,13 @@ export async function PUT(
     // Update registration
     const updatedRegistration = await prisma.registrations.update({
       where: { id: registrationId },
-      data: updateData,
-      include: {
-        payments: {
-          orderBy: { createdAt: 'desc' }
-        }
-      }
+      data: updateData
+    })
+
+    // Fetch payments separately
+    const payments = await prisma.payments.findMany({
+      where: { registrationId: registrationId },
+      orderBy: { createdAt: 'desc' }
     })
 
     // Log the action
@@ -238,7 +238,8 @@ export async function PUT(
     const responseData = {
       ...updatedRegistration,
       documents: JSON.parse(updatedRegistration.documents || '[]'),
-      testScore: updatedRegistration.testScore ? JSON.parse(updatedRegistration.testScore) : null
+      testScore: updatedRegistration.testScore ? JSON.parse(updatedRegistration.testScore) : null,
+      payments
     }
 
     return NextResponse.json({

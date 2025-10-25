@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
         uploadDate: 'desc',
       },
       include: {
-        creator: {
+        users: {
           select: {
             id: true,
             name: true,

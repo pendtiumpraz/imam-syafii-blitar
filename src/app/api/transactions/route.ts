@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
       prisma.transactions.findMany({
         where,
         include: {
-          creator: {
+          users: {
             select: {
               name: true,
               username: true,
@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
         createdBy: session.user.id,
       },
       include: {
-        creator: {
+        users: {
           select: {
             name: true,
             username: true,

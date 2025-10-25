@@ -96,21 +96,33 @@ export async function GET(request: NextRequest) {
         where,
         skip,
         take: limit,
-        orderBy: { createdAt: 'desc' },
-        include: {
-          payments: {
-            orderBy: { createdAt: 'desc' }
-          }
-        }
+        orderBy: { createdAt: 'desc' }
       }),
       prisma.registrations.count({ where })
     ]);
-    
+
+    // Fetch payments for all registrations
+    const registrationIds = registrations.map(reg => reg.id)
+    const allPayments = await prisma.payments.findMany({
+      where: { registrationId: { in: registrationIds } },
+      orderBy: { createdAt: 'desc' }
+    })
+
+    // Create a map of registrationId to payments
+    const paymentsMap = new Map<string, typeof allPayments>()
+    allPayments.forEach(payment => {
+      if (payment.registrationId) {
+        const existing = paymentsMap.get(payment.registrationId) || []
+        paymentsMap.set(payment.registrationId, [...existing, payment])
+      }
+    })
+
     // Parse JSON fields
     const parsedRegistrations = registrations.map(reg => ({
       ...reg,
       documents: JSON.parse(reg.documents),
-      testScore: reg.testScore ? JSON.parse(reg.testScore) : null
+      testScore: reg.testScore ? JSON.parse(reg.testScore) : null,
+      payments: paymentsMap.get(reg.id) || []
     }));
     
     return NextResponse.json({

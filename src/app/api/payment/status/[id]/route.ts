@@ -11,30 +11,7 @@ export async function GET(
 
     // Find payment by ID
     const payment = await prisma.payments.findUnique({
-      where: { id: paymentId },
-      include: {
-        registration: {
-          select: {
-            id: true,
-            registrationNo: true,
-            fullName: true,
-            email: true,
-            phoneNumber: true,
-            level: true,
-            status: true,
-            paymentStatus: true
-          }
-        },
-        student: {
-          select: {
-            id: true,
-            nis: true,
-            fullName: true,
-            email: true,
-            phone: true
-          }
-        }
-      }
+      where: { id: paymentId }
     })
 
     if (!payment) {
@@ -42,6 +19,44 @@ export async function GET(
         { error: 'Payment not found' },
         { status: 404 }
       )
+    }
+
+    // Fetch related registration and student data separately
+    const [registration, student] = await Promise.all([
+      payment.registrationId
+        ? prisma.ppdb_registrations.findUnique({
+            where: { id: payment.registrationId },
+            select: {
+              id: true,
+              registrationNo: true,
+              fullName: true,
+              email: true,
+              phone: true,
+              level: true,
+              status: true,
+              paymentStatus: true
+            }
+          })
+        : null,
+      payment.studentId
+        ? prisma.students.findUnique({
+            where: { id: payment.studentId },
+            select: {
+              id: true,
+              nis: true,
+              fullName: true,
+              email: true,
+              phone: true
+            }
+          })
+        : null
+    ])
+
+    // Combine payment with relations
+    const paymentWithRelations = {
+      ...payment,
+      registration,
+      student
     }
 
     // Check if payment is still pending and not expired
@@ -89,11 +104,10 @@ export async function GET(
 
             // Update registration if payment successful
             if (newStatus === 'SUCCESS' && payment.registrationId) {
-              await prisma.registrations.update({
+              await prisma.ppdb_registrations.update({
                 where: { id: payment.registrationId },
                 data: {
                   paymentStatus: 'PAID',
-                  paymentDate: paidAt,
                   updatedAt: new Date()
                 }
               })
@@ -102,7 +116,7 @@ export async function GET(
             // Return updated payment data
             return NextResponse.json({
               payment: {
-                ...payment,
+                ...paymentWithRelations,
                 status: newStatus,
                 paidAt
               },
@@ -129,7 +143,7 @@ export async function GET(
 
       return NextResponse.json({
         payment: {
-          ...payment,
+          ...paymentWithRelations,
           status: 'EXPIRED'
         },
         gatewayStatus
@@ -138,7 +152,7 @@ export async function GET(
 
     // Return current payment status
     return NextResponse.json({
-      payment,
+      payment: paymentWithRelations,
       gatewayStatus
     })
 
@@ -166,11 +180,7 @@ export async function POST(
 
     // Find payment
     const payment = await prisma.payments.findUnique({
-      where: { id: paymentId },
-      include: {
-        registration: true,
-        student: true
-      }
+      where: { id: paymentId }
     })
 
     if (!payment) {
@@ -259,11 +269,10 @@ export async function POST(
 
         // Update registration if payment successful
         if (newStatus === 'SUCCESS' && payment.registrationId) {
-          await prisma.registrations.update({
+          await prisma.ppdb_registrations.update({
             where: { id: payment.registrationId },
             data: {
               paymentStatus: 'PAID',
-              paymentDate: paidAt,
               updatedAt: new Date()
             }
           })
@@ -327,11 +336,10 @@ export async function POST(
 
       // Update registration if payment successful
       if (payment.registrationId) {
-        await prisma.registrations.update({
+        await prisma.ppdb_registrations.update({
           where: { id: payment.registrationId },
           data: {
             paymentStatus: 'PAID',
-            paymentDate: new Date(),
             updatedAt: new Date()
           }
         })

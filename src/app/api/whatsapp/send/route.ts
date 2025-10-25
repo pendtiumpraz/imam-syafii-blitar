@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
             { status: 400 }
           );
         }
-        const hafalanMessage = WhatsAppMessageBuilder.hafalanProgress(templateParams);
+        const hafalanMessage = WhatsAppMessageBuilder.hafalan_progress(templateParams);
         result = await whatsappService.sendTextMessage(to, hafalanMessage);
         break;
 

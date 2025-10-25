@@ -11,14 +11,6 @@ export async function GET(request: NextRequest) {
     }
 
     const units = await prisma.business_units.findMany({
-      include: {
-        _count: {
-          select: {
-            monthlyReports: true,
-            transactions: true
-          }
-        }
-      },
       orderBy: { name: 'asc' }
     });
 
@@ -59,21 +51,61 @@ export async function GET(request: NextRequest) {
 
       // Fetch again after initialization
       const newUnits = await prisma.business_units.findMany({
-        include: {
-          _count: {
-            select: {
-              monthlyReports: true,
-              transactions: true
-            }
-          }
-        },
         orderBy: { name: 'asc' }
       });
 
-      return NextResponse.json(newUnits);
+      // Get counts separately for new units
+      const unitIds = newUnits.map(u => u.id);
+      const [reportCounts, transactionCounts] = await Promise.all([
+        Promise.all(unitIds.map(async id => ({
+          unitId: id,
+          count: await prisma.business_unit_reports.count({ where: { unitId: id } })
+        }))),
+        Promise.all(unitIds.map(async id => ({
+          unitId: id,
+          count: await prisma.business_transactions.count({ where: { unitId: id } })
+        })))
+      ]);
+
+      const reportCountsMap = new Map(reportCounts.map(rc => [rc.unitId, rc.count]));
+      const transactionCountsMap = new Map(transactionCounts.map(tc => [tc.unitId, tc.count]));
+
+      const newUnitsWithCounts = newUnits.map(u => ({
+        ...u,
+        _count: {
+          monthlyReports: reportCountsMap.get(u.id) || 0,
+          transactions: transactionCountsMap.get(u.id) || 0
+        }
+      }));
+
+      return NextResponse.json(newUnitsWithCounts);
     }
 
-    return NextResponse.json(units);
+    // Get counts separately for existing units
+    const unitIds = units.map(u => u.id);
+    const [reportCounts, transactionCounts] = await Promise.all([
+      Promise.all(unitIds.map(async id => ({
+        unitId: id,
+        count: await prisma.business_unit_reports.count({ where: { unitId: id } })
+      }))),
+      Promise.all(unitIds.map(async id => ({
+        unitId: id,
+        count: await prisma.business_transactions.count({ where: { unitId: id } })
+      })))
+    ]);
+
+    const reportCountsMap = new Map(reportCounts.map(rc => [rc.unitId, rc.count]));
+    const transactionCountsMap = new Map(transactionCounts.map(tc => [tc.unitId, tc.count]));
+
+    const unitsWithCounts = units.map(u => ({
+      ...u,
+      _count: {
+        monthlyReports: reportCountsMap.get(u.id) || 0,
+        transactions: transactionCountsMap.get(u.id) || 0
+      }
+    }));
+
+    return NextResponse.json(unitsWithCounts);
   } catch (error) {
     console.error('Error fetching business units:', error);
     return NextResponse.json(

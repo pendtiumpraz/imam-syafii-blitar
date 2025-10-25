@@ -99,12 +99,13 @@ export async function POST(request: NextRequest) {
     // Update registration
     const updatedRegistration = await prisma.registrations.update({
       where: { id: registrationId },
-      data: updateData,
-      include: {
-        payments: {
-          orderBy: { createdAt: 'desc' }
-        }
-      }
+      data: updateData
+    })
+
+    // Fetch payments separately
+    const payments = await prisma.payments.findMany({
+      where: { registrationId: registrationId },
+      orderBy: { createdAt: 'desc' }
     })
 
     // Send status update email
@@ -112,19 +113,19 @@ export async function POST(request: NextRequest) {
       try {
         const { getEmailService } = await import('@/lib/email-service');
         const emailService = getEmailService();
-        
+
         const statusDescriptions: { [key: string]: string } = {
           'VERIFIED': 'Dokumen Terverifikasi',
           'DOCUMENT_CHECK': 'Dokumen Perlu Diperbaiki',
           'PAYMENT_VERIFIED': 'Pembayaran Terverifikasi'
         };
-        
+
         await emailService.sendStatusUpdate(updatedRegistration.email, {
           fullName: updatedRegistration.fullName,
           registrationNo: updatedRegistration.registrationNo,
           status: updateData.status || updatedRegistration.status,
           statusDescription: statusDescriptions[updateData.status || updatedRegistration.status] || updateData.status,
-          message: action === 'REJECT' ? `Dokumen perlu diperbaiki. Alasan: ${reason}` : 
+          message: action === 'REJECT' ? `Dokumen perlu diperbaiki. Alasan: ${reason}` :
                    action === 'VERIFY' ? 'Selamat! Dokumen Anda telah berhasil diverifikasi. Kami akan segera menghubungi Anda untuk jadwal tes.' :
                    'Pembayaran Anda telah berhasil diverifikasi.'
         });
@@ -147,7 +148,8 @@ export async function POST(request: NextRequest) {
     const responseData = {
       ...updatedRegistration,
       documents: JSON.parse(updatedRegistration.documents || '[]'),
-      testScore: updatedRegistration.testScore ? JSON.parse(updatedRegistration.testScore) : null
+      testScore: updatedRegistration.testScore ? JSON.parse(updatedRegistration.testScore) : null,
+      payments
     }
 
     return NextResponse.json({
