@@ -8,44 +8,33 @@ import {
   EnvelopeIcon,
   GlobeAltIcon,
 } from '@heroicons/react/24/outline';
+import { useSiteConfig } from '@/hooks/useSiteConfig';
+import Image from 'next/image';
 
 export default function PublicFooter() {
   const currentYear = new Date().getFullYear();
+  const { config, loading } = useSiteConfig();
 
-  const footerLinks = {
-    profil: [
-      { label: 'Yayasan', href: '/about/yayasan' },
-      { label: 'Struktur Organisasi', href: '/about/struktur' },
-      { label: 'Ustadz & Ustadzah', href: '/about/pengajar' },
-      { label: 'Visi & Misi', href: '/about/yayasan#visi-misi' },
-    ],
-    pendidikan: [
-      { label: 'Pondok Pesantren', href: '/about/pondok' },
-      { label: 'TK Islam', href: '/about/tk' },
-      { label: 'SD Islam', href: '/about/sd' },
-      { label: 'PPDB Online', href: '/ppdb' },
-    ],
-    layanan: [
-      { label: 'Portal Wali', href: '/parent-portal/dashboard' },
-      { label: 'Perpustakaan Digital', href: '/library' },
-      { label: 'Tanya Ustadz', href: '/tanya-ustadz' },
-      { label: 'Video Kajian', href: '/kajian' },
-      { label: 'Galeri Kegiatan', href: '/gallery' },
-    ],
-    donasi: [
-      { label: 'Donasi Umum', href: '/donasi' },
-      { label: 'Program OTA', href: '/donasi/ota' },
-      { label: 'Kalkulator Zakat', href: '/donasi/zakat-calculator' },
-      { label: 'Laporan Keuangan', href: '/donasi#laporan' },
-    ],
-  };
+  // Group footer links by category
+  const groupedLinks = config.footerLinks.reduce((acc, link) => {
+    const category = link.category;
+    if (!acc[category]) {
+      acc[category] = [];
+    }
+    acc[category].push(link);
+    return acc;
+  }, {} as Record<string, typeof config.footerLinks>);
 
+  const categories = Object.keys(groupedLinks);
+
+  // Build social media array from config
   const socialMedia = [
-    { name: 'Facebook', icon: 'facebook', url: '#' },
-    { name: 'Instagram', icon: 'instagram', url: '#' },
-    { name: 'YouTube', icon: 'youtube', url: '#' },
-    { name: 'WhatsApp', icon: 'whatsapp', url: 'https://wa.me/628123456789' },
-  ];
+    config.facebook && { name: 'Facebook', icon: 'F', url: config.facebook },
+    config.instagram && { name: 'Instagram', icon: 'I', url: config.instagram },
+    config.youtube && { name: 'YouTube', icon: 'Y', url: config.youtube },
+    config.twitter && { name: 'Twitter', icon: 'X', url: config.twitter },
+    config.linkedIn && { name: 'LinkedIn', icon: 'L', url: config.linkedIn },
+  ].filter(Boolean) as Array<{ name: string; icon: string; url: string }>;
 
   return (
     <footer className="bg-gradient-to-br from-gray-900 to-gray-800 text-white relative overflow-hidden">
@@ -62,112 +51,76 @@ export default function PublicFooter() {
           {/* About Section */}
           <div className="lg:col-span-2">
             <div className="flex items-center space-x-3 mb-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-emerald-500 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-2xl">P</span>
-              </div>
+              {config.logoWhite ? (
+                <Image
+                  src={config.logoWhite}
+                  alt={config.siteName}
+                  width={48}
+                  height={48}
+                  className="rounded-lg object-contain"
+                />
+              ) : (
+                <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-emerald-500 rounded-lg flex items-center justify-center">
+                  <span className="text-white font-bold text-2xl">P</span>
+                </div>
+              )}
               <div>
-                <h3 className="font-bold text-xl">Pondok Pesantren</h3>
-                <p className="text-sm text-gray-300">Imam Syafi'i Blitar</p>
+                <h3 className="font-bold text-xl">{config.siteName}</h3>
+                <p className="text-sm text-gray-300">Blitar, Jawa Timur</p>
               </div>
             </div>
             <p className="text-gray-300 mb-4 text-sm leading-relaxed">
-              Lembaga pendidikan Islam terpadu yang menggabungkan pendidikan formal dan pesantren,
-              membentuk generasi yang berilmu, berakhlak mulia, dan berwawasan global.
+              {config.footerAbout || config.siteDescription}
             </p>
-            
+
             {/* Contact Info */}
             <div className="space-y-2">
-              <div className="flex items-start space-x-3">
-                <MapPinIcon className="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0" />
-                <p className="text-sm text-gray-300">
-                  Jl. Raya Imam Syafi'i No. 123, Kel. Sananwetan,<br />
-                  Kec. Sananwetan, Kota Blitar, Jawa Timur 66137
-                </p>
-              </div>
-              <div className="flex items-center space-x-3">
-                <PhoneIcon className="w-5 h-5 text-green-400 flex-shrink-0" />
-                <p className="text-sm text-gray-300">(0342) 801234 / 0812-3456-7890</p>
-              </div>
-              <div className="flex items-center space-x-3">
-                <EnvelopeIcon className="w-5 h-5 text-green-400 flex-shrink-0" />
-                <p className="text-sm text-gray-300">info@imamsyafii-blitar.sch.id</p>
-              </div>
-              <div className="flex items-center space-x-3">
-                <GlobeAltIcon className="w-5 h-5 text-green-400 flex-shrink-0" />
-                <p className="text-sm text-gray-300">imam-syafii-blitar.vercel.app</p>
-              </div>
+              {config.address && (
+                <div className="flex items-start space-x-3">
+                  <MapPinIcon className="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0" />
+                  <p className="text-sm text-gray-300">{config.address}</p>
+                </div>
+              )}
+              {config.contactPhone && (
+                <div className="flex items-center space-x-3">
+                  <PhoneIcon className="w-5 h-5 text-green-400 flex-shrink-0" />
+                  <p className="text-sm text-gray-300">{config.contactPhone}</p>
+                </div>
+              )}
+              {config.contactEmail && (
+                <div className="flex items-center space-x-3">
+                  <EnvelopeIcon className="w-5 h-5 text-green-400 flex-shrink-0" />
+                  <p className="text-sm text-gray-300">{config.contactEmail}</p>
+                </div>
+              )}
+              {config.contactWhatsapp && (
+                <div className="flex items-center space-x-3">
+                  <GlobeAltIcon className="w-5 h-5 text-green-400 flex-shrink-0" />
+                  <p className="text-sm text-gray-300">{config.contactWhatsapp}</p>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Links Sections */}
+          {/* Links Sections - Dynamic */}
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-6 lg:col-span-3">
-            {/* Profil */}
-            <div>
-              <h4 className="font-semibold text-green-400 mb-3">Profil</h4>
-              <ul className="space-y-2">
-                {footerLinks.profil.map((link) => (
-                  <li key={link.href}>
-                    <Link 
-                      href={link.href}
-                      className="text-sm text-gray-300 hover:text-green-400 transition-colors"
-                    >
-                      {link.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Pendidikan */}
-            <div>
-              <h4 className="font-semibold text-green-400 mb-3">Pendidikan</h4>
-              <ul className="space-y-2">
-                {footerLinks.pendidikan.map((link) => (
-                  <li key={link.href}>
-                    <Link 
-                      href={link.href}
-                      className="text-sm text-gray-300 hover:text-green-400 transition-colors"
-                    >
-                      {link.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Layanan */}
-            <div>
-              <h4 className="font-semibold text-green-400 mb-3">Layanan</h4>
-              <ul className="space-y-2">
-                {footerLinks.layanan.map((link) => (
-                  <li key={link.href}>
-                    <Link 
-                      href={link.href}
-                      className="text-sm text-gray-300 hover:text-green-400 transition-colors"
-                    >
-                      {link.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Donasi */}
-            <div>
-              <h4 className="font-semibold text-green-400 mb-3">Donasi</h4>
-              <ul className="space-y-2">
-                {footerLinks.donasi.map((link) => (
-                  <li key={link.href}>
-                    <Link 
-                      href={link.href}
-                      className="text-sm text-gray-300 hover:text-green-400 transition-colors"
-                    >
-                      {link.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            {categories.slice(0, 4).map((category) => (
+              <div key={category}>
+                <h4 className="font-semibold text-green-400 mb-3">{category}</h4>
+                <ul className="space-y-2">
+                  {groupedLinks[category].map((link) => (
+                    <li key={link.id}>
+                      <Link
+                        href={link.href}
+                        className="text-sm text-gray-300 hover:text-green-400 transition-colors"
+                      >
+                        {link.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
           </div>
         </div>
 
@@ -175,23 +128,25 @@ export default function PublicFooter() {
         <div className="border-t border-gray-700 pt-8 mb-8">
           <div className="flex flex-col lg:flex-row justify-between items-center gap-6">
             {/* Social Media */}
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-400">Ikuti Kami:</span>
-              {socialMedia.map((social) => (
-                <motion.a
-                  key={social.name}
-                  href={social.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="w-10 h-10 bg-gray-700 hover:bg-green-600 rounded-lg flex items-center justify-center transition-colors"
-                  aria-label={social.name}
-                >
-                  <span className="text-sm font-bold">{social.icon[0].toUpperCase()}</span>
-                </motion.a>
-              ))}
-            </div>
+            {socialMedia.length > 0 && (
+              <div className="flex items-center space-x-4">
+                <span className="text-sm text-gray-400">Ikuti Kami:</span>
+                {socialMedia.map((social) => (
+                  <motion.a
+                    key={social.name}
+                    href={social.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="w-10 h-10 bg-gray-700 hover:bg-green-600 rounded-lg flex items-center justify-center transition-colors"
+                    aria-label={social.name}
+                  >
+                    <span className="text-sm font-bold">{social.icon}</span>
+                  </motion.a>
+                ))}
+              </div>
+            )}
 
             {/* Newsletter */}
             <div className="flex flex-col sm:flex-row items-center gap-3">
@@ -214,7 +169,7 @@ export default function PublicFooter() {
         <div className="border-t border-gray-700 pt-6">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-sm text-gray-400 text-center md:text-left">
-              © 2025 Pondok Pesantren Imam Syafi'i Blitar. Hak Cipta Dilindungi.
+              © {currentYear} {config.siteName}. Hak Cipta Dilindungi.
             </p>
             <div className="flex items-center space-x-6 text-sm text-gray-400">
               <Link href="/privacy" className="hover:text-green-400 transition-colors">

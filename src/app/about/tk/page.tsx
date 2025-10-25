@@ -29,6 +29,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import PublicLayout from '@/components/layout/PublicLayout'
+import { useSiteConfig } from '@/hooks/useSiteConfig'
 
 interface Statistics {
   totalStudents: number
@@ -38,6 +39,7 @@ interface Statistics {
 }
 
 export default function TKPage() {
+  const { config, loading } = useSiteConfig()
   const [statistics, setStatistics] = useState<Statistics>({
     totalStudents: 120,
     totalTeachers: 12,
@@ -467,8 +469,7 @@ export default function TKPage() {
                 <MapPin className="w-10 h-10 text-blue-600 mx-auto mb-3" />
                 <h3 className="font-bold mb-2">Alamat</h3>
                 <p className="text-sm text-gray-600">
-                  Jl. Imam Syafi'i No. 123<br />
-                  Kota Blitar, Jawa Timur 66111
+                  {config.address}
                 </p>
               </CardContent>
             </Card>
@@ -477,8 +478,13 @@ export default function TKPage() {
                 <Phone className="w-10 h-10 text-blue-600 mx-auto mb-3" />
                 <h3 className="font-bold mb-2">Telepon</h3>
                 <p className="text-sm text-gray-600">
-                  (0342) 123456<br />
-                  +62 812-3456-7890
+                  {config.contactPhone}
+                  {config.contactWhatsapp && (
+                    <>
+                      <br />
+                      {config.contactWhatsapp}
+                    </>
+                  )}
                 </p>
               </CardContent>
             </Card>
@@ -487,8 +493,7 @@ export default function TKPage() {
                 <Mail className="w-10 h-10 text-blue-600 mx-auto mb-3" />
                 <h3 className="font-bold mb-2">Email</h3>
                 <p className="text-sm text-gray-600">
-                  tk@imamsyafii-blitar.sch.id<br />
-                  info@imamsyafii-blitar.sch.id
+                  {config.contactEmail}
                 </p>
               </CardContent>
             </Card>

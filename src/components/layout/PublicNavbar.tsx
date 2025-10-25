@@ -17,12 +17,15 @@ import {
   UserIcon,
   ChatBubbleBottomCenterTextIcon,
 } from '@heroicons/react/24/outline';
+import { useSiteConfig } from '@/hooks/useSiteConfig';
+import Image from 'next/image';
 
 export default function PublicNavbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const pathname = usePathname();
+  const { config, loading } = useSiteConfig();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -39,59 +42,37 @@ export default function PublicNavbar() {
     setOpenDropdown(null);
   }, [pathname]);
 
-  const navItems = [
-    {
-      label: 'Beranda',
-      href: '/',
-      icon: HomeIcon,
-    },
-    {
-      label: 'Profil',
-      icon: null,
-      dropdown: [
-        { label: 'Yayasan', href: '/about/yayasan' },
-        { label: 'Struktur Organisasi', href: '/about/struktur' },
-        { label: 'Ustadz & Ustadzah', href: '/about/pengajar' },
-        { label: 'Pondok Pesantren', href: '/about/pondok' },
-        { label: 'TK Islam', href: '/about/tk' },
-        { label: 'SD Islam', href: '/about/sd' },
-      ],
-    },
-    {
-      label: 'Donasi',
-      icon: HeartIcon,
-      dropdown: [
-        { label: 'Donasi Umum', href: '/donasi' },
-        { label: 'Program OTA', href: '/donasi/ota' },
-        { label: 'Kalkulator Zakat', href: '/donasi/zakat-calculator' },
-      ],
-    },
-    {
-      label: 'Galeri',
-      href: '/gallery',
-      icon: PhotoIcon,
-    },
-    {
-      label: 'Kajian',
-      href: '/kajian',
-      icon: PlayCircleIcon,
-    },
-    {
-      label: 'Perpustakaan',
-      href: '/library',
-      icon: BookOpenIcon,
-    },
-    {
-      label: 'Tanya Ustadz',
-      href: '/tanya-ustadz',
-      icon: ChatBubbleBottomCenterTextIcon,
-    },
-    {
-      label: 'PPDB',
-      href: '/ppdb',
-      icon: AcademicCapIcon,
-    },
-  ];
+  // Icon mapping for navbar items
+  const iconMap: { [key: string]: any } = {
+    'beranda': HomeIcon,
+    'home': HomeIcon,
+    'donasi': HeartIcon,
+    'donate': HeartIcon,
+    'galeri': PhotoIcon,
+    'gallery': PhotoIcon,
+    'kajian': PlayCircleIcon,
+    'video': PlayCircleIcon,
+    'perpustakaan': BookOpenIcon,
+    'library': BookOpenIcon,
+    'tanya': ChatBubbleBottomCenterTextIcon,
+    'ppdb': AcademicCapIcon,
+  };
+
+  const getIcon = (label: string) => {
+    const key = label.toLowerCase().split(' ')[0];
+    return iconMap[key] || null;
+  };
+
+  // Transform config navbarItems to match the expected format
+  const navItems = config.navbarItems.map((item) => ({
+    label: item.label,
+    href: item.children ? '#' : item.href,
+    icon: getIcon(item.label),
+    dropdown: item.children?.map((child) => ({
+      label: child.label,
+      href: child.href,
+    })),
+  }));
 
   const isActive = (href: string) => {
     if (href === '/') {
@@ -116,15 +97,30 @@ export default function PublicNavbar() {
             {/* Logo */}
             <div className="flex items-center">
               <Link href="/" className="flex items-center space-x-3">
-                <motion.div 
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center shadow-md"
-                >
-                  <span className="text-white font-bold text-xl">P</span>
-                </motion.div>
+                {config.logo ? (
+                  <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <Image
+                      src={config.logo}
+                      alt={config.siteName}
+                      width={40}
+                      height={40}
+                      className="rounded-lg shadow-md object-contain"
+                    />
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center shadow-md"
+                  >
+                    <span className="text-white font-bold text-xl">P</span>
+                  </motion.div>
+                )}
                 <div className="hidden sm:block">
-                  <h1 className="font-bold text-gray-800 text-lg">Pondok Imam Syafi'i</h1>
+                  <h1 className="font-bold text-gray-800 text-lg">{config.siteName}</h1>
                   <p className="text-xs text-gray-500">Blitar, Jawa Timur</p>
                 </div>
               </Link>
