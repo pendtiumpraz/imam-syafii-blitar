@@ -288,10 +288,13 @@ export default function ClassesPage() {
             className="px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="">Semua Jenjang</option>
-            <option value="TK">TK</option>
+            <option value="KB_TK">KB-TK</option>
             <option value="SD">SD</option>
+            <option value="MTQ">MTQ</option>
+            <option value="MSWi">MSWi</option>
+            <option value="MSWa">MSWa</option>
             <option value="SMP">SMP</option>
-            <option value="PONDOK">Pondok</option>
+            <option value="SMA">SMA</option>
           </select>
 
           <select
@@ -442,10 +445,13 @@ export default function ClassesPage() {
                   required
                 >
                   <option value="">Pilih Jenjang</option>
-                  <option value="TK">TK</option>
+                  <option value="KB_TK">KB-TK</option>
                   <option value="SD">SD</option>
+                  <option value="MTQ">MTQ</option>
+                  <option value="MSWi">MSWi</option>
+                  <option value="MSWa">MSWa</option>
                   <option value="SMP">SMP</option>
-                  <option value="PONDOK">Pondok</option>
+                  <option value="SMA">SMA</option>
                 </select>
               </div>
 

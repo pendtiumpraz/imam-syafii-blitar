@@ -69,7 +69,17 @@ const SUBJECT_CATEGORIES = {
   MUATAN_LOKAL: { label: 'Muatan Lokal', color: 'bg-purple-500' },
 };
 
-const EDUCATION_LEVELS = ['TK', 'SD', 'SMP', 'PONDOK'];
+const EDUCATION_LEVELS = ['KB_TK', 'SD', 'MTQ', 'MSWi', 'MSWa', 'SMP', 'SMA'];
+
+const EDUCATION_LEVEL_LABELS: Record<string, string> = {
+  'KB_TK': 'KB-TK',
+  'SD': 'SD',
+  'MTQ': 'MTQ',
+  'MSWi': 'MSWi',
+  'MSWa': 'MSWa',
+  'SMP': 'SMP',
+  'SMA': 'SMA',
+};
 
 // Common Islamic subjects
 const ISLAMIC_SUBJECTS = [
@@ -297,7 +307,7 @@ export default function SubjectsPage() {
           >
             <option value="">Semua Jenjang</option>
             {EDUCATION_LEVELS.map((level) => (
-              <option key={level} value={level}>{level}</option>
+              <option key={level} value={level}>{EDUCATION_LEVEL_LABELS[level] || level}</option>
             ))}
           </select>
 
@@ -381,7 +391,7 @@ export default function SubjectsPage() {
                 
                 <Badge variant="outline">{subject.level}</Badge>
                 
-                <Badge variant="outline">{subject.credits} SKS</Badge>
+                <Badge variant="outline">{subject.credits} Jam</Badge>
 
                 {!subject.isActive && (
                   <Badge variant="secondary">Nonaktif</Badge>
@@ -446,7 +456,7 @@ export default function SubjectsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">SKS *</label>
+                  <label className="block text-sm font-medium mb-1">Jam *</label>
                   <Input
                     type="number"
                     min="1"
@@ -489,7 +499,7 @@ export default function SubjectsPage() {
                   >
                     <option value="">Pilih Jenjang</option>
                     {EDUCATION_LEVELS.map((level) => (
-                      <option key={level} value={level}>{level}</option>
+                      <option key={level} value={level}>{EDUCATION_LEVEL_LABELS[level] || level}</option>
                     ))}
                   </select>
                 </div>

@@ -192,7 +192,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate level
-    const validLevels = ['TK', 'SD', 'SMP', 'PONDOK'];
+    const validLevels = ['KB_TK', 'SD', 'MTQ', 'MSWi', 'MSWa', 'SMP', 'SMA'];
     if (!validLevels.includes(level)) {
       return NextResponse.json(
         { error: `Level must be one of: ${validLevels.join(', ')}` },
@@ -327,7 +327,7 @@ export async function PUT(request: NextRequest) {
 
     // Validate level if provided
     if (level) {
-      const validLevels = ['TK', 'SD', 'SMP', 'PONDOK'];
+      const validLevels = ['KB_TK', 'SD', 'MTQ', 'MSWi', 'MSWa', 'SMP', 'SMA'];
       if (!validLevels.includes(level)) {
         return NextResponse.json(
           { error: `Level must be one of: ${validLevels.join(', ')}` },

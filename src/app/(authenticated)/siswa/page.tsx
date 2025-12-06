@@ -40,7 +40,7 @@ interface Student {
 export default function SiswaPage() {
   const [students, setStudents] = useState<Student[]>([])
   const [loading, setLoading] = useState(true)
-  const [selectedType, setSelectedType] = useState<'all' | 'TK' | 'SD' | 'PONDOK'>('all')
+  const [selectedType, setSelectedType] = useState<'all' | 'KB_TK' | 'SD' | 'MTQ' | 'MSWi' | 'MSWa' | 'SMP' | 'SMA'>('all')
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null)
   const [showForm, setShowForm] = useState(false)
@@ -194,9 +194,13 @@ export default function SiswaPage() {
   })
 
   const stats = {
-    tk: (students || []).filter(s => s.institutionType === 'TK').length,
+    kb_tk: (students || []).filter(s => s.institutionType === 'KB_TK').length,
     sd: (students || []).filter(s => s.institutionType === 'SD').length,
-    pondok: (students || []).filter(s => s.institutionType === 'PONDOK').length,
+    mtq: (students || []).filter(s => s.institutionType === 'MTQ').length,
+    mswi: (students || []).filter(s => s.institutionType === 'MSWi').length,
+    mswa: (students || []).filter(s => s.institutionType === 'MSWa').length,
+    smp: (students || []).filter(s => s.institutionType === 'SMP').length,
+    sma: (students || []).filter(s => s.institutionType === 'SMA').length,
     total: (students || []).length
   }
 
@@ -232,8 +236,8 @@ export default function SiswaPage() {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600 mb-1">TK</p>
-                  <p className="text-2xl font-bold">{stats.tk}</p>
+                  <p className="text-sm text-gray-600 mb-1">KB-TK</p>
+                  <p className="text-2xl font-bold">{stats.kb_tk}</p>
                 </div>
                 <Baby className="w-8 h-8 text-yellow-500" />
               </div>
@@ -256,8 +260,8 @@ export default function SiswaPage() {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600 mb-1">Pondok</p>
-                  <p className="text-2xl font-bold">{stats.pondok}</p>
+                  <p className="text-sm text-gray-600 mb-1">Pesantren</p>
+                  <p className="text-2xl font-bold">{stats.mtq + stats.mswi + stats.mswa + stats.smp + stats.sma}</p>
                 </div>
                 <GraduationCap className="w-8 h-8 text-purple-500" />
               </div>
@@ -282,8 +286,8 @@ export default function SiswaPage() {
               </div>
 
               {/* Filter by Institution */}
-              <div className="flex gap-2">
-                {(['all', 'TK', 'SD', 'PONDOK'] as const).map((type) => (
+              <div className="flex flex-wrap gap-2">
+                {(['all', 'KB_TK', 'SD', 'MTQ', 'MSWi', 'MSWa', 'SMP', 'SMA'] as const).map((type) => (
                   <Button
                     key={type}
                     variant={selectedType === type ? 'default' : 'outline'}
@@ -291,7 +295,7 @@ export default function SiswaPage() {
                     onClick={() => setSelectedType(type)}
                     className={selectedType === type ? 'bg-green-600 hover:bg-green-700' : ''}
                   >
-                    {type === 'all' ? 'Semua' : type}
+                    {type === 'all' ? 'Semua' : type === 'KB_TK' ? 'KB-TK' : type}
                   </Button>
                 ))}
               </div>
@@ -390,11 +394,16 @@ export default function SiswaPage() {
                       </td>
                       <td className="px-4 py-4">
                         <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                          student.institutionType === 'TK' ? 'bg-yellow-100 text-yellow-800' :
+                          student.institutionType === 'KB_TK' ? 'bg-yellow-100 text-yellow-800' :
                           student.institutionType === 'SD' ? 'bg-green-100 text-green-800' :
-                          'bg-purple-100 text-purple-800'
+                          student.institutionType === 'MTQ' ? 'bg-emerald-100 text-emerald-800' :
+                          student.institutionType === 'MSWi' ? 'bg-blue-100 text-blue-800' :
+                          student.institutionType === 'MSWa' ? 'bg-pink-100 text-pink-800' :
+                          student.institutionType === 'SMP' ? 'bg-indigo-100 text-indigo-800' :
+                          student.institutionType === 'SMA' ? 'bg-purple-100 text-purple-800' :
+                          'bg-gray-100 text-gray-800'
                         }`}>
-                          {student.institutionType}
+                          {student.institutionType === 'KB_TK' ? 'KB-TK' : student.institutionType}
                         </span>
                       </td>
                       <td className="px-4 py-4 text-sm text-gray-900">

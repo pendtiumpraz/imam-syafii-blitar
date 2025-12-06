@@ -36,7 +36,7 @@ const StudentImportSchema = z.object({
   guardianJob: z.string().optional(),
   guardianPhone: z.string().optional(),
   guardianRelation: z.string().optional(),
-  institutionType: z.enum(['TK', 'SD', 'PONDOK']),
+  institutionType: z.enum(['KB_TK', 'SD', 'MTQ', 'MSWi', 'MSWa', 'SMP', 'SMA']),
   grade: z.string().optional(),
   enrollmentDate: z.string().min(1, 'Tanggal masuk wajib diisi'),
   enrollmentYear: z.string().min(1, 'Tahun ajaran wajib diisi'),
@@ -240,7 +240,7 @@ export async function GET() {
           birthDate: 'YYYY-MM-DD atau DD/MM/YYYY',
           enrollmentDate: 'YYYY-MM-DD atau DD/MM/YYYY',
           gender: 'L/P atau MALE/FEMALE atau Laki-laki/Perempuan',
-          institutionType: 'TK, SD, atau PONDOK',
+          institutionType: 'KB_TK, SD, MTQ, MSWi, MSWa, SMP, atau SMA',
           status: 'ACTIVE, GRADUATED, TRANSFERRED, atau DROPPED',
           email: 'Format email yang valid (opsional)'
         }

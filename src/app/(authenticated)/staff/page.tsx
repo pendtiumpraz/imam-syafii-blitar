@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import BulkOperationsModal from '@/components/bulk-operations/bulk-operations-modal'
+import { ValidationRules } from '@/lib/bulk-operations'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -13,7 +15,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
-import { Users, Plus, Search, Filter, Edit, Trash2, Eye, MoreHorizontal, UserCheck, UserX, Mail, Phone, Calendar, MapPin, BookOpen, Shield, Crown, User } from 'lucide-react'
+import { Users, Plus, Search, Filter, Edit, Trash2, Eye, MoreHorizontal, UserCheck, UserX, Mail, Phone, Calendar, MapPin, BookOpen, Shield, Crown, User, Download } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
 interface Staff {
@@ -138,7 +140,7 @@ const defaultRoles: Role[] = [
 
 export default function StaffManagementPage() {
   const { toast } = useToast()
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterRole, setFilterRole] = useState<string>('')
   const [filterStatus, setFilterStatus] = useState<string>('')
@@ -148,80 +150,127 @@ export default function StaffManagementPage() {
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
   const [roles, setRoles] = useState<Role[]>(defaultRoles)
   
-  const [staff, setStaff] = useState<Staff[]>([
-    {
-      id: '1',
-      name: 'Dr. Ahmad Hidayat',
-      email: 'ahmad.hidayat@school.com',
-      phone: '081234567890',
-      role: 'ADMIN',
-      status: 'ACTIVE',
-      employeeId: 'STF001',
-      joinDate: new Date('2020-01-15'),
-      position: 'Principal',
-      department: 'Administration',
-      address: 'Jl. Pendidikan No. 123, Jakarta',
-      dateOfBirth: new Date('1975-05-10'),
-      emergencyContact: {
-        name: 'Fatimah Hidayat',
-        phone: '081234567891',
-        relationship: 'Wife'
-      },
-      lastLoginAt: new Date(),
-      permissions: permissions.map(p => p.id),
-      createdAt: new Date('2020-01-15'),
-      updatedAt: new Date()
-    },
-    {
-      id: '2',
-      name: 'Siti Nurhaliza, S.Pd',
-      email: 'siti.nurhaliza@school.com',
-      phone: '081234567892',
-      role: 'TEACHER',
-      status: 'ACTIVE',
-      employeeId: 'STF002',
-      joinDate: new Date('2020-08-01'),
-      position: 'Arabic Teacher',
-      department: 'Academic',
-      address: 'Jl. Masjid No. 45, Jakarta',
-      dateOfBirth: new Date('1985-03-15'),
-      emergencyContact: {
-        name: 'Muhammad Nurhaliza',
-        phone: '081234567893',
-        relationship: 'Husband'
-      },
-      lastLoginAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-      permissions: ['student.read', 'reports.student', 'reports.academic'],
-      createdAt: new Date('2020-08-01'),
-      updatedAt: new Date()
-    },
-    {
-      id: '3',
-      name: 'Muhammad Yusuf, S.E',
-      email: 'muhammad.yusuf@school.com',
-      phone: '081234567894',
-      role: 'FINANCE',
-      status: 'ACTIVE',
-      employeeId: 'STF003',
-      joinDate: new Date('2021-03-10'),
-      position: 'Finance Manager',
-      department: 'Finance',
-      address: 'Jl. Bank No. 78, Jakarta',
-      dateOfBirth: new Date('1980-11-22'),
-      emergencyContact: {
-        name: 'Khadijah Yusuf',
-        phone: '081234567895',
-        relationship: 'Wife'
-      },
-      lastLoginAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-      permissions: [
-        'student.read', 'payment.create', 'payment.read', 'payment.update', 'payment.delete', 'payment.process',
-        'reports.financial', 'settings.payment'
-      ],
-      createdAt: new Date('2021-03-10'),
-      updatedAt: new Date()
+  const [staff, setStaff] = useState<Staff[]>([])
+  const [showBulkModal, setShowBulkModal] = useState(false)
+  const [templateColumns, setTemplateColumns] = useState<any[]>([])
+  const [importValidationRules, setImportValidationRules] = useState<any[]>([])
+
+  // Fetch staff from API
+  const fetchStaff = async () => {
+    setLoading(true)
+    try {
+      const params = new URLSearchParams()
+      params.set('limit', '100')
+      if (filterRole) params.set('role', filterRole)
+      if (filterStatus) params.set('isActive', filterStatus === 'ACTIVE' ? 'true' : 'false')
+      
+      const response = await fetch(`/api/users?${params}`)
+      if (response.ok) {
+        const data = await response.json()
+        // Map API response to Staff interface
+        const mappedStaff = (data.users || []).map((user: any) => ({
+          id: user.id,
+          name: user.name || '',
+          email: user.email || '',
+          phone: user.phone || '',
+          role: mapRoleToStaffRole(user.role),
+          status: user.isActive ? 'ACTIVE' : 'INACTIVE',
+          employeeId: user.employeeId || user.id.slice(0, 8),
+          joinDate: user.createdAt ? new Date(user.createdAt) : new Date(),
+          position: user.position || '',
+          department: user.department || '',
+          address: user.address || '',
+          dateOfBirth: user.dateOfBirth ? new Date(user.dateOfBirth) : new Date(),
+          emergencyContact: {
+            name: '',
+            phone: '',
+            relationship: ''
+          },
+          lastLoginAt: user.updatedAt ? new Date(user.updatedAt) : undefined,
+          permissions: getRoleInfo(user.role?.toLowerCase() || 'staff').permissions,
+          createdAt: user.createdAt ? new Date(user.createdAt) : new Date(),
+          updatedAt: user.updatedAt ? new Date(user.updatedAt) : new Date()
+        }))
+        setStaff(mappedStaff)
+      }
+    } catch (error) {
+      console.error('Error fetching staff:', error)
+      toast({
+        title: 'Error',
+        description: 'Gagal memuat data staff',
+        variant: 'destructive'
+      })
+    } finally {
+      setLoading(false)
     }
-  ])
+  }
+
+  // Map API roles to Staff roles
+  const mapRoleToStaffRole = (role: string): Staff['role'] => {
+    const roleMap: Record<string, Staff['role']> = {
+      'SUPER_ADMIN': 'ADMIN',
+      'ADMIN': 'ADMIN',
+      'USTADZ': 'TEACHER',
+      'STAFF': 'STAFF',
+      'PARENT': 'STAFF'
+    }
+    return roleMap[role] || 'STAFF'
+  }
+
+  useEffect(() => {
+    fetchStaff()
+    fetchTemplateInfo()
+  }, [filterRole, filterStatus])
+
+  const fetchTemplateInfo = async () => {
+    try {
+      const response = await fetch('/api/import/staff')
+      if (response.ok) {
+        const data = await response.json()
+        setTemplateColumns(data.templateColumns || [])
+        const rules = [
+          ValidationRules.required('name'),
+          ValidationRules.email('email', true),
+        ]
+        setImportValidationRules(rules)
+      }
+    } catch (error) {
+      console.error('Error fetching template info:', error)
+    }
+  }
+
+  const handleImportComplete = async (importedData: any[]) => {
+    try {
+      const response = await fetch('/api/import/staff', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: importedData })
+      })
+
+      const result = await response.json()
+
+      if (result.success && result.validRows > 0) {
+        toast({
+          title: 'Import Berhasil',
+          description: `${result.validRows} staff telah ditambahkan.`
+        })
+        fetchStaff()
+      } else if (result.errors?.length > 0) {
+        toast({
+          title: 'Import Gagal',
+          description: result.errors.slice(0, 3).join(', '),
+          variant: 'destructive'
+        })
+      }
+    } catch (error) {
+      console.error('Error importing staff:', error)
+      toast({
+        title: 'Error',
+        description: 'Gagal mengimpor data staff',
+        variant: 'destructive'
+      })
+    }
+  }
 
   const [formData, setFormData] = useState<Partial<Staff>>({
     name: '',
@@ -285,64 +334,126 @@ export default function StaffManagementPage() {
   }
 
   const handleCreate = async (data: any) => {
-    const newStaff: Staff = {
-      ...data as Staff,
-      id: Math.random().toString(36).substr(2, 9),
-      joinDate: new Date(),
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      permissions: getRoleInfo(data.role!.toLowerCase()).permissions
+    setLoading(true)
+    try {
+      // Map staff role to API role
+      const roleMap: Record<string, string> = {
+        'ADMIN': 'ADMIN',
+        'TEACHER': 'USTADZ',
+        'FINANCE': 'STAFF',
+        'ACADEMIC': 'STAFF',
+        'STAFF': 'STAFF'
+      }
+
+      const response = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: data.name,
+          email: data.email,
+          username: data.email?.split('@')[0] || data.name?.toLowerCase().replace(/\s+/g, '.'),
+          password: 'password123', // Default password, should be changed by user
+          role: roleMap[data.role] || 'STAFF',
+          isActive: data.status === 'ACTIVE'
+        })
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to create staff')
+      }
+
+      toast({
+        title: 'Staff Created',
+        description: `${data.name} has been added successfully.`
+      })
+
+      setIsAddDialogOpen(false)
+      resetForm()
+      fetchStaff() // Refresh the list
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to create staff member.',
+        variant: 'destructive'
+      })
+    } finally {
+      setLoading(false)
     }
-
-    setStaff(prev => [...prev, newStaff])
-    setIsAddDialogOpen(false)
-    resetForm()
-
-    toast({
-      title: 'Staff Created',
-      description: `${newStaff.name} has been added successfully.`
-    })
   }
 
   const handleUpdate = async (data: any) => {
-    if (!selectedStaff) {
-      return
+    if (!selectedStaff) return
+
+    setLoading(true)
+    try {
+      const roleMap: Record<string, string> = {
+        'ADMIN': 'ADMIN',
+        'TEACHER': 'USTADZ',
+        'FINANCE': 'STAFF',
+        'ACADEMIC': 'STAFF',
+        'STAFF': 'STAFF'
+      }
+
+      const response = await fetch('/api/users', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: selectedStaff.id,
+          name: data.name,
+          email: data.email,
+          role: roleMap[data.role] || 'STAFF',
+          isActive: data.status === 'ACTIVE'
+        })
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to update staff')
+      }
+
+      toast({
+        title: 'Staff Updated',
+        description: 'Staff information has been updated successfully.'
+      })
+
+      setIsEditDialogOpen(false)
+      setSelectedStaff(null)
+      resetForm()
+      fetchStaff() // Refresh the list
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to update staff member.',
+        variant: 'destructive'
+      })
+    } finally {
+      setLoading(false)
     }
-
-    setStaff(prev => prev.map(s =>
-      s.id === selectedStaff.id
-        ? {
-            ...s,
-            ...data,
-            updatedAt: new Date(),
-            permissions: getRoleInfo(data.role!.toLowerCase()).permissions
-          } as Staff
-        : s
-    ))
-
-    setIsEditDialogOpen(false)
-    setSelectedStaff(null)
-    resetForm()
-
-    toast({
-      title: 'Staff Updated',
-      description: 'Staff information has been updated successfully.'
-    })
   }
 
   const handleDelete = async (staffId: string) => {
     setLoading(true)
     try {
-      setStaff(prev => prev.filter(s => s.id !== staffId))
+      const response = await fetch(`/api/users?id=${staffId}`, {
+        method: 'DELETE'
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to delete staff')
+      }
       
       toast({
         title: 'Staff Deleted',
         description: 'Staff member has been removed successfully.'
       })
+
+      fetchStaff() // Refresh the list
     } catch (error) {
       toast({
         title: 'Error',
-        description: 'Failed to delete staff member.',
+        description: error instanceof Error ? error.message : 'Failed to delete staff member.',
         variant: 'destructive'
       })
     } finally {
@@ -405,10 +516,16 @@ export default function StaffManagementPage() {
           </p>
         </div>
         
-        <Button onClick={() => { resetForm(); setIsAddDialogOpen(true); }}>
-          <Plus className="w-4 h-4 mr-2" />
-          Add Staff
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setShowBulkModal(true)}>
+            <Download className="w-4 h-4 mr-2" />
+            Import / Export
+          </Button>
+          <Button onClick={() => { resetForm(); setIsAddDialogOpen(true); }}>
+            <Plus className="w-4 h-4 mr-2" />
+            Add Staff
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -773,6 +890,36 @@ export default function StaffManagementPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Bulk Operations Modal */}
+      <BulkOperationsModal
+        isOpen={showBulkModal}
+        onClose={() => setShowBulkModal(false)}
+        title="Data Staff/Pengajar"
+        exportData={staff.map(s => ({
+          name: s.name,
+          email: s.email,
+          phone: s.phone,
+          role: s.role,
+          status: s.status,
+          employeeId: s.employeeId,
+          position: s.position,
+          department: s.department,
+        }))}
+        exportColumns={[
+          { key: 'name', header: 'Nama' },
+          { key: 'email', header: 'Email' },
+          { key: 'phone', header: 'No. HP' },
+          { key: 'role', header: 'Role' },
+          { key: 'status', header: 'Status' },
+          { key: 'employeeId', header: 'ID Pegawai' },
+          { key: 'position', header: 'Jabatan' },
+          { key: 'department', header: 'Lembaga' },
+        ]}
+        templateColumns={templateColumns}
+        importValidationRules={importValidationRules}
+        onImportComplete={handleImportComplete}
+      />
     </div>
   )
 }

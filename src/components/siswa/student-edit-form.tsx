@@ -373,9 +373,13 @@ export function StudentEditForm({ student, isOpen, onClose, onSubmit }: StudentE
                     className="w-full px-3 py-2 border border-gray-300 rounded-md"
                     required
                   >
-                    <option value="TK">TK</option>
+                    <option value="KB_TK">KB-TK</option>
                     <option value="SD">SD</option>
-                    <option value="PONDOK">PONDOK</option>
+                    <option value="MTQ">MTQ</option>
+                    <option value="MSWi">MSWi</option>
+                    <option value="MSWa">MSWa</option>
+                    <option value="SMP">SMP</option>
+                    <option value="SMA">SMA</option>
                   </select>
                 </div>
 
