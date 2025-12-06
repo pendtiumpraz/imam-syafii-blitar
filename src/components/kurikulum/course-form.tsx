@@ -1,12 +1,14 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { X } from 'lucide-react'
+import { Course } from '@/types'
 
 interface CourseFormProps {
+  course?: Course
   onClose: () => void
   onSubmit: (data: {
     name: string
@@ -20,7 +22,7 @@ interface CourseFormProps {
   }) => void
 }
 
-export function CourseForm({ onClose, onSubmit }: CourseFormProps) {
+export function CourseForm({ course, onClose, onSubmit }: CourseFormProps) {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -31,6 +33,21 @@ export function CourseForm({ onClose, onSubmit }: CourseFormProps) {
     capacity: '',
     status: 'active'
   })
+
+  useEffect(() => {
+    if (course) {
+      setFormData({
+        name: course.name,
+        description: course.description,
+        level: course.level,
+        schedule: course.schedule,
+        teacher: course.teacher,
+        duration: course.duration,
+        capacity: String(course.capacity),
+        status: course.status
+      })
+    }
+  }, [course])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -56,7 +73,7 @@ export function CourseForm({ onClose, onSubmit }: CourseFormProps) {
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
       <Card className="w-full max-w-2xl my-8">
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Tambah Kelas</CardTitle>
+          <CardTitle>{course ? 'Edit Kelas' : 'Tambah Kelas'}</CardTitle>
           <Button variant="ghost" size="icon" onClick={onClose}>
             <X className="w-4 h-4" />
           </Button>

@@ -1573,14 +1573,23 @@ model ppdb_settings {
   academicYear          String
   openDate              DateTime
   closeDate             DateTime
+  // Quota per jenjang
+  quotaKBTK             Int      @default(30)
   quotaTK               Int      @default(30)
   quotaSD               Int      @default(60)
   quotaSMP              Int      @default(40)
+  quotaSMA              Int      @default(40)
   quotaPondok           Int      @default(50)
+  // Biaya pendaftaran per jenjang
+  registrationFeeKBTK   Decimal  @default(100000)
   registrationFeeTK     Decimal  @default(100000)
   registrationFeeSD     Decimal  @default(150000)
   registrationFeeSMP    Decimal  @default(200000)
+  registrationFeeSMA    Decimal  @default(200000)
   registrationFeePondok Decimal  @default(250000)
+  // Biaya detail per jenjang dalam format JSON
+  feeDetails            String   @default("{}")
+  // Test settings
   testEnabled           Boolean  @default(true)
   testPassScore         Decimal  @default(60)
   interviewEnabled      Boolean  @default(true)

@@ -4,108 +4,165 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Header } from '@/components/layout/header'
-import { Plus, Users, Clock, BookOpen, Filter } from 'lucide-react'
+import { Plus, Users, Clock, BookOpen, Edit, Trash2, Search } from 'lucide-react'
 import { Course } from '@/types'
 import { CourseForm } from '@/components/kurikulum/course-form'
 import { CourseDetail } from '@/components/kurikulum/course-detail'
+import { toast } from '@/components/ui/use-toast'
+import { Input } from '@/components/ui/input'
+
+interface Stats {
+  total: number
+  active: number
+  totalEnrolled: number
+  totalCapacity: number
+}
 
 export default function Kurikulum() {
   const [courses, setCourses] = useState<Course[]>([])
+  const [stats, setStats] = useState<Stats>({ total: 0, active: 0, totalEnrolled: 0, totalCapacity: 0 })
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null)
+  const [editingCourse, setEditingCourse] = useState<Course | null>(null)
   const [filter, setFilter] = useState<'all' | 'active' | 'inactive' | 'completed'>('all')
   const [levelFilter, setLevelFilter] = useState<'all' | 'beginner' | 'intermediate' | 'advanced'>('all')
+  const [searchTerm, setSearchTerm] = useState('')
 
   useEffect(() => {
-    // Simulate loading courses
-    setTimeout(() => {
-      setCourses([
-        {
-          id: '1',
-          name: 'Tahfidz Al-Quran Tingkat Dasar',
-          description: 'Program menghafal Al-Quran untuk tingkat pemula dengan target 5 juz',
-          level: 'beginner',
-          schedule: 'Senin-Kamis, 07:00-09:00',
-          teacher: 'Ustadz Ahmad Fauzi, S.Pd.I',
-          duration: '6 bulan',
-          capacity: 20,
-          enrolled: 18,
-          status: 'active',
-          createdBy: 'user1',
-          createdAt: new Date(),
-          updatedAt: new Date()
-        },
-        {
-          id: '2',
-          name: 'Fiqih Muamalah',
-          description: 'Pembelajaran tentang hukum Islam dalam bermuamalah dan transaksi',
-          level: 'intermediate',
-          schedule: 'Selasa-Jumat, 13:00-15:00',
-          teacher: 'Ustadz Muhammad Yusuf, M.A',
-          duration: '4 bulan',
-          capacity: 25,
-          enrolled: 22,
-          status: 'active',
-          createdBy: 'user1',
-          createdAt: new Date(),
-          updatedAt: new Date()
-        },
-        {
-          id: '3',
-          name: 'Bahasa Arab Praktis',
-          description: 'Pembelajaran bahasa Arab dengan fokus pada percakapan sehari-hari',
-          level: 'beginner',
-          schedule: 'Senin-Rabu, 15:30-17:00',
-          teacher: 'Ustadzah Fatimah, Lc',
-          duration: '8 bulan',
-          capacity: 15,
-          enrolled: 12,
-          status: 'active',
-          createdBy: 'user1',
-          createdAt: new Date(),
-          updatedAt: new Date()
-        },
-        {
-          id: '4',
-          name: 'Ilmu Hadits',
-          description: 'Studi mendalam tentang hadits Rasulullah SAW dan metodologi pemahaman',
-          level: 'advanced',
-          schedule: 'Kamis-Sabtu, 19:00-21:00',
-          teacher: 'Ustadz Dr. Abdullah Mansur',
-          duration: '12 bulan',
-          capacity: 12,
-          enrolled: 8,
-          status: 'active',
-          createdBy: 'user1',
-          createdAt: new Date(),
-          updatedAt: new Date()
-        },
-        {
-          id: '5',
-          name: 'Tahsin Al-Quran',
-          description: 'Program perbaikan bacaan Al-Quran sesuai kaidah tajwid',
-          level: 'beginner',
-          schedule: 'Sabtu-Minggu, 08:00-10:00',
-          teacher: 'Ustadz Hafiz Rahman, S.Pd',
-          duration: '3 bulan',
-          capacity: 30,
-          enrolled: 30,
-          status: 'completed',
-          createdBy: 'user1',
-          createdAt: new Date(),
-          updatedAt: new Date()
-        }
-      ])
-      setLoading(false)
-    }, 1000)
-  }, [])
+    fetchCourses()
+  }, [filter, levelFilter])
 
-  const filteredCourses = courses.filter(course => {
-    const matchesStatus = filter === 'all' || course.status === filter
-    const matchesLevel = levelFilter === 'all' || course.level === levelFilter
-    return matchesStatus && matchesLevel
-  })
+  const fetchCourses = async () => {
+    try {
+      setLoading(true)
+      const params = new URLSearchParams()
+      if (filter !== 'all') params.set('status', filter)
+      if (levelFilter !== 'all') params.set('level', levelFilter)
+      if (searchTerm) params.set('search', searchTerm)
+
+      const response = await fetch(`/api/courses?${params}`)
+      if (response.ok) {
+        const data = await response.json()
+        setCourses(data.courses || [])
+        setStats(data.stats || { total: 0, active: 0, totalEnrolled: 0, totalCapacity: 0 })
+      } else {
+        toast({
+          title: 'Error',
+          description: 'Gagal memuat data kelas',
+          variant: 'destructive'
+        })
+      }
+    } catch (error) {
+      console.error('Error fetching courses:', error)
+      toast({
+        title: 'Error',
+        description: 'Gagal memuat data kelas',
+        variant: 'destructive'
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleCreate = async (data: Partial<Course>) => {
+    try {
+      const response = await fetch('/api/courses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      })
+
+      if (response.ok) {
+        toast({
+          title: 'Berhasil',
+          description: 'Kelas berhasil ditambahkan'
+        })
+        fetchCourses()
+        setShowForm(false)
+      } else {
+        const error = await response.json()
+        toast({
+          title: 'Error',
+          description: error.error || 'Gagal menambahkan kelas',
+          variant: 'destructive'
+        })
+      }
+    } catch (error) {
+      console.error('Error creating course:', error)
+      toast({
+        title: 'Error',
+        description: 'Gagal menambahkan kelas',
+        variant: 'destructive'
+      })
+    }
+  }
+
+  const handleUpdate = async (data: Partial<Course>) => {
+    if (!editingCourse) return
+
+    try {
+      const response = await fetch('/api/courses', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: editingCourse.id, ...data })
+      })
+
+      if (response.ok) {
+        toast({
+          title: 'Berhasil',
+          description: 'Kelas berhasil diupdate'
+        })
+        fetchCourses()
+        setEditingCourse(null)
+      } else {
+        const error = await response.json()
+        toast({
+          title: 'Error',
+          description: error.error || 'Gagal mengupdate kelas',
+          variant: 'destructive'
+        })
+      }
+    } catch (error) {
+      console.error('Error updating course:', error)
+      toast({
+        title: 'Error',
+        description: 'Gagal mengupdate kelas',
+        variant: 'destructive'
+      })
+    }
+  }
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Apakah Anda yakin ingin menghapus kelas ini?')) return
+
+    try {
+      const response = await fetch(`/api/courses?id=${id}`, {
+        method: 'DELETE'
+      })
+
+      if (response.ok) {
+        toast({
+          title: 'Berhasil',
+          description: 'Kelas berhasil dihapus'
+        })
+        fetchCourses()
+      } else {
+        toast({
+          title: 'Error',
+          description: 'Gagal menghapus kelas',
+          variant: 'destructive'
+        })
+      }
+    } catch (error) {
+      console.error('Error deleting course:', error)
+      toast({
+        title: 'Error',
+        description: 'Gagal menghapus kelas',
+        variant: 'destructive'
+      })
+    }
+  }
 
   const getLevelLabel = (level: string) => {
     switch (level) {
@@ -165,7 +222,7 @@ export default function Kurikulum() {
           <Card>
             <CardContent className="pt-6">
               <div className="text-2xl font-bold text-center">
-                {courses.length}
+                {stats.total}
               </div>
               <p className="text-sm text-gray-600 text-center">
                 Total Kelas
@@ -176,7 +233,7 @@ export default function Kurikulum() {
           <Card>
             <CardContent className="pt-6">
               <div className="text-2xl font-bold text-center text-green-600">
-                {courses.filter(c => c.status === 'active').length}
+                {stats.active}
               </div>
               <p className="text-sm text-gray-600 text-center">
                 Kelas Aktif
@@ -187,7 +244,7 @@ export default function Kurikulum() {
           <Card>
             <CardContent className="pt-6">
               <div className="text-2xl font-bold text-center text-blue-600">
-                {courses.reduce((sum, c) => sum + c.enrolled, 0)}
+                {stats.totalEnrolled}
               </div>
               <p className="text-sm text-gray-600 text-center">
                 Total Santri
@@ -198,7 +255,7 @@ export default function Kurikulum() {
           <Card>
             <CardContent className="pt-6">
               <div className="text-2xl font-bold text-center text-purple-600">
-                {Math.round(courses.reduce((sum, c) => sum + (c.enrolled / c.capacity * 100), 0) / courses.length)}%
+                {stats.totalCapacity > 0 ? Math.round((stats.totalEnrolled / stats.totalCapacity) * 100) : 0}%
               </div>
               <p className="text-sm text-gray-600 text-center">
                 Rata-rata Kapasitas
@@ -210,6 +267,18 @@ export default function Kurikulum() {
         {/* Controls */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <div className="flex flex-wrap gap-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Input
+                type="text"
+                placeholder="Cari kelas..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && fetchCourses()}
+                className="pl-10 w-64"
+              />
+            </div>
+
             <select
               value={filter}
               onChange={(e) => setFilter(e.target.value as any)}
@@ -241,17 +310,16 @@ export default function Kurikulum() {
 
         {/* Courses Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredCourses.length === 0 ? (
+          {courses.length === 0 ? (
             <div className="col-span-full text-center py-8 text-gray-500">
               Tidak ada kelas ditemukan
             </div>
           ) : (
-            filteredCourses.map((course) => {
+            courses.map((course) => {
               const enrollmentPercentage = calculateEnrollmentPercentage(course.enrolled, course.capacity)
               
               return (
-                <Card key={course.id} className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
-                      onClick={() => setSelectedCourse(course)}>
+                <Card key={course.id} className="overflow-hidden hover:shadow-lg transition-shadow">
                   <CardHeader>
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex items-center gap-2">
@@ -262,8 +330,35 @@ export default function Kurikulum() {
                           {getStatusLabel(course.status)}
                         </span>
                       </div>
+                      <div className="flex gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setEditingCourse(course)
+                          }}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleDelete(course.id)
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4 text-red-500" />
+                        </Button>
+                      </div>
                     </div>
-                    <CardTitle className="text-lg line-clamp-2">{course.name}</CardTitle>
+                    <CardTitle 
+                      className="text-lg line-clamp-2 cursor-pointer hover:text-primary-600"
+                      onClick={() => setSelectedCourse(course)}
+                    >
+                      {course.name}
+                    </CardTitle>
                   </CardHeader>
 
                   <CardContent className="pt-0">
@@ -328,22 +423,20 @@ export default function Kurikulum() {
         </div>
       </main>
 
-      {/* Course Form Modal */}
+      {/* Course Form Modal - Add */}
       {showForm && (
         <CourseForm
           onClose={() => setShowForm(false)}
-          onSubmit={(data) => {
-            const newCourse: Course = {
-              id: Math.random().toString(),
-              ...data,
-              enrolled: 0,
-              createdBy: 'current-user',
-              createdAt: new Date(),
-              updatedAt: new Date()
-            }
-            setCourses([newCourse, ...courses])
-            setShowForm(false)
-          }}
+          onSubmit={handleCreate}
+        />
+      )}
+
+      {/* Course Form Modal - Edit */}
+      {editingCourse && (
+        <CourseForm
+          course={editingCourse}
+          onClose={() => setEditingCourse(null)}
+          onSubmit={handleUpdate}
         />
       )}
 
@@ -353,9 +446,7 @@ export default function Kurikulum() {
           course={selectedCourse}
           onClose={() => setSelectedCourse(null)}
           onUpdate={(updatedCourse) => {
-            setCourses(courses.map(c => 
-              c.id === updatedCourse.id ? updatedCourse : c
-            ))
+            fetchCourses()
             setSelectedCourse(null)
           }}
         />

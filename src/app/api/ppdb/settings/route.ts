@@ -14,19 +14,33 @@ export async function GET(request: NextRequest) {
     
     // If settings don't exist, create default settings
     if (!settings) {
+      const defaultFeeDetails = {
+        KB_TK: { registrationFee: 100000, enrollmentFee: 500000, monthlyFee: 300000, uniformFee: 250000, booksFee: 150000 },
+        TK: { registrationFee: 100000, enrollmentFee: 500000, monthlyFee: 300000, uniformFee: 250000, booksFee: 150000 },
+        SD: { registrationFee: 150000, enrollmentFee: 750000, monthlyFee: 400000, uniformFee: 350000, booksFee: 200000 },
+        SMP: { registrationFee: 200000, enrollmentFee: 1000000, monthlyFee: 500000, uniformFee: 400000, booksFee: 250000 },
+        SMA: { registrationFee: 200000, enrollmentFee: 1000000, monthlyFee: 500000, uniformFee: 400000, booksFee: 250000 },
+        PONDOK: { registrationFee: 250000, enrollmentFee: 1500000, monthlyFee: 750000, uniformFee: 500000, booksFee: 300000 }
+      };
+
       settings = await prisma.ppdb_settings.create({
         data: {
           academicYear,
           openDate: new Date('2024-01-01'),
           closeDate: new Date('2024-03-31'),
+          quotaKBTK: 30,
           quotaTK: 30,
           quotaSD: 60,
           quotaSMP: 40,
+          quotaSMA: 40,
           quotaPondok: 50,
+          registrationFeeKBTK: 100000,
           registrationFeeTK: 100000,
           registrationFeeSD: 150000,
           registrationFeeSMP: 200000,
+          registrationFeeSMA: 200000,
           registrationFeePondok: 250000,
+          feeDetails: JSON.stringify(defaultFeeDetails),
           testEnabled: true,
           testPassScore: 60,
           interviewEnabled: true,
@@ -45,13 +59,15 @@ export async function GET(request: NextRequest) {
     
     // Get current registration statistics
     const stats = {
+      KB_TK: { registered: 0, accepted: 0, enrolled: 0 },
       TK: { registered: 0, accepted: 0, enrolled: 0 },
       SD: { registered: 0, accepted: 0, enrolled: 0 },
       SMP: { registered: 0, accepted: 0, enrolled: 0 },
+      SMA: { registered: 0, accepted: 0, enrolled: 0 },
       PONDOK: { registered: 0, accepted: 0, enrolled: 0 }
     };
     
-    for (const level of ['TK', 'SD', 'SMP', 'PONDOK']) {
+    for (const level of ['KB_TK', 'TK', 'SD', 'SMP', 'SMA', 'PONDOK']) {
       const [registered, accepted, enrolled] = await Promise.all([
         prisma.ppdb_registrations.count({
           where: { level, academicYear, status: { not: 'DRAFT' } }
@@ -108,6 +124,11 @@ export async function PUT(request: NextRequest) {
     // Stringify requiredDocs if it's an array
     if (Array.isArray(updateData.requiredDocs)) {
       updateData.requiredDocs = JSON.stringify(updateData.requiredDocs);
+    }
+    
+    // Stringify feeDetails if it's an object
+    if (updateData.feeDetails && typeof updateData.feeDetails === 'object') {
+      updateData.feeDetails = JSON.stringify(updateData.feeDetails);
     }
     
     const existingSettings = await prisma.ppdb_settings.findFirst({

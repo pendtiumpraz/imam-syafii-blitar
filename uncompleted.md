@@ -3,16 +3,12 @@
 ## A. MENU DENGAN DATA MOCK/DUMMY (Tidak Terhubung API)
 
 ### 1. Kurikulum
-**Status:** ❌ Tidak ada API
-**Masalah:** 
-- Halaman `/kurikulum/page.tsx` menggunakan data hardcoded
-- Tidak ada API `/api/kurikulum` atau `/api/courses`
-- Form tambah/edit tidak menyimpan ke database
-
-**Solusi:**
-- Buat tabel `courses` di Prisma schema
-- Buat API CRUD `/api/courses`
-- Hubungkan page ke API
+**Status:** ✅ SELESAI (2024-12-06)
+**Perbaikan:** 
+- ✅ Buat API CRUD `/api/courses/route.ts`
+- ✅ Update halaman `/kurikulum/page.tsx` untuk fetch dari API
+- ✅ Update `CourseForm` component untuk support edit mode
+- Tabel `courses` sudah ada di Prisma schema
 
 ---
 
@@ -85,69 +81,30 @@
 ## B. FITUR YANG BELUM LENGKAP
 
 ### 9. SPMB/PPDB - Biaya Pendaftaran per Jenjang
-**Status:** ⚠️ Partial - Perlu Update
+**Status:** ✅ SELESAI (2024-12-06)
 **File:** 
-- `prisma/schema.prisma` - model ppdb_settings
-- `src/app/api/ppdb/settings/route.ts`
+- `prisma/schema.prisma` - model ppdb_settings (UPDATED)
+- `src/app/api/ppdb/settings/route.ts` (UPDATED)
+- `src/app/(authenticated)/ppdb-admin/settings/page.tsx` (NEW)
 
-**Kondisi Saat Ini:**
-Schema ppdb_settings sudah ada dengan field:
-- quotaTK, quotaSD, quotaSMP, quotaPondok
-- registrationFeeTK, registrationFeeSD, registrationFeeSMP, registrationFeePondok
+**Perbaikan yang dilakukan:**
+1. ✅ Tambah field SMA (quotaSMA, registrationFeeSMA)
+2. ✅ Tambah field KB_TK (quotaKBTK, registrationFeeKBTK)
+3. ✅ Tambah field feeDetails (JSON) untuk biaya detail per jenjang
+4. ✅ Buat halaman admin `/ppdb-admin/settings` untuk manage biaya
+5. ✅ Update API untuk handle semua jenjang (KB_TK, TK, SD, SMP, SMA, PONDOK)
 
-**Masalah:**
-1. ❌ Tidak ada SMA (quotaSMA, registrationFeeSMA)
-2. ❌ KB dan TK belum dipisah (harusnya KB_TK atau terpisah)
-3. ❌ Tidak ada biaya daftar ulang dan SPP per jenjang
-4. ❌ Belum ada halaman admin untuk edit biaya (harus dari database langsung)
+**Biaya yang bisa diatur per jenjang (via feeDetails JSON):**
+| Jenjang | Biaya Pendaftaran | Biaya Daftar Ulang | SPP Bulanan | Seragam | Buku |
+|---------|-------------------|--------------------| ------------|---------|------|
+| KB-TK   | ✅ | ✅ | ✅ | ✅ | ✅ |
+| TK      | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SD      | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SMP     | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SMA     | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Pondok  | ✅ | ✅ | ✅ | ✅ | ✅ |
 
-**Yang Perlu Ditambahkan ke Schema:**
-```prisma
-model ppdb_settings {
-  // ... existing fields ...
-  
-  // Tambahan jenjang
-  quotaKBTK             Int      @default(30)
-  quotaSMA              Int      @default(40)
-  registrationFeeKBTK   Decimal  @default(100000)
-  registrationFeeSMA    Decimal  @default(200000)
-  
-  // Biaya tambahan per jenjang (optional - bisa pakai JSON)
-  feeDetails            String   @default("{}") // JSON untuk biaya detail per jenjang
-}
-```
-
-**Atau Format JSON untuk feeDetails:**
-```json
-{
-  "KB_TK": {
-    "registrationFee": 100000,
-    "enrollmentFee": 500000,
-    "monthlyFee": 300000,
-    "uniformFee": 250000,
-    "booksFee": 150000
-  },
-  "SD": { ... },
-  "SMP": { ... },
-  "SMA": { ... },
-  "PONDOK": { ... }
-}
-```
-
-**Yang Perlu Dibuat:**
-1. Update schema Prisma dengan field baru
-2. Buat halaman `/settings/ppdb` atau `/ppdb-admin/settings` untuk manage biaya
-3. Update API PUT untuk handle semua jenjang
-4. Update form PPDB publik untuk ambil biaya sesuai jenjang
-
-**Jenjang yang perlu diatur biayanya:**
-| Jenjang | Biaya Pendaftaran | Biaya Daftar Ulang | SPP Bulanan |
-|---------|-------------------|--------------------| ------------|
-| KB-TK   | Rp 100.000 | ? | ? |
-| SD      | Rp 150.000 | ? | ? |
-| SMP     | Rp 200.000 | ? | ? |
-| SMA     | Rp 200.000 (BARU) | ? | ? |
-| Pondok  | Rp 250.000 | ? | ? |
+**Akses:** `/ppdb-admin/settings`
 
 ---
 
