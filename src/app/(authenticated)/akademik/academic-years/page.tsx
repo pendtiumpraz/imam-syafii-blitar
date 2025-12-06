@@ -17,7 +17,10 @@ import {
   Users,
   AlertCircle,
   CheckCircle,
+  Download,
 } from 'lucide-react';
+import BulkOperationsModal from '@/components/bulk-operations/bulk-operations-modal';
+import { ValidationRules } from '@/lib/bulk-operations';
 
 interface Semester {
   id: string;
@@ -58,6 +61,8 @@ export default function AcademicYearsPage() {
   const [editingYear, setEditingYear] = useState<AcademicYear | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
+  const [showBulkModal, setShowBulkModal] = useState(false);
+  const [templateColumns, setTemplateColumns] = useState<any[]>([]);
 
   const [formData, setFormData] = useState<AcademicYearFormData>({
     name: '',
@@ -69,7 +74,42 @@ export default function AcademicYearsPage() {
 
   useEffect(() => {
     fetchAcademicYears();
+    fetchTemplateInfo();
   }, [selectedStatus]);
+
+  const fetchTemplateInfo = async () => {
+    try {
+      const response = await fetch('/api/import/academic-years');
+      if (response.ok) {
+        const data = await response.json();
+        setTemplateColumns(data.templateColumns || []);
+      }
+    } catch (error) {
+      console.error('Error fetching template info:', error);
+    }
+  };
+
+  const handleImportComplete = async (importedData: any[]) => {
+    try {
+      const response = await fetch('/api/import/academic-years', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: importedData })
+      });
+
+      const result = await response.json();
+
+      if (result.success && result.validRows > 0) {
+        toast.success(`${result.validRows} tahun ajaran telah ditambahkan.`);
+        fetchAcademicYears();
+      } else if (result.errors?.length > 0) {
+        toast.error(result.errors.slice(0, 3).join(', '));
+      }
+    } catch (error) {
+      console.error('Error importing academic years:', error);
+      toast.error('Gagal mengimpor data tahun ajaran');
+    }
+  };
 
   const fetchAcademicYears = async () => {
     try {
@@ -187,10 +227,16 @@ export default function AcademicYearsPage() {
           <h1 className="text-3xl font-bold text-gray-900">Tahun Ajaran</h1>
           <p className="text-gray-600 mt-2">Kelola tahun ajaran akademik</p>
         </div>
-        <Button onClick={() => setShowForm(true)} className="flex items-center space-x-2">
-          <Plus className="w-4 h-4" />
-          <span>Tambah Tahun Ajaran</span>
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setShowBulkModal(true)}>
+            <Download className="w-4 h-4 mr-2" />
+            Import / Export
+          </Button>
+          <Button onClick={() => setShowForm(true)} className="flex items-center space-x-2">
+            <Plus className="w-4 h-4" />
+            <span>Tambah Tahun Ajaran</span>
+          </Button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -448,6 +494,34 @@ export default function AcademicYearsPage() {
           </div>
         </div>
       )}
+
+      {/* Bulk Operations Modal */}
+      <BulkOperationsModal
+        isOpen={showBulkModal}
+        onClose={() => setShowBulkModal(false)}
+        title="Data Tahun Ajaran"
+        exportData={academicYears.map(y => ({
+          name: y.name,
+          startDate: y.startDate,
+          endDate: y.endDate,
+          description: y.description,
+          isActive: y.isActive,
+        }))}
+        exportColumns={[
+          { key: 'name', header: 'Nama' },
+          { key: 'startDate', header: 'Tanggal Mulai' },
+          { key: 'endDate', header: 'Tanggal Selesai' },
+          { key: 'description', header: 'Keterangan' },
+          { key: 'isActive', header: 'Aktif' },
+        ]}
+        templateColumns={templateColumns}
+        importValidationRules={[
+          ValidationRules.required('name'),
+          ValidationRules.required('startDate'),
+          ValidationRules.required('endDate'),
+        ]}
+        onImportComplete={handleImportComplete}
+      />
     </div>
   );
 }

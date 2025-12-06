@@ -21,6 +21,8 @@ import {
   FileText,
   Download,
 } from 'lucide-react';
+import BulkOperationsModal from '@/components/bulk-operations/bulk-operations-modal';
+import { ValidationRules } from '@/lib/bulk-operations';
 
 interface Student {
   id: string;
@@ -86,11 +88,51 @@ export default function AttendancePage() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [attendanceData, setAttendanceData] = useState<Record<string, Attendance>>({});
   const [showHistory, setShowHistory] = useState(false);
+  const [showBulkModal, setShowBulkModal] = useState(false);
+  const [templateColumns, setTemplateColumns] = useState<any[]>([]);
 
   useEffect(() => {
     fetchSemesters();
     fetchClasses();
+    fetchTemplateInfo();
   }, []);
+
+  const fetchTemplateInfo = async () => {
+    try {
+      const response = await fetch('/api/import/attendance');
+      if (response.ok) {
+        const data = await response.json();
+        setTemplateColumns(data.templateColumns || []);
+      }
+    } catch (error) {
+      console.error('Error fetching template info:', error);
+    }
+  };
+
+  const handleImportComplete = async (importedData: any[]) => {
+    try {
+      const response = await fetch('/api/import/attendance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: importedData })
+      });
+
+      const result = await response.json();
+
+      if (result.success && result.validRows > 0) {
+        toast.success(`${result.validRows} data absensi telah ditambahkan/diupdate.`);
+        if (selectedClass && selectedSemester) {
+          fetchStudents();
+          fetchAttendance();
+        }
+      } else if (result.errors?.length > 0) {
+        toast.error(result.errors.slice(0, 3).join(', '));
+      }
+    } catch (error) {
+      console.error('Error importing attendance:', error);
+      toast.error('Gagal mengimpor data absensi');
+    }
+  };
 
   useEffect(() => {
     if (selectedClass && selectedSemester) {
@@ -364,6 +406,10 @@ export default function AttendancePage() {
           </p>
         </div>
         <div className="flex space-x-2">
+          <Button variant="outline" onClick={() => setShowBulkModal(true)}>
+            <Download className="w-4 h-4 mr-2" />
+            Import / Export
+          </Button>
           <Button
             variant="outline"
             onClick={() => setShowHistory(!showHistory)}
@@ -568,6 +614,36 @@ export default function AttendancePage() {
           )}
         </div>
       </Card>
+
+      {/* Bulk Operations Modal */}
+      <BulkOperationsModal
+        isOpen={showBulkModal}
+        onClose={() => setShowBulkModal(false)}
+        title="Data Absensi"
+        exportData={attendanceRecords.map(a => ({
+          studentNis: a.student.nis,
+          studentName: a.student.fullName,
+          date: a.date,
+          status: a.status,
+          timeIn: a.timeIn,
+          notes: a.notes,
+        }))}
+        exportColumns={[
+          { key: 'studentNis', header: 'NIS' },
+          { key: 'studentName', header: 'Nama Siswa' },
+          { key: 'date', header: 'Tanggal' },
+          { key: 'status', header: 'Status' },
+          { key: 'timeIn', header: 'Jam Masuk' },
+          { key: 'notes', header: 'Keterangan' },
+        ]}
+        templateColumns={templateColumns}
+        importValidationRules={[
+          ValidationRules.required('studentNis'),
+          ValidationRules.required('date'),
+          ValidationRules.required('status'),
+        ]}
+        onImportComplete={handleImportComplete}
+      />
     </div>
   );
 }

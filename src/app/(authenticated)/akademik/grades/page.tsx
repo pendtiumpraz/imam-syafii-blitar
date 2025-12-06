@@ -19,7 +19,10 @@ import {
   Award,
   Lock,
   Unlock,
+  Download,
 } from 'lucide-react';
+import BulkOperationsModal from '@/components/bulk-operations/bulk-operations-modal';
+import { ValidationRules } from '@/lib/bulk-operations';
 
 interface Grade {
   id: string;
@@ -94,12 +97,51 @@ export default function GradesPage() {
   const [selectedSubject, setSelectedSubject] = useState('');
   const [selectedSemester, setSelectedSemester] = useState('');
   const [gradeInputs, setGradeInputs] = useState<Record<string, any>>({});
+  const [showBulkModal, setShowBulkModal] = useState(false);
+  const [templateColumns, setTemplateColumns] = useState<any[]>([]);
 
   useEffect(() => {
     fetchSemesters();
     fetchClasses();
     fetchSubjects();
+    fetchTemplateInfo();
   }, []);
+
+  const fetchTemplateInfo = async () => {
+    try {
+      const response = await fetch('/api/import/grades');
+      if (response.ok) {
+        const data = await response.json();
+        setTemplateColumns(data.templateColumns || []);
+      }
+    } catch (error) {
+      console.error('Error fetching template info:', error);
+    }
+  };
+
+  const handleImportComplete = async (importedData: any[]) => {
+    try {
+      const response = await fetch('/api/import/grades', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: importedData })
+      });
+
+      const result = await response.json();
+
+      if (result.success && result.validRows > 0) {
+        toast.success(`${result.validRows} nilai telah ditambahkan/diupdate.`);
+        if (selectedClass && selectedSubject && selectedSemester) {
+          fetchGrades();
+        }
+      } else if (result.errors?.length > 0) {
+        toast.error(result.errors.slice(0, 3).join(', '));
+      }
+    } catch (error) {
+      console.error('Error importing grades:', error);
+      toast.error('Gagal mengimpor data nilai');
+    }
+  };
 
   useEffect(() => {
     if (selectedClass && selectedSubject && selectedSemester) {
@@ -392,13 +434,9 @@ export default function GradesPage() {
           </p>
         </div>
         <div className="flex space-x-2">
-          <Button variant="outline" onClick={handleBulkImport}>
-            <FileSpreadsheet className="w-4 h-4 mr-2" />
-            Import Excel
-          </Button>
-          <Button variant="outline" onClick={handleBulkExport}>
-            <FileSpreadsheet className="w-4 h-4 mr-2" />
-            Export Excel
+          <Button variant="outline" onClick={() => setShowBulkModal(true)}>
+            <Download className="w-4 h-4 mr-2" />
+            Import / Export
           </Button>
           <Button onClick={() => {
             setSelectedClass('');
@@ -589,6 +627,51 @@ export default function GradesPage() {
           </table>
         </div>
       </Card>
+
+      {/* Bulk Operations Modal */}
+      <BulkOperationsModal
+        isOpen={showBulkModal}
+        onClose={() => setShowBulkModal(false)}
+        title="Data Nilai"
+        exportData={grades.map(g => ({
+          studentNis: g.student.nis,
+          studentName: g.student.fullName,
+          subjectCode: g.subject.code,
+          subjectName: g.subject.name,
+          daily: g.daily,
+          quiz: g.quiz,
+          assignment: g.assignment,
+          midterm: g.midterm,
+          final: g.final,
+          participation: g.participation,
+          total: g.total,
+          grade: g.grade,
+          akhlak: g.akhlak,
+          notes: g.notes,
+        }))}
+        exportColumns={[
+          { key: 'studentNis', header: 'NIS' },
+          { key: 'studentName', header: 'Nama Siswa' },
+          { key: 'subjectCode', header: 'Kode Mapel' },
+          { key: 'subjectName', header: 'Nama Mapel' },
+          { key: 'daily', header: 'Nilai Harian' },
+          { key: 'quiz', header: 'Nilai Kuis' },
+          { key: 'assignment', header: 'Nilai Tugas' },
+          { key: 'midterm', header: 'Nilai UTS' },
+          { key: 'final', header: 'Nilai UAS' },
+          { key: 'participation', header: 'Partisipasi' },
+          { key: 'total', header: 'Total' },
+          { key: 'grade', header: 'Grade' },
+          { key: 'akhlak', header: 'Akhlak' },
+          { key: 'notes', header: 'Catatan' },
+        ]}
+        templateColumns={templateColumns}
+        importValidationRules={[
+          ValidationRules.required('studentNis'),
+          ValidationRules.required('subjectCode'),
+        ]}
+        onImportComplete={handleImportComplete}
+      />
     </div>
   );
 }
