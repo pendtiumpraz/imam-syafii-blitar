@@ -13,6 +13,8 @@ import {
 import { formatDate } from '@/lib/utils'
 import { AlumniEditForm } from '@/components/alumni/alumni-edit-form'
 import BulkOperationsModal from '@/components/bulk-operations/bulk-operations-modal'
+import { ValidationRules } from '@/lib/bulk-operations'
+import { toast } from '@/components/ui/toast'
 
 interface Alumni {
   id: string
@@ -63,12 +65,46 @@ export default function AlumniPage() {
   const [editingAlumni, setEditingAlumni] = useState<Alumni | null>(null)
   const [showEditForm, setShowEditForm] = useState(false)
   const [showBulkModal, setShowBulkModal] = useState(false)
-  const [exportData, setExportData] = useState<any[]>([])
-  const [exportColumns, setExportColumns] = useState<any[]>([])
+  const [templateColumns, setTemplateColumns] = useState<any[]>([])
 
   useEffect(() => {
     fetchAlumni()
+    fetchTemplateInfo()
   }, [selectedType, selectedYear])
+
+  const fetchTemplateInfo = async () => {
+    try {
+      const response = await fetch('/api/import/alumni')
+      if (response.ok) {
+        const data = await response.json()
+        setTemplateColumns(data.templateColumns || [])
+      }
+    } catch (error) {
+      console.error('Error fetching template info:', error)
+    }
+  }
+
+  const handleImportComplete = async (importedData: any[]) => {
+    try {
+      const response = await fetch('/api/import/alumni', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: importedData })
+      })
+
+      const result = await response.json()
+
+      if (result.success && result.validRows > 0) {
+        toast.success(`${result.validRows} alumni telah ditambahkan.`)
+        fetchAlumni()
+      } else if (result.errors?.length > 0) {
+        toast.error(result.errors.slice(0, 3).join(', '))
+      }
+    } catch (error) {
+      console.error('Error importing alumni:', error)
+      toast.error('Gagal mengimpor data alumni')
+    }
+  }
 
   const fetchAlumni = async () => {
     try {
@@ -132,22 +168,7 @@ export default function AlumniPage() {
   }
 
   const handleBulkExport = async () => {
-    try {
-      const params = new URLSearchParams()
-      if (selectedType !== 'all') params.set('institutionType', selectedType)
-      if (selectedYear !== 'all') params.set('graduationYear', selectedYear)
-      
-      const response = await fetch(`/api/export/alumni?${params}`)
-      if (response.ok) {
-        const data = await response.json()
-        setExportData(data.data || [])
-        setExportColumns(data.columns || [])
-        setShowBulkModal(true)
-      }
-    } catch (error) {
-      console.error('Error preparing export:', error)
-      alert('Gagal menyiapkan data export')
-    }
+    setShowBulkModal(true)
   }
 
   const exportToCSV = () => {
@@ -683,8 +704,54 @@ export default function AlumniPage() {
           isOpen={showBulkModal}
           onClose={() => setShowBulkModal(false)}
           title="Data Alumni"
-          exportData={exportData}
-          exportColumns={exportColumns}
+          exportData={alumni.map(a => ({
+            fullName: a.fullName,
+            nis: a.nis,
+            nisn: a.nisn,
+            birthPlace: a.birthPlace,
+            birthDate: a.birthDate,
+            gender: a.gender,
+            institutionType: a.institutionType,
+            graduationYear: a.graduationYear,
+            currentAddress: a.currentAddress,
+            currentCity: a.currentCity,
+            phone: a.phone,
+            email: a.email,
+            currentJob: a.currentJob,
+            company: a.company,
+            university: a.university,
+            major: a.major,
+          }))}
+          exportColumns={[
+            { key: 'fullName', header: 'Nama Lengkap' },
+            { key: 'nis', header: 'NIS' },
+            { key: 'nisn', header: 'NISN' },
+            { key: 'birthPlace', header: 'Tempat Lahir' },
+            { key: 'birthDate', header: 'Tanggal Lahir' },
+            { key: 'gender', header: 'L/P' },
+            { key: 'institutionType', header: 'Lembaga' },
+            { key: 'graduationYear', header: 'Tahun Lulus' },
+            { key: 'currentAddress', header: 'Alamat' },
+            { key: 'currentCity', header: 'Kota' },
+            { key: 'phone', header: 'No. HP' },
+            { key: 'email', header: 'Email' },
+            { key: 'currentJob', header: 'Pekerjaan' },
+            { key: 'company', header: 'Tempat Kerja' },
+            { key: 'university', header: 'Universitas' },
+            { key: 'major', header: 'Jurusan' },
+          ]}
+          templateColumns={templateColumns}
+          importValidationRules={[
+            ValidationRules.required('fullName'),
+            ValidationRules.required('birthPlace'),
+            ValidationRules.required('birthDate'),
+            ValidationRules.required('gender'),
+            ValidationRules.required('institutionType'),
+            ValidationRules.required('graduationYear'),
+            ValidationRules.required('currentAddress'),
+            ValidationRules.required('currentCity'),
+          ]}
+          onImportComplete={handleImportComplete}
         />
       </main>
     </div>

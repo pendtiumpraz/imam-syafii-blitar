@@ -17,7 +17,10 @@ import {
   UserPlus,
   BookOpen,
   Calendar,
+  Download,
 } from 'lucide-react';
+import BulkOperationsModal from '@/components/bulk-operations/bulk-operations-modal';
+import { ValidationRules } from '@/lib/bulk-operations';
 
 interface AcademicYear {
   id: string;
@@ -79,6 +82,8 @@ export default function ClassesPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedLevel, setSelectedLevel] = useState('');
   const [selectedAcademicYear, setSelectedAcademicYear] = useState('');
+  const [showBulkModal, setShowBulkModal] = useState(false);
+  const [templateColumns, setTemplateColumns] = useState<any[]>([]);
 
   const [formData, setFormData] = useState<ClassFormData>({
     name: '',
@@ -98,7 +103,42 @@ export default function ClassesPage() {
     fetchClasses();
     fetchAcademicYears();
     fetchTeachers();
+    fetchTemplateInfo();
   }, []);
+
+  const fetchTemplateInfo = async () => {
+    try {
+      const response = await fetch('/api/import/classes');
+      if (response.ok) {
+        const data = await response.json();
+        setTemplateColumns(data.templateColumns || []);
+      }
+    } catch (error) {
+      console.error('Error fetching template info:', error);
+    }
+  };
+
+  const handleImportComplete = async (importedData: any[]) => {
+    try {
+      const response = await fetch('/api/import/classes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: importedData })
+      });
+
+      const result = await response.json();
+
+      if (result.success && result.validRows > 0) {
+        toast.success(`${result.validRows} kelas telah ditambahkan.`);
+        fetchClasses();
+      } else if (result.errors?.length > 0) {
+        toast.error(result.errors.slice(0, 3).join(', '));
+      }
+    } catch (error) {
+      console.error('Error importing classes:', error);
+      toast.error('Gagal mengimpor data kelas');
+    }
+  };
 
   const fetchClasses = async () => {
     try {
@@ -263,10 +303,16 @@ export default function ClassesPage() {
           <h1 className="text-3xl font-bold text-gray-900">Kelola Kelas</h1>
           <p className="text-gray-600 mt-2">Atur kelas dan penugasan siswa</p>
         </div>
-        <Button onClick={() => setShowForm(true)} className="flex items-center space-x-2">
-          <Plus className="w-4 h-4" />
-          <span>Tambah Kelas</span>
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setShowBulkModal(true)}>
+            <Download className="w-4 h-4 mr-2" />
+            Import / Export
+          </Button>
+          <Button onClick={() => setShowForm(true)} className="flex items-center space-x-2">
+            <Plus className="w-4 h-4" />
+            <span>Tambah Kelas</span>
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -556,6 +602,44 @@ export default function ClassesPage() {
           </div>
         </div>
       )}
+
+      {/* Bulk Operations Modal */}
+      <BulkOperationsModal
+        isOpen={showBulkModal}
+        onClose={() => setShowBulkModal(false)}
+        title="Data Kelas"
+        exportData={classes.map(c => ({
+          name: c.name,
+          grade: c.grade,
+          section: c.section,
+          level: c.level,
+          program: c.program,
+          capacity: c.capacity,
+          room: c.room,
+          academicYear: c.academicYear?.name,
+          teacher: c.teacher?.name,
+          isActive: c.isActive,
+        }))}
+        exportColumns={[
+          { key: 'name', header: 'Nama Kelas' },
+          { key: 'grade', header: 'Tingkat' },
+          { key: 'section', header: 'Bagian' },
+          { key: 'level', header: 'Jenjang' },
+          { key: 'program', header: 'Program' },
+          { key: 'capacity', header: 'Kapasitas' },
+          { key: 'room', header: 'Ruangan' },
+          { key: 'academicYear', header: 'Tahun Ajaran' },
+          { key: 'teacher', header: 'Wali Kelas' },
+          { key: 'isActive', header: 'Aktif' },
+        ]}
+        templateColumns={templateColumns}
+        importValidationRules={[
+          ValidationRules.required('name'),
+          ValidationRules.required('grade'),
+          ValidationRules.required('level'),
+        ]}
+        onImportComplete={handleImportComplete}
+      />
     </div>
   );
 }
