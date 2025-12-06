@@ -85,7 +85,19 @@ const menuItems: MenuItem[] = [
     title: 'Admin PPDB',
     href: '/ppdb-admin',
     icon: ClipboardCheck,
-    adminOnly: true
+    adminOnly: true,
+    children: [
+      {
+        title: 'Pendaftar',
+        href: '/ppdb-admin',
+        icon: Users
+      },
+      {
+        title: 'Pengaturan Biaya',
+        href: '/ppdb-admin/settings',
+        icon: Settings
+      }
+    ]
   },
   {
     title: 'OTA Admin',
