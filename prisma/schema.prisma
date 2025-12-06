@@ -2405,6 +2405,8 @@ model users {
   email              String         @unique
   password           String
   name               String
+  title              String?        // Gelar depan (Dr., Ust., Ustdz., KH., dll)
+  suffix             String?        // Gelar belakang (S.Pd.I, M.A., Lc., dll)
   role               String         @default("STAFF")
   isActive           Boolean        @default(true)
   createdAt          DateTime       @default(now())

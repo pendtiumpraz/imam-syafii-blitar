@@ -94,36 +94,31 @@
 ## B. FORMAT CHANGES
 
 ### 7. Format Penyebutan Nama = Nama Lengkap + Gelar
-**Status:** Perlu diubah
+**Status:** ✅ SELESAI (2024-12-06)
 **Contoh:** 
 - Sebelum: `Ahmad Hidayat`
 - Sesudah: `Dr. Ahmad Hidayat, S.Pd.I`
 
-**Lokasi yang perlu diubah:**
-- Display nama di semua halaman
-- Tambah field `title` (gelar depan) dan `suffix` (gelar belakang) di model User/Staff
-- Format display: `{title} {fullName}, {suffix}`
+**Perubahan yang sudah dilakukan:**
+- ✅ Tambah field `title` dan `suffix` di schema Prisma (`prisma/schema.prisma`)
+- ✅ Buat helper function `formatFullName()` di `src/lib/utils.ts`
+- ✅ Update Staff interface untuk include title dan suffix
+- ✅ Update staff page untuk menampilkan nama dengan gelar
+- ✅ Update export columns untuk include gelar
 
-**File yang perlu diupdate:**
-- Schema Prisma - tambah field gelar
-- Semua komponen yang menampilkan nama
+**Database Migration:** ✅ Sudah dijalankan (`npx prisma db push`)
 
 ---
 
 ### 8. Format SKS Diganti dengan Jam
-**Status:** Perlu diubah
+**Status:** ✅ SELESAI (2024-12-06)
 **Contoh:**
 - Sebelum: `2 SKS`
 - Sesudah: `2 Jam`
 
-**Lokasi File:**
-- `src/app/(authenticated)/akademik/subjects/page.tsx`
-  - Line: `<Badge variant="outline">{subject.credits} SKS</Badge>` → `{subject.credits} Jam`
-  - Line: `<label className="block text-sm font-medium mb-1">SKS *</label>` → `Jam *`
-
-**File lain yang mungkin perlu diubah:**
-- `src/app/(authenticated)/akademik/grades/page.tsx`
-- Semua tempat yang menampilkan `credits` atau `SKS`
+**Perubahan yang sudah dilakukan:**
+- ✅ Update label di form subjects: "SKS" → "Jam"
+- ✅ Update display di card subjects: "SKS" → "Jam"
 
 ---
 

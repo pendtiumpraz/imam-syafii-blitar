@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import BulkOperationsModal from '@/components/bulk-operations/bulk-operations-modal'
 import { ValidationRules } from '@/lib/bulk-operations'
+import { formatFullName } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -21,6 +22,8 @@ import { useToast } from '@/hooks/use-toast'
 interface Staff {
   id: string
   name: string
+  title?: string // Gelar depan (Dr., Ust., dll)
+  suffix?: string // Gelar belakang (S.Pd.I, M.A., dll)
   email: string
   phone: string
   role: 'ADMIN' | 'TEACHER' | 'STAFF' | 'FINANCE' | 'ACADEMIC'
@@ -171,6 +174,8 @@ export default function StaffManagementPage() {
         const mappedStaff = (data.users || []).map((user: any) => ({
           id: user.id,
           name: user.name || '',
+          title: user.title || '',
+          suffix: user.suffix || '',
           email: user.email || '',
           phone: user.phone || '',
           role: mapRoleToStaffRole(user.role),
@@ -274,6 +279,8 @@ export default function StaffManagementPage() {
 
   const [formData, setFormData] = useState<Partial<Staff>>({
     name: '',
+    title: '',
+    suffix: '',
     email: '',
     phone: '',
     role: 'STAFF',
@@ -464,6 +471,8 @@ export default function StaffManagementPage() {
   const resetForm = () => {
     setFormData({
       name: '',
+      title: '',
+      suffix: '',
       email: '',
       phone: '',
       role: 'STAFF',
@@ -486,6 +495,8 @@ export default function StaffManagementPage() {
     setSelectedStaff(staff)
     setFormData({
       name: staff.name,
+      title: staff.title || '',
+      suffix: staff.suffix || '',
       email: staff.email,
       phone: staff.phone,
       role: staff.role,
@@ -598,7 +609,7 @@ export default function StaffManagementPage() {
                   
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                      <h3 className="font-medium">{member.name}</h3>
+                      <h3 className="font-medium">{formatFullName(member.name, member.title, member.suffix)}</h3>
                       {getRoleBadge(member.role)}
                       {getStatusBadge(member.status)}
                     </div>
@@ -898,6 +909,8 @@ export default function StaffManagementPage() {
         title="Data Staff/Pengajar"
         exportData={staff.map(s => ({
           name: s.name,
+          title: s.title,
+          suffix: s.suffix,
           email: s.email,
           phone: s.phone,
           role: s.role,
@@ -908,6 +921,8 @@ export default function StaffManagementPage() {
         }))}
         exportColumns={[
           { key: 'name', header: 'Nama' },
+          { key: 'title', header: 'Gelar Depan' },
+          { key: 'suffix', header: 'Gelar Belakang' },
           { key: 'email', header: 'Email' },
           { key: 'phone', header: 'No. HP' },
           { key: 'role', header: 'Role' },

@@ -41,3 +41,29 @@ export function getInitials(name: string): string {
     .toUpperCase()
     .slice(0, 2)
 }
+
+/**
+ * Format nama lengkap dengan gelar
+ * @param name - Nama lengkap
+ * @param title - Gelar depan (Dr., Ust., Ustdz., KH., dll)
+ * @param suffix - Gelar belakang (S.Pd.I, M.A., Lc., dll)
+ * @returns Nama lengkap dengan gelar
+ * @example formatFullName('Ahmad Hidayat', 'Ust.', 'S.Pd.I') => 'Ust. Ahmad Hidayat, S.Pd.I'
+ */
+export function formatFullName(name: string, title?: string | null, suffix?: string | null): string {
+  const parts: string[] = []
+  
+  if (title?.trim()) {
+    parts.push(title.trim())
+  }
+  
+  parts.push(name)
+  
+  let fullName = parts.join(' ')
+  
+  if (suffix?.trim()) {
+    fullName += `, ${suffix.trim()}`
+  }
+  
+  return fullName
+}

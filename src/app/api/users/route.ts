@@ -60,6 +60,8 @@ export async function GET(request: NextRequest) {
           username: true,
           email: true,
           name: true,
+          title: true,
+          suffix: true,
           role: true,
           isActive: true,
           createdAt: true,
