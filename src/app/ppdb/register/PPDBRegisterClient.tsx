@@ -1002,8 +1002,10 @@ export default function PPDBRegisterClient() {
                   }`}
                 >
                   <option value="">Pilih jenjang</option>
-                  <option value="TK">TK (Taman Kanak-Kanak)</option>
-                  <option value="SD">SD (Sekolah Dasar)</option>
+                  <option value="KB_TK">KB-TK (Kelompok Bermain & Taman Kanak-Kanak)</option>
+                  <option value="SD">SD (Sekolah Dasar Islam)</option>
+                  <option value="SMP">SMP (Sekolah Menengah Pertama Islam)</option>
+                  <option value="SMA">SMA (Sekolah Menengah Atas Islam)</option>
                   <option value="PONDOK">Pondok Pesantren</option>
                 </select>
                 {errors.level && (
@@ -1036,8 +1038,9 @@ export default function PPDBRegisterClient() {
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
                     >
                       <option value="">Pilih kelas</option>
-                      {formData.level === 'TK' && (
+                      {(formData.level === 'TK' || formData.level === 'KB_TK') && (
                         <>
+                          <option value="KB">Kelompok Bermain</option>
                           <option value="TK A">TK A</option>
                           <option value="TK B">TK B</option>
                         </>
@@ -1050,6 +1053,20 @@ export default function PPDBRegisterClient() {
                           <option value="4">Kelas 4</option>
                           <option value="5">Kelas 5</option>
                           <option value="6">Kelas 6</option>
+                        </>
+                      )}
+                      {formData.level === 'SMP' && (
+                        <>
+                          <option value="7">Kelas 7</option>
+                          <option value="8">Kelas 8</option>
+                          <option value="9">Kelas 9</option>
+                        </>
+                      )}
+                      {formData.level === 'SMA' && (
+                        <>
+                          <option value="10">Kelas 10</option>
+                          <option value="11">Kelas 11</option>
+                          <option value="12">Kelas 12</option>
                         </>
                       )}
                       {formData.level === 'PONDOK' && (
@@ -1280,7 +1297,7 @@ export default function PPDBRegisterClient() {
                 { type: 'akta', label: 'Akta Kelahiran', required: true },
                 { type: 'kk', label: 'Kartu Keluarga', required: true },
                 { type: 'foto', label: 'Pas Foto 3x4', required: true },
-                { type: 'ijazah', label: 'Ijazah/Raport Terakhir', required: formData.level !== 'TK' },
+                { type: 'ijazah', label: 'Ijazah/Raport Terakhir', required: formData.level !== 'TK' && formData.level !== 'KB_TK' },
                 { type: 'sehat', label: 'Surat Keterangan Sehat', required: true },
                 { type: 'kip', label: 'Kartu Indonesia Pintar (jika ada)', required: false },
               ].map((doc) => {
