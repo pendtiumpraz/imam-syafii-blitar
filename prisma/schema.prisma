@@ -1573,6 +1573,9 @@ model ppdb_settings {
   academicYear          String
   openDate              DateTime
   closeDate             DateTime
+  // Gelombang/Periode pendaftaran dalam format JSON
+  // [{ "name": "Gelombang 1", "startDate": "2024-01-01", "endDate": "2024-02-28", "discount": 20 }, ...]
+  registrationPeriods   String   @default("[]")
   // Quota per jenjang
   quotaKBTK             Int      @default(30)
   quotaTK               Int      @default(30)

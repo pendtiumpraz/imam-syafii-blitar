@@ -23,11 +23,18 @@ export async function GET(request: NextRequest) {
         PONDOK: { registrationFee: 250000, enrollmentFee: 1500000, monthlyFee: 750000, uniformFee: 500000, booksFee: 300000 }
       };
 
+      const defaultPeriods = [
+        { name: 'Gelombang 1', startDate: '2025-01-01', endDate: '2025-02-28', discount: 20 },
+        { name: 'Gelombang 2', startDate: '2025-03-01', endDate: '2025-04-30', discount: 10 },
+        { name: 'Gelombang 3', startDate: '2025-05-01', endDate: '2025-06-30', discount: 0 }
+      ];
+
       settings = await prisma.ppdb_settings.create({
         data: {
           academicYear,
-          openDate: new Date('2024-01-01'),
-          closeDate: new Date('2024-03-31'),
+          openDate: new Date('2025-01-01'),
+          closeDate: new Date('2025-06-30'),
+          registrationPeriods: JSON.stringify(defaultPeriods),
           quotaKBTK: 30,
           quotaTK: 30,
           quotaSD: 60,
@@ -129,6 +136,11 @@ export async function PUT(request: NextRequest) {
     // Stringify feeDetails if it's an object
     if (updateData.feeDetails && typeof updateData.feeDetails === 'object') {
       updateData.feeDetails = JSON.stringify(updateData.feeDetails);
+    }
+    
+    // Stringify registrationPeriods if it's an array
+    if (Array.isArray(updateData.registrationPeriods)) {
+      updateData.registrationPeriods = JSON.stringify(updateData.registrationPeriods);
     }
     
     const existingSettings = await prisma.ppdb_settings.findFirst({

@@ -31,10 +31,18 @@ interface FeeDetail {
   booksFee: number;
 }
 
+interface RegistrationPeriod {
+  name: string;
+  startDate: string;
+  endDate: string;
+  discount: number;
+}
+
 interface PPDBSettings {
   academicYear: string;
   openDate: string;
   closeDate: string;
+  registrationPeriods: RegistrationPeriod[];
   quotaKBTK: number;
   quotaTK: number;
   quotaSD: number;
@@ -199,7 +207,7 @@ export default function PPDBPageClient() {
 
   const fetchSettings = async () => {
     try {
-      const response = await fetch('/api/ppdb/settings?academicYear=2024/2025');
+      const response = await fetch('/api/ppdb/settings?academicYear=2025/2026');
       if (response.ok) {
         const data = await response.json();
         const settingsData = data.settings;
@@ -210,6 +218,15 @@ export default function PPDBPageClient() {
             settingsData.feeDetails = JSON.parse(settingsData.feeDetails);
           } catch {
             settingsData.feeDetails = {};
+          }
+        }
+        
+        // Parse registrationPeriods if string
+        if (typeof settingsData.registrationPeriods === 'string') {
+          try {
+            settingsData.registrationPeriods = JSON.parse(settingsData.registrationPeriods);
+          } catch {
+            settingsData.registrationPeriods = [];
           }
         }
         
@@ -417,8 +434,68 @@ export default function PPDBPageClient() {
         </div>
       </section>
 
+      {/* Registration Periods Section */}
+      {settings?.registrationPeriods && settings.registrationPeriods.length > 0 && (
+        <section className="py-16 bg-gray-50">
+          <div className="container mx-auto px-4">
+            <h2 className="text-3xl font-bold text-center mb-12 text-gray-900">
+              Gelombang Pendaftaran
+            </h2>
+            <div className="max-w-3xl mx-auto">
+              {settings.registrationPeriods.map((period, index) => {
+                const now = new Date();
+                const startDate = new Date(period.startDate);
+                const endDate = new Date(period.endDate);
+                const isActive = now >= startDate && now <= endDate;
+                const isPast = now > endDate;
+                const isFuture = now < startDate;
+                
+                return (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, x: -20 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                    className={`flex gap-4 mb-8 ${isActive ? 'scale-105' : ''}`}
+                  >
+                    <div className={`w-4 h-4 rounded-full mt-2 flex-shrink-0 ${
+                      isActive ? 'bg-green-500 ring-4 ring-green-200' : 
+                      isPast ? 'bg-gray-300' : 'bg-blue-300'
+                    }`} />
+                    <div className={`flex-1 p-6 rounded-xl ${
+                      isActive ? 'bg-white shadow-xl border-2 border-green-500' : 'bg-white shadow'
+                    }`}>
+                      <div className="flex justify-between items-start mb-2">
+                        <h3 className="text-xl font-bold text-gray-900">{period.name}</h3>
+                        {period.discount > 0 && (
+                          <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-semibold">
+                            Diskon {period.discount}%
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-gray-600">
+                        {formatDate(period.startDate)} - {formatDate(period.endDate)}
+                      </p>
+                      {isActive && (
+                        <p className="mt-2 text-green-600 font-semibold">Sedang Dibuka</p>
+                      )}
+                      {isPast && (
+                        <p className="mt-2 text-gray-400">Sudah Berakhir</p>
+                      )}
+                      {isFuture && (
+                        <p className="mt-2 text-blue-600">Akan Datang</p>
+                      )}
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Steps Section */}
-      <section className="py-16 bg-gray-50">
+      <section className="py-16">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl font-bold text-center mb-12 text-gray-900">
             Alur Pendaftaran

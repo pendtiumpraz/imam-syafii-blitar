@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { toast } from '@/components/ui/use-toast'
-import { Save, ArrowLeft, RefreshCw } from 'lucide-react'
+import { Save, ArrowLeft, RefreshCw, Plus, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 
 interface FeeDetail {
@@ -19,11 +19,19 @@ interface FeeDetail {
   booksFee: number
 }
 
+interface RegistrationPeriod {
+  name: string
+  startDate: string
+  endDate: string
+  discount: number
+}
+
 interface PPDBSettings {
   id: string
   academicYear: string
   openDate: string
   closeDate: string
+  registrationPeriods: RegistrationPeriod[]
   quotaKBTK: number
   quotaTK: number
   quotaSD: number
@@ -66,7 +74,7 @@ export default function PPDBSettingsPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [settings, setSettings] = useState<PPDBSettings | null>(null)
-  const [academicYear, setAcademicYear] = useState('2024/2025')
+  const [academicYear, setAcademicYear] = useState('2025/2026')
 
   useEffect(() => {
     fetchSettings()
@@ -80,7 +88,7 @@ export default function PPDBSettingsPage() {
         const data = await response.json()
         const settingsData = data.settings
         
-        // Parse feeDetails if it's a string
+        // Parse JSON fields
         if (typeof settingsData.feeDetails === 'string') {
           try {
             settingsData.feeDetails = JSON.parse(settingsData.feeDetails)
@@ -89,12 +97,19 @@ export default function PPDBSettingsPage() {
           }
         }
         
-        // Parse requiredDocs if it's a string
         if (typeof settingsData.requiredDocs === 'string') {
           try {
             settingsData.requiredDocs = JSON.parse(settingsData.requiredDocs)
           } catch {
             settingsData.requiredDocs = []
+          }
+        }
+
+        if (typeof settingsData.registrationPeriods === 'string') {
+          try {
+            settingsData.registrationPeriods = JSON.parse(settingsData.registrationPeriods)
+          } catch {
+            settingsData.registrationPeriods = []
           }
         }
 
@@ -181,6 +196,35 @@ export default function PPDBSettingsPage() {
     })
   }
 
+  const addPeriod = () => {
+    if (!settings) return
+    const periods = settings.registrationPeriods || []
+    const newPeriod: RegistrationPeriod = {
+      name: `Gelombang ${periods.length + 1}`,
+      startDate: '',
+      endDate: '',
+      discount: 0
+    }
+    setSettings({
+      ...settings,
+      registrationPeriods: [...periods, newPeriod]
+    })
+  }
+
+  const updatePeriod = (index: number, field: keyof RegistrationPeriod, value: any) => {
+    if (!settings) return
+    const periods = [...(settings.registrationPeriods || [])]
+    periods[index] = { ...periods[index], [field]: value }
+    setSettings({ ...settings, registrationPeriods: periods })
+  }
+
+  const removePeriod = (index: number) => {
+    if (!settings) return
+    const periods = [...(settings.registrationPeriods || [])]
+    periods.splice(index, 1)
+    setSettings({ ...settings, registrationPeriods: periods })
+  }
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
@@ -219,18 +263,17 @@ export default function PPDBSettingsPage() {
             </Link>
             <div>
               <h1 className="text-2xl font-bold">Pengaturan PPDB</h1>
-              <p className="text-gray-600">Atur biaya pendaftaran dan kuota per jenjang</p>
+              <p className="text-gray-600">Atur tahun ajaran, periode, biaya, dan kuota</p>
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <select
+            <Input
+              type="text"
               value={academicYear}
               onChange={(e) => setAcademicYear(e.target.value)}
-              className="px-3 py-2 border rounded-md"
-            >
-              <option value="2024/2025">2024/2025</option>
-              <option value="2025/2026">2025/2026</option>
-            </select>
+              placeholder="2025/2026"
+              className="w-32"
+            />
             <Button onClick={fetchSettings} variant="outline">
               <RefreshCw className="w-4 h-4 mr-2" />
               Refresh
@@ -242,12 +285,130 @@ export default function PPDBSettingsPage() {
           </div>
         </div>
 
-        <Tabs defaultValue="biaya" className="space-y-6">
+        <Tabs defaultValue="umum" className="space-y-6">
           <TabsList>
+            <TabsTrigger value="umum">Umum & Periode</TabsTrigger>
             <TabsTrigger value="biaya">Biaya Pendaftaran</TabsTrigger>
             <TabsTrigger value="kuota">Kuota</TabsTrigger>
-            <TabsTrigger value="jadwal">Jadwal & Test</TabsTrigger>
+            <TabsTrigger value="test">Test & Interview</TabsTrigger>
           </TabsList>
+
+          {/* Tab Umum & Periode */}
+          <TabsContent value="umum" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Tahun Ajaran</CardTitle>
+                <CardDescription>Atur tahun ajaran dan tanggal pembukaan/penutupan PPDB</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <Label>Tahun Ajaran</Label>
+                    <Input
+                      value={settings.academicYear || academicYear}
+                      onChange={(e) => updateSetting('academicYear', e.target.value)}
+                      placeholder="2025/2026"
+                    />
+                  </div>
+                  <div>
+                    <Label>Tanggal Buka PPDB</Label>
+                    <Input
+                      type="date"
+                      value={settings.openDate?.split('T')[0] || ''}
+                      onChange={(e) => updateSetting('openDate', e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label>Tanggal Tutup PPDB</Label>
+                    <Input
+                      type="date"
+                      value={settings.closeDate?.split('T')[0] || ''}
+                      onChange={(e) => updateSetting('closeDate', e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center justify-between pt-4 border-t">
+                  <div>
+                    <Label>Status PPDB</Label>
+                    <p className="text-sm text-gray-500">Buka/tutup pendaftaran PPDB</p>
+                  </div>
+                  <Switch
+                    checked={settings.isActive}
+                    onCheckedChange={(checked) => updateSetting('isActive', checked)}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Gelombang Pendaftaran</CardTitle>
+                    <CardDescription>Atur periode/gelombang pendaftaran dan diskon</CardDescription>
+                  </div>
+                  <Button onClick={addPeriod} size="sm">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Tambah Gelombang
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {(settings.registrationPeriods || []).length === 0 ? (
+                  <p className="text-gray-500 text-center py-4">Belum ada gelombang pendaftaran</p>
+                ) : (
+                  <div className="space-y-4">
+                    {(settings.registrationPeriods || []).map((period, index) => (
+                      <div key={index} className="flex items-end gap-4 p-4 bg-gray-50 rounded-lg">
+                        <div className="flex-1">
+                          <Label>Nama Gelombang</Label>
+                          <Input
+                            value={period.name}
+                            onChange={(e) => updatePeriod(index, 'name', e.target.value)}
+                            placeholder="Gelombang 1"
+                          />
+                        </div>
+                        <div>
+                          <Label>Tanggal Mulai</Label>
+                          <Input
+                            type="date"
+                            value={period.startDate}
+                            onChange={(e) => updatePeriod(index, 'startDate', e.target.value)}
+                          />
+                        </div>
+                        <div>
+                          <Label>Tanggal Selesai</Label>
+                          <Input
+                            type="date"
+                            value={period.endDate}
+                            onChange={(e) => updatePeriod(index, 'endDate', e.target.value)}
+                          />
+                        </div>
+                        <div className="w-24">
+                          <Label>Diskon (%)</Label>
+                          <Input
+                            type="number"
+                            value={period.discount}
+                            onChange={(e) => updatePeriod(index, 'discount', Number(e.target.value))}
+                            min="0"
+                            max="100"
+                          />
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removePeriod(index)}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           {/* Tab Biaya */}
           <TabsContent value="biaya" className="space-y-6">
@@ -358,37 +519,11 @@ export default function PPDBSettingsPage() {
             </Card>
           </TabsContent>
 
-          {/* Tab Jadwal & Test */}
-          <TabsContent value="jadwal" className="space-y-6">
+          {/* Tab Test & Interview */}
+          <TabsContent value="test" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Jadwal Pendaftaran</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>Tanggal Buka</Label>
-                    <Input
-                      type="date"
-                      value={settings.openDate?.split('T')[0] || ''}
-                      onChange={(e) => updateSetting('openDate', e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label>Tanggal Tutup</Label>
-                    <Input
-                      type="date"
-                      value={settings.closeDate?.split('T')[0] || ''}
-                      onChange={(e) => updateSetting('closeDate', e.target.value)}
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Pengaturan Test</CardTitle>
+                <CardTitle>Pengaturan Test Masuk</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
@@ -412,7 +547,14 @@ export default function PPDBSettingsPage() {
                     />
                   </div>
                 )}
+              </CardContent>
+            </Card>
 
+            <Card>
+              <CardHeader>
+                <CardTitle>Pengaturan Interview</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <Label>Interview</Label>
@@ -434,24 +576,6 @@ export default function PPDBSettingsPage() {
                     />
                   </div>
                 )}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Status</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label>PPDB Aktif</Label>
-                    <p className="text-sm text-gray-500">Buka/tutup pendaftaran PPDB</p>
-                  </div>
-                  <Switch
-                    checked={settings.isActive}
-                    onCheckedChange={(checked) => updateSetting('isActive', checked)}
-                  />
-                </div>
               </CardContent>
             </Card>
           </TabsContent>
