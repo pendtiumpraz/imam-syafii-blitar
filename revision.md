@@ -123,73 +123,54 @@
 ---
 
 ### 9. Format Satuan Pendidikan
-**Status:** Perlu diubah
+**Status:** ✅ SELESAI (2024-12-06)
 **Perubahan:**
 | Sebelum | Sesudah |
 |---------|---------|
-| TK | KB-TK |
+| TK | KB_TK |
 | SD | SD |
 | SMP | SMP |
-| PONDOK | SMA |
+| PONDOK | MTQ, MSWi, MSWa, SMA |
 
-**Lokasi yang perlu diubah:**
-- Schema Prisma (enum/string values)
-- Semua dropdown/select options
-- Semua badge/label display
-- API validations
-
-**File yang perlu diupdate:**
-- `prisma/schema.prisma` - update institutionType values
-- `src/app/(authenticated)/siswa/page.tsx`
-- `src/app/(authenticated)/akademik/classes/page.tsx`
-- `src/app/(authenticated)/akademik/subjects/page.tsx`
-- `src/components/siswa/student-edit-form.tsx`
-- Semua API routes yang memvalidasi level/institutionType
+**Perubahan yang sudah dilakukan:**
+- ✅ Update dropdown di siswa page (7 jenis: KB_TK, SD, MTQ, MSWi, MSWa, SMP, SMA)
+- ✅ Update dropdown di classes page
+- ✅ Update dropdown di subjects page
+- ✅ Update student-edit-form component
+- ✅ Update API validation di students, classes, subjects routes
+- ✅ Update import API routes
 
 ---
 
 ## C. MENU PUBLIK - PROFIL YAYASAN
 
 ### 10. Update Menu Bar Profil untuk Umum
-**Status:** Perlu ditambahkan/diupdate
+**Status:** ✅ SELESAI (2024-12-06)
 
-**Struktur Menu Profil yang Dibutuhkan:**
+**Halaman yang sudah ditambahkan:**
+- ✅ `src/app/about/latar-belakang/page.tsx` - Sejarah yayasan dengan timeline
+- ✅ `src/app/about/visi-misi/page.tsx` - Visi, misi, nilai-nilai, dan goals
+- ✅ `src/app/about/beasiswa/page.tsx` - 5 jenis program beasiswa
+- ✅ `src/app/about/keunggulan/page.tsx` - Keunggulan dan testimonial
+- ✅ `src/app/about/smp/page.tsx` - SMP Pesantren
+- ✅ `src/app/about/sma/page.tsx` - SMA Pesantren
 
+**Navbar sudah diupdate di `src/lib/site-config.ts`:**
 ```
-PROFIL
+PROFIL (12 item)
 ├── Identitas Yayasan
 ├── Latar Belakang
 ├── Visi & Misi
-├── Program & Layanan
-│   ├── KB-TK
-│   ├── SD
-│   ├── SMP (Pesantren)
-│   ├── SMA (Pesantren)
-│   └── Beasiswa Pendidikan
 ├── Keunggulan
-└── Legalitas (Optional)
+├── KB-TK Islam
+├── SD Islam
+├── SMP Pesantren
+├── SMA Pesantren
+├── Pondok Pesantren
+├── Beasiswa
+├── Ustadz & Ustadzah
+└── Struktur Organisasi
 ```
-
-**File yang ada saat ini:**
-- `src/app/about/yayasan/page.tsx`
-- `src/app/about/tk/page.tsx`
-- `src/app/about/sd/page.tsx`
-- `src/app/about/pondok/page.tsx`
-- `src/app/about/pengajar/page.tsx`
-- `src/app/about/struktur/page.tsx`
-
-**File yang perlu ditambahkan:**
-- `src/app/about/latar-belakang/page.tsx`
-- `src/app/about/visi-misi/page.tsx`
-- `src/app/about/smp/page.tsx` - SMP (Pesantren)
-- `src/app/about/sma/page.tsx` - SMA (Pesantren)
-- `src/app/about/beasiswa/page.tsx` - Beasiswa Pendidikan
-- `src/app/about/keunggulan/page.tsx`
-- `src/app/about/legalitas/page.tsx` (optional)
-
-**Update Navigation:**
-- Update navbar/menu untuk menampilkan struktur baru
-- Update footer links jika ada
 
 ---
 
