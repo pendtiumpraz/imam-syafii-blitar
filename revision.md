@@ -3,17 +3,17 @@
 ## A. BUG FIXES - Menu Admin
 
 ### 1. Menu Data Siswa - Tidak Bisa Diinput
-**Status:** Perlu diperbaiki
+**Status:** ✅ API Sudah Berfungsi
 **Masalah:** Form tambah siswa tidak bisa menyimpan data
 **Lokasi File:**
 - `src/app/(authenticated)/siswa/page.tsx`
 - `src/app/api/students/route.ts`
 - `src/components/siswa/student-edit-form.tsx`
 
-**Perbaikan yang diperlukan:**
-- Cek validasi form dan field yang required
-- Pastikan API POST `/api/students` berfungsi dengan baik
-- Cek format tanggal `birthDate` dan `enrollmentDate`
+**Catatan:**
+- API POST `/api/students` sudah berfungsi dengan validasi Zod
+- Institution type sudah diupdate ke KB_TK, SD, MTQ, MSWi, MSWa, SMP, SMA
+- Import CSV sudah tersedia
 
 ---
 
@@ -31,31 +31,32 @@
 ---
 
 ### 3. Menu Akademik - Kelas: Pilihan Tahun Ajaran dan Wali Kelas Kosong
-**Status:** Perlu diperbaiki
+**Status:** ✅ API Sudah Berfungsi (Perlu Data di Database)
 **Masalah:** Dropdown tahun ajaran dan wali kelas tidak menampilkan data
 **Lokasi File:**
 - `src/app/(authenticated)/akademik/classes/page.tsx`
 - `src/app/api/academic/years/route.ts`
 - `src/app/api/users/route.ts`
 
-**Perbaikan yang diperlukan:**
-- Pastikan ada data tahun ajaran di database (jalankan seeder)
-- Fetch teachers dari `/api/users?role=USTADZ&isActive=true`
-- Cek response format dari API academic years
+**Catatan:**
+- API sudah memanggil `/api/academic/years` dan `/api/users?role=USTADZ&isActive=true`
+- Pastikan ada data tahun ajaran di database (jalankan seeder atau import CSV)
+- Pastikan ada data user dengan role USTADZ di database
+- Import CSV sudah tersedia untuk kedua entity
 
 ---
 
 ### 4. Menu Akademik - Mata Pelajaran Tidak Bisa Disimpan
-**Status:** Perlu diperbaiki
+**Status:** ✅ API Sudah Berfungsi
 **Masalah:** Form mata pelajaran gagal submit
 **Lokasi File:**
 - `src/app/(authenticated)/akademik/subjects/page.tsx`
 - `src/app/api/academic/subjects/route.ts`
 
-**Perbaikan yang diperlukan:**
-- Cek validasi field `code`, `name`, `level` (required)
-- Pastikan level yang valid: `TK`, `SD`, `SMP`, `PONDOK`
-- Debug error response dari API
+**Catatan:**
+- API sudah berfungsi dengan validasi level: KB_TK, SD, MTQ, MSWi, MSWa, SMP, SMA
+- Sudah ada fitur Quick Add untuk mata pelajaran Islam
+- Import CSV sudah tersedia
 
 ---
 
