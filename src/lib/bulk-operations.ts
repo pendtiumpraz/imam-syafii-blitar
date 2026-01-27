@@ -59,7 +59,7 @@ export async function exportToExcel<T>(
   // Add data rows
   data.forEach((item, index) => {
     const row = worksheet.addRow(item);
-    
+
     // Format specific cell types
     columns.forEach((col, colIndex) => {
       const cell = row.getCell(colIndex + 1);
@@ -89,10 +89,10 @@ export async function exportToExcel<T>(
 
   // Generate buffer and download
   const buffer = await workbook.xlsx.writeBuffer();
-  const blob = new Blob([buffer], { 
-    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+  const blob = new Blob([buffer], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
   });
-  
+
   const filename = options.filename || `export-${new Date().toISOString().split('T')[0]}.xlsx`;
   saveAs(blob, filename);
 }
@@ -104,7 +104,7 @@ export function exportToCSV<T>(
   options: ExportOptions = { format: 'csv' }
 ): void {
   const headers = columns.map(col => col.header);
-  const csvData = data.map(item => 
+  const csvData = data.map(item =>
     columns.map(col => {
       const value = item[col.key];
       if (value === null || value === undefined) return '';
@@ -130,7 +130,7 @@ export async function generateExcelTemplate(
   filename: string
 ): Promise<void> {
   const workbook = new ExcelJS.Workbook();
-  
+
   // Instructions sheet
   const instructionsSheet = workbook.addWorksheet('Instruksi');
   instructionsSheet.addRow(['INSTRUKSI PENGGUNAAN TEMPLATE']);
@@ -139,10 +139,17 @@ export async function generateExcelTemplate(
   instructionsSheet.addRow(['2. Kolom yang bertanda (*) wajib diisi']);
   instructionsSheet.addRow(['3. Perhatikan format data sesuai contoh']);
   instructionsSheet.addRow(['4. Jangan mengubah nama kolom atau urutan kolom']);
-  instructionsSheet.addRow(['5. Hapus baris contoh sebelum mengupload']);
+  instructionsSheet.addRow(['5. HAPUS baris contoh (baris ke-2) sebelum mengupload!']);
   instructionsSheet.addRow(['']);
-  instructionsSheet.addRow(['Format Data:']);
-  
+  instructionsSheet.addRow(['FORMAT DATA PENTING:']);
+  instructionsSheet.addRow(['- Tanggal: DD/MM/YYYY (contoh: 15/05/2010) atau YYYY-MM-DD']);
+  instructionsSheet.addRow(['- Jenis Kelamin: L atau P (atau MALE/FEMALE)']);
+  instructionsSheet.addRow(['- Jenis Institusi: KB_TK, SD, MTQ, MSWi, MSWa, SMP, atau SMA']);
+  instructionsSheet.addRow(['- Email: Kosongkan jika tidak ada (jangan isi sembarangan)']);
+  instructionsSheet.addRow(['- Status: ACTIVE, GRADUATED, TRANSFERRED, atau DROPPED']);
+  instructionsSheet.addRow(['']);
+  instructionsSheet.addRow(['DETAIL KOLOM:']);
+
   columns.forEach((col, index) => {
     const required = col.required ? ' (Wajib)' : ' (Opsional)';
     const example = col.example ? ` - Contoh: ${col.example}` : '';
@@ -151,11 +158,11 @@ export async function generateExcelTemplate(
 
   // Data sheet
   const dataSheet = workbook.addWorksheet('Data');
-  
+
   // Headers
   const headers = columns.map(col => col.required ? `${col.header} *` : col.header);
   dataSheet.addRow(headers);
-  
+
   // Example row
   const exampleRow = columns.map(col => col.example || '');
   dataSheet.addRow(exampleRow);
@@ -177,8 +184,8 @@ export async function generateExcelTemplate(
   });
 
   const buffer = await workbook.xlsx.writeBuffer();
-  const blob = new Blob([buffer], { 
-    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+  const blob = new Blob([buffer], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
   });
   saveAs(blob, filename);
 }
@@ -195,40 +202,40 @@ export async function importFromExcel(
       try {
         const workbook = new ExcelJS.Workbook();
         await workbook.xlsx.load(e.target?.result as ArrayBuffer);
-        
+
         const worksheet = workbook.getWorksheet('Data') || workbook.worksheets[0];
         const rows: any[] = [];
         const errors: string[] = [];
-        
+
         let totalRows = 0;
         let validRows = 0;
-        
+
         worksheet.eachRow((row, rowNumber) => {
           if (rowNumber === 1) return; // Skip header row
-          if (rowNumber === 2 && Array.isArray(row.values) && row.values.every((cell: any) => 
+          if (rowNumber === 2 && Array.isArray(row.values) && row.values.every((cell: any) =>
             typeof cell === 'string' && cell.includes('Contoh')
           )) return; // Skip example row
-          
+
           totalRows++;
-          
+
           if (onProgress) {
             onProgress(rowNumber - 1, worksheet.rowCount - 1, `Processing row ${rowNumber}...`);
           }
-          
+
           const rowData: any = {};
           const rowErrors: string[] = [];
-          
+
           validationRules.forEach((rule, colIndex) => {
             const cellValue = row.getCell(colIndex + 1).value;
             const result = validateCell(cellValue, rule, rowNumber);
-            
+
             if (result.valid) {
               rowData[rule.field] = result.value;
             } else {
               rowErrors.push(result.error!);
             }
           });
-          
+
           if (rowErrors.length === 0) {
             rows.push(rowData);
             validRows++;
@@ -236,7 +243,7 @@ export async function importFromExcel(
             errors.push(`Baris ${rowNumber}: ${rowErrors.join(', ')}`);
           }
         });
-        
+
         resolve({
           success: errors.length === 0 || validRows > 0,
           data: rows,
@@ -278,23 +285,23 @@ export function importFromCSV(
         const rows: any[] = [];
         const errors: string[] = [];
         let validRows = 0;
-        
+
         results.data.forEach((row: any, index: number) => {
           const rowNumber = index + 2; // Account for header row
           const rowData: any = {};
           const rowErrors: string[] = [];
-          
+
           validationRules.forEach(rule => {
             const cellValue = row[rule.field] || row[`${rule.field} *`]; // Handle required field markers
             const result = validateCell(cellValue, rule, rowNumber);
-            
+
             if (result.valid) {
               rowData[rule.field] = result.value;
             } else {
               rowErrors.push(result.error!);
             }
           });
-          
+
           if (rowErrors.length === 0) {
             rows.push(rowData);
             validRows++;
@@ -302,7 +309,7 @@ export function importFromCSV(
             errors.push(`Baris ${rowNumber}: ${rowErrors.join(', ')}`);
           }
         });
-        
+
         resolve({
           success: errors.length === 0 || validRows > 0,
           data: rows,
@@ -327,8 +334,8 @@ export function importFromCSV(
 
 // Cell validation helper
 function validateCell(
-  cellValue: any, 
-  rule: ImportValidationRule, 
+  cellValue: any,
+  rule: ImportValidationRule,
   rowNumber: number
 ): { valid: boolean; value?: any; error?: string } {
   // Handle empty values
@@ -338,9 +345,9 @@ function validateCell(
     }
     return { valid: true, value: null };
   }
-  
+
   let value = cellValue;
-  
+
   // Type conversion and validation
   switch (rule.type) {
     case 'string':
@@ -352,26 +359,53 @@ function validateCell(
         return { valid: false, error: `${rule.field} maksimal ${rule.maxLength} karakter` };
       }
       break;
-      
+
     case 'number':
       value = Number(value);
       if (isNaN(value)) {
         return { valid: false, error: `${rule.field} harus berupa angka` };
       }
       break;
-      
+
     case 'date':
       if (value instanceof Date) {
         // Already a date object
+      } else if (typeof value === 'number') {
+        // Handle Excel serial date
+        const excelEpoch = new Date(1899, 11, 30);
+        value = new Date(excelEpoch.getTime() + value * 24 * 60 * 60 * 1000);
       } else {
-        const date = new Date(value);
-        if (isNaN(date.getTime())) {
-          return { valid: false, error: `${rule.field} format tanggal tidak valid` };
+        const strValue = String(value).trim();
+        let date: Date | null = null;
+
+        // Try DD/MM/YYYY or DD-MM-YYYY format (common in Indonesia)
+        const ddmmyyyyMatch = strValue.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+        if (ddmmyyyyMatch) {
+          const [, day, month, year] = ddmmyyyyMatch;
+          date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+        }
+
+        // Try YYYY-MM-DD or YYYY/MM/DD format
+        if (!date || isNaN(date.getTime())) {
+          const yyyymmddMatch = strValue.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
+          if (yyyymmddMatch) {
+            const [, year, month, day] = yyyymmddMatch;
+            date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+          }
+        }
+
+        // Try default Date parsing as fallback
+        if (!date || isNaN(date.getTime())) {
+          date = new Date(strValue);
+        }
+
+        if (!date || isNaN(date.getTime())) {
+          return { valid: false, error: `${rule.field} format tanggal tidak valid (gunakan DD/MM/YYYY atau YYYY-MM-DD)` };
         }
         value = date;
       }
       break;
-      
+
     case 'email':
       value = String(value).trim().toLowerCase();
       const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -379,7 +413,7 @@ function validateCell(
         return { valid: false, error: `${rule.field} format email tidak valid` };
       }
       break;
-      
+
     case 'phone':
       value = String(value).trim();
       // Remove any non-digit characters except +
@@ -390,25 +424,25 @@ function validateCell(
       value = cleanPhone;
       break;
   }
-  
+
   // Pattern validation
   if (rule.pattern && !rule.pattern.test(String(value))) {
     return { valid: false, error: `${rule.field} format tidak sesuai` };
   }
-  
+
   // Custom validation
   if (rule.validator) {
     const validationResult = rule.validator(value);
     if (validationResult !== true) {
-      return { 
-        valid: false, 
-        error: typeof validationResult === 'string' 
-          ? validationResult 
-          : `${rule.field} tidak valid` 
+      return {
+        valid: false,
+        error: typeof validationResult === 'string'
+          ? validationResult
+          : `${rule.field} tidak valid`
       };
     }
   }
-  
+
   return { valid: true, value };
 }
 
@@ -419,31 +453,31 @@ export const ValidationRules = {
     required: true,
     type: 'string'
   }),
-  
+
   email: (field: string, required = false): ImportValidationRule => ({
     field,
     required,
     type: 'email'
   }),
-  
+
   phone: (field: string, required = false): ImportValidationRule => ({
     field,
     required,
     type: 'phone'
   }),
-  
+
   date: (field: string, required = false): ImportValidationRule => ({
     field,
     required,
     type: 'date'
   }),
-  
+
   number: (field: string, required = false): ImportValidationRule => ({
     field,
     required,
     type: 'number'
   }),
-  
+
   nis: (field: string): ImportValidationRule => ({
     field,
     required: true,
@@ -452,20 +486,30 @@ export const ValidationRules = {
     maxLength: 20,
     pattern: /^[0-9]+$/
   }),
-  
+
   gender: (field: string): ImportValidationRule => ({
     field,
     required: true,
     type: 'string',
-    validator: (value) => ['MALE', 'FEMALE', 'L', 'P', 'Laki-laki', 'Perempuan'].includes(value) 
+    validator: (value) => ['MALE', 'FEMALE', 'L', 'P', 'Laki-laki', 'Perempuan'].includes(value)
       || 'Jenis kelamin harus L/P atau MALE/FEMALE'
   }),
-  
+
   institutionType: (field: string): ImportValidationRule => ({
     field,
     required: true,
     type: 'string',
-    validator: (value) => ['TK', 'SD', 'PONDOK'].includes(value) 
-      || 'Jenis institusi harus TK, SD, atau PONDOK'
+    validator: (value) => {
+      const upperValue = String(value).toUpperCase().trim();
+      const validTypes = ['KB_TK', 'SD', 'MTQ', 'MSWI', 'MSWA', 'SMP', 'SMA'];
+      const aliases: Record<string, string> = {
+        'TK': 'KB_TK',
+        'KB-TK': 'KB_TK',
+        'PONDOK': 'MTQ',
+        'MADRASAH': 'MTQ'
+      };
+      return validTypes.includes(upperValue) || Object.keys(aliases).includes(upperValue)
+        || 'Jenis institusi harus KB_TK, SD, MTQ, MSWi, MSWa, SMP, atau SMA';
+    }
   })
 };

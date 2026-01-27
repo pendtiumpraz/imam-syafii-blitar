@@ -76,16 +76,80 @@ export async function POST(request: NextRequest) {
       try {
         // Normalize gender values
         if (row.gender) {
-          if (['L', 'Laki-laki'].includes(row.gender)) row.gender = 'MALE';
-          if (['P', 'Perempuan'].includes(row.gender)) row.gender = 'FEMALE';
+          const genderUpper = String(row.gender).toUpperCase().trim();
+          if (['L', 'LAKI-LAKI', 'LAKI'].includes(genderUpper)) row.gender = 'MALE';
+          else if (['P', 'PEREMPUAN', 'WANITA'].includes(genderUpper)) row.gender = 'FEMALE';
+          else if (['MALE', 'FEMALE'].includes(genderUpper)) row.gender = genderUpper;
         }
 
-        // Normalize date values
+        // Normalize institutionType values
+        if (row.institutionType) {
+          const instUpper = String(row.institutionType).toUpperCase().trim();
+          const instAliases: Record<string, string> = {
+            'TK': 'KB_TK',
+            'KB-TK': 'KB_TK',
+            'KBTK': 'KB_TK',
+            'PONDOK': 'MTQ',
+            'MADRASAH': 'MTQ'
+          };
+          row.institutionType = instAliases[instUpper] || instUpper;
+        }
+
+        // Helper function to parse dates with multiple format support
+        const parseDate = (dateValue: any): string | null => {
+          if (!dateValue) return null;
+
+          // If already a Date object
+          if (dateValue instanceof Date) {
+            return dateValue.toISOString();
+          }
+
+          // If it's a number (Excel serial date)
+          if (typeof dateValue === 'number') {
+            const excelEpoch = new Date(1899, 11, 30);
+            const date = new Date(excelEpoch.getTime() + dateValue * 24 * 60 * 60 * 1000);
+            return date.toISOString();
+          }
+
+          const strValue = String(dateValue).trim();
+
+          // Try DD/MM/YYYY or DD-MM-YYYY format (common in Indonesia)
+          const ddmmyyyyMatch = strValue.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+          if (ddmmyyyyMatch) {
+            const [, day, month, year] = ddmmyyyyMatch;
+            const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+            if (!isNaN(date.getTime())) return date.toISOString();
+          }
+
+          // Try YYYY-MM-DD or YYYY/MM/DD format
+          const yyyymmddMatch = strValue.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
+          if (yyyymmddMatch) {
+            const [, year, month, day] = yyyymmddMatch;
+            const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+            if (!isNaN(date.getTime())) return date.toISOString();
+          }
+
+          // Fallback to default Date parsing
+          const date = new Date(strValue);
+          if (!isNaN(date.getTime())) return date.toISOString();
+
+          return null;
+        };
+
+        // Parse date values with improved handling
         if (row.birthDate) {
-          row.birthDate = new Date(row.birthDate).toISOString();
+          const parsedBirthDate = parseDate(row.birthDate);
+          if (!parsedBirthDate) {
+            throw new Error(`birthDate format tanggal tidak valid (gunakan DD/MM/YYYY atau YYYY-MM-DD)`);
+          }
+          row.birthDate = parsedBirthDate;
         }
         if (row.enrollmentDate) {
-          row.enrollmentDate = new Date(row.enrollmentDate).toISOString();
+          const parsedEnrollmentDate = parseDate(row.enrollmentDate);
+          if (!parsedEnrollmentDate) {
+            throw new Error(`enrollmentDate format tanggal tidak valid (gunakan DD/MM/YYYY atau YYYY-MM-DD)`);
+          }
+          row.enrollmentDate = parsedEnrollmentDate;
         }
 
         // Validate row data
@@ -197,8 +261,8 @@ export async function GET() {
       { key: 'fullName', header: 'Nama Lengkap', required: true, example: 'Ahmad Fadli Rahman', width: 25 },
       { key: 'nickname', header: 'Nama Panggilan', required: false, example: 'Fadli', width: 15 },
       { key: 'birthPlace', header: 'Tempat Lahir', required: true, example: 'Blitar', width: 15 },
-      { key: 'birthDate', header: 'Tanggal Lahir', required: true, example: '2010-05-15', width: 15 },
-      { key: 'gender', header: 'Jenis Kelamin', required: true, example: 'L (atau MALE)', width: 15 },
+      { key: 'birthDate', header: 'Tanggal Lahir', required: true, example: '15/05/2010', width: 15 },
+      { key: 'gender', header: 'Jenis Kelamin', required: true, example: 'L', width: 15 },
       { key: 'bloodType', header: 'Golongan Darah', required: false, example: 'O', width: 10 },
       { key: 'religion', header: 'Agama', required: false, example: 'Islam', width: 10 },
       { key: 'nationality', header: 'Kewarganegaraan', required: false, example: 'Indonesia', width: 15 },
@@ -209,7 +273,7 @@ export async function GET() {
       { key: 'province', header: 'Provinsi', required: false, example: 'Jawa Timur', width: 15 },
       { key: 'postalCode', header: 'Kode Pos', required: false, example: '66171', width: 10 },
       { key: 'phone', header: 'Telepon', required: false, example: '081234567890', width: 15 },
-      { key: 'email', header: 'Email', required: false, example: 'fadli@email.com', width: 25 },
+      { key: 'email', header: 'Email', required: false, example: '', width: 25 },
       { key: 'fatherName', header: 'Nama Ayah', required: true, example: 'Budi Rahman', width: 20 },
       { key: 'fatherJob', header: 'Pekerjaan Ayah', required: false, example: 'Guru', width: 20 },
       { key: 'fatherPhone', header: 'Telepon Ayah', required: false, example: '081234567891', width: 15 },
@@ -224,7 +288,7 @@ export async function GET() {
       { key: 'guardianRelation', header: 'Hubungan Wali', required: false, example: '', width: 15 },
       { key: 'institutionType', header: 'Jenis Institusi', required: true, example: 'SD', width: 15 },
       { key: 'grade', header: 'Kelas', required: false, example: '1', width: 10 },
-      { key: 'enrollmentDate', header: 'Tanggal Masuk', required: true, example: '2024-07-15', width: 15 },
+      { key: 'enrollmentDate', header: 'Tanggal Masuk', required: true, example: '15/07/2024', width: 15 },
       { key: 'enrollmentYear', header: 'Tahun Ajaran', required: true, example: '2024/2025', width: 15 },
       { key: 'previousSchool', header: 'Sekolah Asal', required: false, example: 'TK Dharma Wanita', width: 25 },
       { key: 'specialNeeds', header: 'Kebutuhan Khusus', required: false, example: '', width: 20 },
