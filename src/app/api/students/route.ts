@@ -46,6 +46,7 @@ const createStudentSchema = z.object({
   specialNeeds: z.string().optional().nullable(),
   notes: z.string().optional().nullable(),
   photo: z.string().optional().nullable(),
+  isOrphan: z.boolean().optional().default(false),
 });
 
 export async function GET(request: NextRequest) {

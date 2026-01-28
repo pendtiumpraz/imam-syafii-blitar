@@ -234,51 +234,75 @@ export default function SiswaPage() {
 
       <main className="p-6">
         {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-4 mb-8">
           <Card className="border-l-4 border-l-blue-500">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 mb-1">Total Siswa</p>
-                  <p className="text-2xl font-bold">{stats.total}</p>
-                </div>
-                <Users className="w-8 h-8 text-blue-500" />
+            <CardContent className="pt-4 pb-4">
+              <div className="flex flex-col">
+                <p className="text-xs text-gray-600 mb-1">Total Siswa</p>
+                <p className="text-xl font-bold">{stats.total}</p>
               </div>
             </CardContent>
           </Card>
 
           <Card className="border-l-4 border-l-yellow-500">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 mb-1">KB-TK</p>
-                  <p className="text-2xl font-bold">{stats.kb_tk}</p>
-                </div>
-                <Baby className="w-8 h-8 text-yellow-500" />
+            <CardContent className="pt-4 pb-4">
+              <div className="flex flex-col">
+                <p className="text-xs text-gray-600 mb-1">KB-TK</p>
+                <p className="text-xl font-bold">{stats.kb_tk}</p>
               </div>
             </CardContent>
           </Card>
 
           <Card className="border-l-4 border-l-green-500">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 mb-1">SD</p>
-                  <p className="text-2xl font-bold">{stats.sd}</p>
-                </div>
-                <School className="w-8 h-8 text-green-500" />
+            <CardContent className="pt-4 pb-4">
+              <div className="flex flex-col">
+                <p className="text-xs text-gray-600 mb-1">SD</p>
+                <p className="text-xl font-bold">{stats.sd}</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-l-4 border-l-emerald-500">
+            <CardContent className="pt-4 pb-4">
+              <div className="flex flex-col">
+                <p className="text-xs text-gray-600 mb-1">MTQ</p>
+                <p className="text-xl font-bold">{stats.mtq}</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-l-4 border-l-cyan-500">
+            <CardContent className="pt-4 pb-4">
+              <div className="flex flex-col">
+                <p className="text-xs text-gray-600 mb-1">MSWi</p>
+                <p className="text-xl font-bold">{stats.mswi}</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-l-4 border-l-pink-500">
+            <CardContent className="pt-4 pb-4">
+              <div className="flex flex-col">
+                <p className="text-xs text-gray-600 mb-1">MSWa</p>
+                <p className="text-xl font-bold">{stats.mswa}</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-l-4 border-l-indigo-500">
+            <CardContent className="pt-4 pb-4">
+              <div className="flex flex-col">
+                <p className="text-xs text-gray-600 mb-1">SMP</p>
+                <p className="text-xl font-bold">{stats.smp}</p>
               </div>
             </CardContent>
           </Card>
 
           <Card className="border-l-4 border-l-purple-500">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 mb-1">Pesantren</p>
-                  <p className="text-2xl font-bold">{stats.mtq + stats.mswi + stats.mswa + stats.smp + stats.sma}</p>
-                </div>
-                <GraduationCap className="w-8 h-8 text-purple-500" />
+            <CardContent className="pt-4 pb-4">
+              <div className="flex flex-col">
+                <p className="text-xs text-gray-600 mb-1">SMA</p>
+                <p className="text-xl font-bold">{stats.sma}</p>
               </div>
             </CardContent>
           </Card>
@@ -335,10 +359,10 @@ export default function SiswaPage() {
               </Button>
             </div>
           </div>
-        </div>
+        </div >
 
         {/* Students Table */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
+        < div className="bg-white rounded-lg shadow overflow-hidden" >
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50 border-b">
@@ -409,13 +433,13 @@ export default function SiswaPage() {
                       </td>
                       <td className="px-4 py-4">
                         <span className={`px-2 py-1 text-xs font-medium rounded-full ${student.institutionType === 'KB_TK' ? 'bg-yellow-100 text-yellow-800' :
-                            student.institutionType === 'SD' ? 'bg-green-100 text-green-800' :
-                              student.institutionType === 'MTQ' ? 'bg-emerald-100 text-emerald-800' :
-                                student.institutionType === 'MSWi' ? 'bg-blue-100 text-blue-800' :
-                                  student.institutionType === 'MSWa' ? 'bg-pink-100 text-pink-800' :
-                                    student.institutionType === 'SMP' ? 'bg-indigo-100 text-indigo-800' :
-                                      student.institutionType === 'SMA' ? 'bg-purple-100 text-purple-800' :
-                                        'bg-gray-100 text-gray-800'
+                          student.institutionType === 'SD' ? 'bg-green-100 text-green-800' :
+                            student.institutionType === 'MTQ' ? 'bg-emerald-100 text-emerald-800' :
+                              student.institutionType === 'MSWi' ? 'bg-blue-100 text-blue-800' :
+                                student.institutionType === 'MSWa' ? 'bg-pink-100 text-pink-800' :
+                                  student.institutionType === 'SMP' ? 'bg-indigo-100 text-indigo-800' :
+                                    student.institutionType === 'SMA' ? 'bg-purple-100 text-purple-800' :
+                                      'bg-gray-100 text-gray-800'
                           }`}>
                           {student.institutionType === 'KB_TK' ? 'KB-TK' : student.institutionType}
                         </span>
@@ -434,9 +458,9 @@ export default function SiswaPage() {
                       </td>
                       <td className="px-4 py-4">
                         <span className={`px-2 py-1 text-xs font-medium rounded-full ${student.status === 'ACTIVE' ? 'bg-green-100 text-green-800' :
-                            student.status === 'GRADUATED' ? 'bg-blue-100 text-blue-800' :
-                              student.status === 'TRANSFERRED' ? 'bg-yellow-100 text-yellow-800' :
-                                'bg-red-100 text-red-800'
+                          student.status === 'GRADUATED' ? 'bg-blue-100 text-blue-800' :
+                            student.status === 'TRANSFERRED' ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-red-100 text-red-800'
                           }`}>
                           {student.status === 'ACTIVE' ? 'Aktif' :
                             student.status === 'GRADUATED' ? 'Lulus' :
@@ -494,227 +518,233 @@ export default function SiswaPage() {
               </tbody>
             </table>
           </div>
-        </div>
+        </div >
 
         {/* Student Detail Modal */}
-        {selectedStudent && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6">
-                <div className="flex justify-between items-start mb-4">
-                  <h2 className="text-xl font-bold">Detail Siswa</h2>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={() => setSelectedStudent(null)}
-                  >
-                    ×
-                  </Button>
-                </div>
-
-                <div className="space-y-4">
-                  {/* Photo and Basic Info */}
-                  <div className="flex gap-4">
-                    <div className="w-24 h-24 rounded-lg bg-gray-200 flex items-center justify-center">
-                      {selectedStudent.photo ? (
-                        <img src={selectedStudent.photo} alt={selectedStudent.fullName} className="w-full h-full rounded-lg object-cover" />
-                      ) : (
-                        <User className="w-12 h-12 text-gray-500" />
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold">{selectedStudent.fullName}</h3>
-                      {selectedStudent.nickname && (
-                        <p className="text-sm text-gray-600">Panggilan: {selectedStudent.nickname}</p>
-                      )}
-                      <p className="text-sm text-gray-600">NIS: {selectedStudent.nis}</p>
-                      {selectedStudent.nisn && (
-                        <p className="text-sm text-gray-600">NISN: {selectedStudent.nisn}</p>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Personal Information */}
-                  <div>
-                    <h4 className="font-semibold mb-2">Informasi Pribadi</h4>
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div>
-                        <span className="text-gray-600">Jenis Kelamin:</span>
-                        <span className="ml-2">{selectedStudent.gender === 'MALE' ? 'Laki-laki' : 'Perempuan'}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-600">Golongan Darah:</span>
-                        <span className="ml-2">{selectedStudent.bloodType || '-'}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-600">Tempat Lahir:</span>
-                        <span className="ml-2">{selectedStudent.birthPlace}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-600">Tanggal Lahir:</span>
-                        <span className="ml-2">{formatDate(selectedStudent.birthDate)}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Contact Information */}
-                  <div>
-                    <h4 className="font-semibold mb-2">Informasi Kontak</h4>
-                    <div className="space-y-1 text-sm">
-                      <div className="flex items-center gap-2">
-                        <MapPin className="w-4 h-4 text-gray-400" />
-                        <span>{selectedStudent.address}, {selectedStudent.city}</span>
-                      </div>
-                      {selectedStudent.phone && (
-                        <div className="flex items-center gap-2">
-                          <Phone className="w-4 h-4 text-gray-400" />
-                          <span>{selectedStudent.phone}</span>
-                        </div>
-                      )}
-                      {selectedStudent.email && (
-                        <div className="flex items-center gap-2">
-                          <Mail className="w-4 h-4 text-gray-400" />
-                          <span>{selectedStudent.email}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Parent Information */}
-                  <div>
-                    <h4 className="font-semibold mb-2">Informasi Orang Tua</h4>
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div>
-                        <p className="text-gray-600">Nama Ayah:</p>
-                        <p className="font-medium">{selectedStudent.fatherName}</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-600">Nama Ibu:</p>
-                        <p className="font-medium">{selectedStudent.motherName}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Academic Information */}
-                  <div>
-                    <h4 className="font-semibold mb-2">Informasi Akademik</h4>
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div>
-                        <span className="text-gray-600">Institusi:</span>
-                        <span className="ml-2">{selectedStudent.institutionType}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-600">Kelas:</span>
-                        <span className="ml-2">{selectedStudent.grade || '-'}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-600">Tahun Masuk:</span>
-                        <span className="ml-2">{selectedStudent.enrollmentYear}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-600">Status:</span>
-                        <span className="ml-2">{selectedStudent.status}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-6 flex justify-end gap-2">
-                  {selectedStudent.status === 'ACTIVE' && (
+        {
+          selectedStudent && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                <div className="p-6">
+                  <div className="flex justify-between items-start mb-4">
+                    <h2 className="text-xl font-bold">Detail Siswa</h2>
                     <Button
-                      onClick={() => {
-                        setGraduatingStudent(selectedStudent)
-                        setShowGraduateConfirm(true)
-                      }}
-                      className="bg-blue-600 hover:bg-blue-700"
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => setSelectedStudent(null)}
                     >
-                      <GraduationCap className="w-4 h-4 mr-2" />
-                      Luluskan Siswa
+                      ×
                     </Button>
-                  )}
-                  <Button
-                    onClick={() => setSelectedStudent(null)}
-                    className="bg-green-600 hover:bg-green-700"
-                  >
-                    Tutup
-                  </Button>
+                  </div>
+
+                  <div className="space-y-4">
+                    {/* Photo and Basic Info */}
+                    <div className="flex gap-4">
+                      <div className="w-24 h-24 rounded-lg bg-gray-200 flex items-center justify-center">
+                        {selectedStudent.photo ? (
+                          <img src={selectedStudent.photo} alt={selectedStudent.fullName} className="w-full h-full rounded-lg object-cover" />
+                        ) : (
+                          <User className="w-12 h-12 text-gray-500" />
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-lg font-semibold">{selectedStudent.fullName}</h3>
+                        {selectedStudent.nickname && (
+                          <p className="text-sm text-gray-600">Panggilan: {selectedStudent.nickname}</p>
+                        )}
+                        <p className="text-sm text-gray-600">NIS: {selectedStudent.nis}</p>
+                        {selectedStudent.nisn && (
+                          <p className="text-sm text-gray-600">NISN: {selectedStudent.nisn}</p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Personal Information */}
+                    <div>
+                      <h4 className="font-semibold mb-2">Informasi Pribadi</h4>
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div>
+                          <span className="text-gray-600">Jenis Kelamin:</span>
+                          <span className="ml-2">{selectedStudent.gender === 'MALE' ? 'Laki-laki' : 'Perempuan'}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Golongan Darah:</span>
+                          <span className="ml-2">{selectedStudent.bloodType || '-'}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Tempat Lahir:</span>
+                          <span className="ml-2">{selectedStudent.birthPlace}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Tanggal Lahir:</span>
+                          <span className="ml-2">{formatDate(selectedStudent.birthDate)}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Contact Information */}
+                    <div>
+                      <h4 className="font-semibold mb-2">Informasi Kontak</h4>
+                      <div className="space-y-1 text-sm">
+                        <div className="flex items-center gap-2">
+                          <MapPin className="w-4 h-4 text-gray-400" />
+                          <span>{selectedStudent.address}, {selectedStudent.city}</span>
+                        </div>
+                        {selectedStudent.phone && (
+                          <div className="flex items-center gap-2">
+                            <Phone className="w-4 h-4 text-gray-400" />
+                            <span>{selectedStudent.phone}</span>
+                          </div>
+                        )}
+                        {selectedStudent.email && (
+                          <div className="flex items-center gap-2">
+                            <Mail className="w-4 h-4 text-gray-400" />
+                            <span>{selectedStudent.email}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Parent Information */}
+                    <div>
+                      <h4 className="font-semibold mb-2">Informasi Orang Tua</h4>
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div>
+                          <p className="text-gray-600">Nama Ayah:</p>
+                          <p className="font-medium">{selectedStudent.fatherName}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-600">Nama Ibu:</p>
+                          <p className="font-medium">{selectedStudent.motherName}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Academic Information */}
+                    <div>
+                      <h4 className="font-semibold mb-2">Informasi Akademik</h4>
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div>
+                          <span className="text-gray-600">Institusi:</span>
+                          <span className="ml-2">{selectedStudent.institutionType}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Kelas:</span>
+                          <span className="ml-2">{selectedStudent.grade || '-'}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Tahun Masuk:</span>
+                          <span className="ml-2">{selectedStudent.enrollmentYear}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Status:</span>
+                          <span className="ml-2">{selectedStudent.status}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 flex justify-end gap-2">
+                    {selectedStudent.status === 'ACTIVE' && (
+                      <Button
+                        onClick={() => {
+                          setGraduatingStudent(selectedStudent)
+                          setShowGraduateConfirm(true)
+                        }}
+                        className="bg-blue-600 hover:bg-blue-700"
+                      >
+                        <GraduationCap className="w-4 h-4 mr-2" />
+                        Luluskan Siswa
+                      </Button>
+                    )}
+                    <Button
+                      onClick={() => setSelectedStudent(null)}
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      Tutup
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          )
+        }
 
         {/* Edit Student Form Sidebar */}
-        {editingStudent && (
-          <StudentEditForm
-            student={editingStudent}
-            isOpen={showEditForm}
-            onClose={() => {
-              setShowEditForm(false)
-              setEditingStudent(null)
-            }}
-            onSubmit={async (updatedData) => {
-              const response = await fetch(`/api/students/${editingStudent.id}`, {
-                method: 'PUT',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(updatedData),
-              })
+        {
+          editingStudent && (
+            <StudentEditForm
+              student={editingStudent}
+              isOpen={showEditForm}
+              onClose={() => {
+                setShowEditForm(false)
+                setEditingStudent(null)
+              }}
+              onSubmit={async (updatedData) => {
+                const response = await fetch(`/api/students/${editingStudent.id}`, {
+                  method: 'PUT',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify(updatedData),
+                })
 
-              if (!response.ok) {
-                const errorData = await response.json()
-                throw new Error(errorData.error || 'Gagal memperbarui data siswa')
-              }
+                if (!response.ok) {
+                  const errorData = await response.json()
+                  throw new Error(errorData.error || 'Gagal memperbarui data siswa')
+                }
 
-              const updatedStudent = await response.json()
-              setStudents((students || []).map(s => s.id === editingStudent.id ? updatedStudent : s))
-              setShowEditForm(false)
-              setEditingStudent(null)
-            }}
-          />
-        )}
+                const updatedStudent = await response.json()
+                setStudents((students || []).map(s => s.id === editingStudent.id ? updatedStudent : s))
+                setShowEditForm(false)
+                setEditingStudent(null)
+              }}
+            />
+          )
+        }
 
         {/* Add Student Form */}
-        {showForm && (
-          <StudentEditForm
-            student={{
-              id: '',
-              nis: '',
-              fullName: '',
-              birthPlace: '',
-              birthDate: new Date(),
-              gender: 'MALE',
-              address: '',
-              city: '',
-              fatherName: '',
-              motherName: '',
-              institutionType: 'SD',
-              enrollmentYear: new Date().getFullYear().toString(),
-              status: 'ACTIVE'
-            }}
-            isOpen={showForm}
-            onClose={() => setShowForm(false)}
-            onSubmit={async (data) => {
-              const response = await fetch('/api/students', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(data),
-              })
+        {
+          showForm && (
+            <StudentEditForm
+              student={{
+                id: '',
+                nis: '',
+                fullName: '',
+                birthPlace: '',
+                birthDate: new Date(),
+                gender: 'MALE',
+                address: '',
+                city: '',
+                fatherName: '',
+                motherName: '',
+                institutionType: 'SD',
+                enrollmentYear: new Date().getFullYear().toString(),
+                status: 'ACTIVE'
+              }}
+              isOpen={showForm}
+              onClose={() => setShowForm(false)}
+              onSubmit={async (data) => {
+                const response = await fetch('/api/students', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify(data),
+                })
 
-              if (!response.ok) {
-                const errorData = await response.json()
-                throw new Error(errorData.error || 'Gagal menambahkan siswa')
-              }
+                if (!response.ok) {
+                  const errorData = await response.json()
+                  throw new Error(errorData.error || 'Gagal menambahkan siswa')
+                }
 
-              const newStudent = await response.json()
-              setStudents([...students, newStudent])
-              setShowForm(false)
-            }}
-          />
-        )}
+                const newStudent = await response.json()
+                setStudents([...students, newStudent])
+                setShowForm(false)
+              }}
+            />
+          )
+        }
 
         {/* Bulk Operations Modal */}
         <BulkOperationsModal
@@ -729,69 +759,71 @@ export default function SiswaPage() {
         />
 
         {/* Graduate Confirmation Dialog */}
-        {showGraduateConfirm && graduatingStudent && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg max-w-md w-full p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
-                  <GraduationCap className="w-6 h-6 text-blue-600" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold">Konfirmasi Kelulusan</h3>
-                  <p className="text-sm text-gray-600">Apakah Anda yakin ingin meluluskan siswa ini?</p>
-                </div>
-              </div>
-
-              <div className="bg-gray-50 rounded-lg p-4 mb-4">
-                <div className="space-y-2 text-sm">
-                  <div>
-                    <span className="text-gray-600">Nama:</span>
-                    <span className="ml-2 font-medium">{graduatingStudent.fullName}</span>
+        {
+          showGraduateConfirm && graduatingStudent && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <div className="bg-white rounded-lg max-w-md w-full p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+                    <GraduationCap className="w-6 h-6 text-blue-600" />
                   </div>
                   <div>
-                    <span className="text-gray-600">NIS:</span>
-                    <span className="ml-2 font-medium">{graduatingStudent.nis}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">Institusi:</span>
-                    <span className="ml-2 font-medium">{graduatingStudent.institutionType}</span>
+                    <h3 className="text-lg font-semibold">Konfirmasi Kelulusan</h3>
+                    <p className="text-sm text-gray-600">Apakah Anda yakin ingin meluluskan siswa ini?</p>
                   </div>
                 </div>
-              </div>
 
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
-                <p className="text-sm text-blue-800">
-                  Dengan meluluskan siswa ini:
-                </p>
-                <ul className="list-disc list-inside text-sm text-blue-700 mt-2 space-y-1">
-                  <li>Status siswa akan diubah menjadi LULUS</li>
-                  <li>Siswa akan dipindahkan ke daftar Alumni</li>
-                  <li>Data siswa akan tetap tersimpan</li>
-                </ul>
-              </div>
+                <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                  <div className="space-y-2 text-sm">
+                    <div>
+                      <span className="text-gray-600">Nama:</span>
+                      <span className="ml-2 font-medium">{graduatingStudent.fullName}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">NIS:</span>
+                      <span className="ml-2 font-medium">{graduatingStudent.nis}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Institusi:</span>
+                      <span className="ml-2 font-medium">{graduatingStudent.institutionType}</span>
+                    </div>
+                  </div>
+                </div>
 
-              <div className="flex gap-2 justify-end">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setShowGraduateConfirm(false)
-                    setGraduatingStudent(null)
-                  }}
-                >
-                  Batal
-                </Button>
-                <Button
-                  onClick={handleGraduateStudent}
-                  className="bg-blue-600 hover:bg-blue-700"
-                >
-                  <GraduationCap className="w-4 h-4 mr-2" />
-                  Ya, Luluskan
-                </Button>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                  <p className="text-sm text-blue-800">
+                    Dengan meluluskan siswa ini:
+                  </p>
+                  <ul className="list-disc list-inside text-sm text-blue-700 mt-2 space-y-1">
+                    <li>Status siswa akan diubah menjadi LULUS</li>
+                    <li>Siswa akan dipindahkan ke daftar Alumni</li>
+                    <li>Data siswa akan tetap tersimpan</li>
+                  </ul>
+                </div>
+
+                <div className="flex gap-2 justify-end">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setShowGraduateConfirm(false)
+                      setGraduatingStudent(null)
+                    }}
+                  >
+                    Batal
+                  </Button>
+                  <Button
+                    onClick={handleGraduateStudent}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    <GraduationCap className="w-4 h-4 mr-2" />
+                    Ya, Luluskan
+                  </Button>
+                </div>
               </div>
             </div>
-          </div>
-        )}
-      </main>
-    </div>
+          )
+        }
+      </main >
+    </div >
   )
 }

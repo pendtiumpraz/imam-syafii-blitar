@@ -148,6 +148,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Normalize gender values (L/P to MALE/FEMALE)
+    let normalizedGender = gender;
+    const genderUpper = String(gender).toUpperCase().trim();
+    if (['L', 'LAKI-LAKI', 'LAKI'].includes(genderUpper)) {
+      normalizedGender = 'MALE';
+    } else if (['P', 'PEREMPUAN', 'WANITA'].includes(genderUpper)) {
+      normalizedGender = 'FEMALE';
+    }
+
     // Check if NIP already exists
     if (nip) {
       const existingTeacher = await prisma.teachers.findUnique({
@@ -166,7 +175,7 @@ export async function POST(request: NextRequest) {
         nip: nip || null,
         name,
         title: title || null,
-        gender,
+        gender: normalizedGender,
         birthPlace: birthPlace || null,
         birthDate: birthDate ? new Date(birthDate) : null,
         phone: phone || null,
@@ -250,6 +259,16 @@ export async function PUT(request: NextRequest) {
     // Process number fields
     if (updateData.experience) {
       updateData.experience = parseInt(updateData.experience);
+    }
+
+    // Normalize gender values (L/P to MALE/FEMALE)
+    if (updateData.gender) {
+      const genderUpper = String(updateData.gender).toUpperCase().trim();
+      if (['L', 'LAKI-LAKI', 'LAKI'].includes(genderUpper)) {
+        updateData.gender = 'MALE';
+      } else if (['P', 'PEREMPUAN', 'WANITA'].includes(genderUpper)) {
+        updateData.gender = 'FEMALE';
+      }
     }
 
     const teacher = await prisma.teachers.update({
