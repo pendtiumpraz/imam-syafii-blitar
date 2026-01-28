@@ -69,8 +69,15 @@ export default function SiswaPage() {
     try {
       const params = new URLSearchParams()
       if (selectedType !== 'all') params.set('institutionType', selectedType)
+      // Add timestamp to bypass any caching
+      params.set('_t', Date.now().toString())
 
-      const response = await fetch(`/api/students?${params}`)
+      const response = await fetch(`/api/students?${params}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+        }
+      })
       if (response.ok) {
         const data = await response.json()
         setStudents(data.data)

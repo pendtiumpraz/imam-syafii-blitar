@@ -69,10 +69,15 @@ export async function GET(request: NextRequest) {
       userId: session.user.id
     });
 
-    // Check cache first
-    const cached = cache.get(cacheKey);
-    if (cached) {
-      return withETag(cached, request);
+    // Skip cache if _t (timestamp) param exists - means client wants fresh data
+    const skipCache = searchParams._t;
+
+    // Check cache first (only if not skipping)
+    if (!skipCache) {
+      const cached = cache.get(cacheKey);
+      if (cached) {
+        return withETag(cached, request);
+      }
     }
 
     // Build where clause with better structure
