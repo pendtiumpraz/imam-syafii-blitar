@@ -4,13 +4,13 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { signOut, useSession } from 'next-auth/react'
-import { 
-  Home, 
-  DollarSign, 
-  Calendar, 
-  BookOpen, 
-  Video, 
-  Users, 
+import {
+  Home,
+  DollarSign,
+  Calendar,
+  BookOpen,
+  Video,
+  Users,
   Settings,
   Menu,
   X,
@@ -170,6 +170,11 @@ const menuItems: MenuItem[] = [
         title: 'Ujian',
         href: '/akademik/exams',
         icon: ClipboardCheck
+      },
+      {
+        title: 'Tahun Ajaran',
+        href: '/akademik/academic-years',
+        icon: Calendar
       }
     ]
   },
@@ -375,18 +380,18 @@ export function Sidebar() {
     if (item.adminOnly && session?.user?.role !== 'ADMIN') {
       return false
     }
-    
+
     // Check ustadz-only items
     if (item.ustadzOnly && !session?.user?.isUstadz && !['ADMIN', 'SUPER_ADMIN'].includes(session?.user?.role || '')) {
       return false
     }
-    
+
     return true
   })
 
   const toggleExpanded = (href: string) => {
-    setExpandedItems(prev => 
-      prev.includes(href) 
+    setExpandedItems(prev =>
+      prev.includes(href)
         ? prev.filter(item => item !== href)
         : [...prev, href]
     )
@@ -413,7 +418,7 @@ export function Sidebar() {
           const hasChildren = item.children && item.children.length > 0
           const isExpanded = expandedItems.includes(item.href)
           const isChildActive = hasChildren && item.children?.some(child => pathname === child.href)
-          
+
           return (
             <div key={item.href}>
               {hasChildren ? (
@@ -451,13 +456,13 @@ export function Sidebar() {
                   <span>{item.title}</span>
                 </Link>
               )}
-              
+
               {hasChildren && isExpanded && (
                 <div className="ml-6 mt-1 space-y-1">
                   {(item.children || []).map((child) => {
                     const ChildIcon = child.icon
                     const isChildActiveItem = pathname === child.href
-                    
+
                     return (
                       <Link
                         key={child.href}
