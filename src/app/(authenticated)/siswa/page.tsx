@@ -53,6 +53,8 @@ export default function SiswaPage() {
   const [importValidationRules, setImportValidationRules] = useState<any[]>([])
   const [showGraduateConfirm, setShowGraduateConfirm] = useState(false)
   const [graduatingStudent, setGraduatingStudent] = useState<Student | null>(null)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deletingStudent, setDeletingStudent] = useState<Student | null>(null)
 
   useEffect(() => {
     fetchStudents()
@@ -197,6 +199,37 @@ export default function SiswaPage() {
     } catch (error) {
       console.error('Error graduating student:', error)
       alert(error instanceof Error ? error.message : 'Gagal meluluskan siswa')
+    }
+  }
+
+  const handleDeleteStudent = async () => {
+    if (!deletingStudent) return
+
+    try {
+      const response = await fetch(`/api/students/${deletingStudent.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to delete student')
+      }
+
+      alert(`Siswa ${deletingStudent.fullName} telah dihapus!`)
+
+      // Refresh students list
+      fetchStudents()
+
+      // Close dialogs
+      setShowDeleteConfirm(false)
+      setDeletingStudent(null)
+      setSelectedStudent(null)
+    } catch (error) {
+      console.error('Error deleting student:', error)
+      alert(error instanceof Error ? error.message : 'Gagal menghapus siswa')
     }
   }
 
@@ -507,6 +540,11 @@ export default function SiswaPage() {
                             size="icon"
                             variant="ghost"
                             className="h-8 w-8 text-red-600 hover:text-red-700"
+                            onClick={() => {
+                              setDeletingStudent(student)
+                              setShowDeleteConfirm(true)
+                            }}
+                            title="Hapus Siswa"
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
@@ -823,6 +861,70 @@ export default function SiswaPage() {
             </div>
           )
         }
+
+        {/* Delete Confirmation Dialog */}
+        {showDeleteConfirm && deletingStudent && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg max-w-md w-full p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
+                  <Trash2 className="w-6 h-6 text-red-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold">Konfirmasi Hapus</h3>
+                  <p className="text-sm text-gray-600">Apakah Anda yakin ingin menghapus siswa ini?</p>
+                </div>
+              </div>
+
+              <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                <div className="space-y-2 text-sm">
+                  <div>
+                    <span className="text-gray-600">Nama:</span>
+                    <span className="ml-2 font-medium">{deletingStudent.fullName}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">NIS:</span>
+                    <span className="ml-2 font-medium">{deletingStudent.nis}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Institusi:</span>
+                    <span className="ml-2 font-medium">{deletingStudent.institutionType}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+                <p className="text-sm text-red-800">
+                  Dengan menghapus siswa ini:
+                </p>
+                <ul className="list-disc list-inside text-sm text-red-700 mt-2 space-y-1">
+                  <li>Status siswa akan diubah menjadi KELUAR</li>
+                  <li>Siswa tidak akan muncul di daftar aktif</li>
+                  <li>Data siswa tetap tersimpan untuk arsip</li>
+                </ul>
+              </div>
+
+              <div className="flex gap-2 justify-end">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowDeleteConfirm(false)
+                    setDeletingStudent(null)
+                  }}
+                >
+                  Batal
+                </Button>
+                <Button
+                  onClick={handleDeleteStudent}
+                  className="bg-red-600 hover:bg-red-700"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Ya, Hapus
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </main >
     </div >
   )
