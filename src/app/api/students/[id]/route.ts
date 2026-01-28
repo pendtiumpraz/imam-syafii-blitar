@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { z } from 'zod';
+import { invalidateCache } from '@/lib/redis-cache';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
@@ -198,6 +199,9 @@ export async function DELETE(
         updatedAt: new Date(),
       },
     });
+
+    // Invalidate students cache
+    invalidateCache.students();
 
     return NextResponse.json(deletedStudent);
   } catch (error) {

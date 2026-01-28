@@ -18,20 +18,22 @@ export async function GET(request: NextRequest) {
     const format = searchParams.get('format') || 'json';
 
     // Build where clause
-    const where: any = {};
-    
+    const where: any = {
+      isDeleted: false, // Exclude soft-deleted records
+    };
+
     if (institutionType && institutionType !== 'all') {
       where.institutionType = institutionType;
     }
-    
+
     if (status && status !== 'all') {
       where.status = status;
     }
-    
+
     if (enrollmentYear && enrollmentYear !== 'all') {
       where.enrollmentYear = enrollmentYear;
     }
-    
+
     if (grade && grade !== 'all') {
       where.grade = grade;
     }
