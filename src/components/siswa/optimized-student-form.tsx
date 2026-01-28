@@ -584,9 +584,6 @@ export const OptimizedStudentEditForm = memo(({
                     options={[
                       { value: 'KB_TK', label: 'KB-TK' },
                       { value: 'SD', label: 'SD' },
-                      { value: 'MTQ', label: 'MTQ' },
-                      { value: 'MSWi', label: 'MSWi' },
-                      { value: 'MSWa', label: 'MSWa' },
                       { value: 'SMP', label: 'SMP' },
                       { value: 'SMA', label: 'SMA' }
                     ]}

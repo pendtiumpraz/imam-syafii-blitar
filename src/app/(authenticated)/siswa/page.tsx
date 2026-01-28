@@ -40,7 +40,7 @@ interface Student {
 export default function SiswaPage() {
   const [students, setStudents] = useState<Student[]>([])
   const [loading, setLoading] = useState(true)
-  const [selectedType, setSelectedType] = useState<'all' | 'KB_TK' | 'SD' | 'MTQ' | 'MSWi' | 'MSWa' | 'SMP' | 'SMA'>('all')
+  const [selectedType, setSelectedType] = useState<'all' | 'KB_TK' | 'SD' | 'SMP' | 'SMA'>('all')
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null)
   const [showForm, setShowForm] = useState(false)
@@ -267,7 +267,7 @@ export default function SiswaPage() {
 
       <main className="p-6">
         {/* Statistics Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-4 mb-8">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
           <Card className="border-l-4 border-l-blue-500">
             <CardContent className="pt-4 pb-4">
               <div className="flex flex-col">
@@ -291,33 +291,6 @@ export default function SiswaPage() {
               <div className="flex flex-col">
                 <p className="text-xs text-gray-600 mb-1">SD</p>
                 <p className="text-xl font-bold">{stats.sd}</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-l-4 border-l-emerald-500">
-            <CardContent className="pt-4 pb-4">
-              <div className="flex flex-col">
-                <p className="text-xs text-gray-600 mb-1">MTQ</p>
-                <p className="text-xl font-bold">{stats.mtq}</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-l-4 border-l-cyan-500">
-            <CardContent className="pt-4 pb-4">
-              <div className="flex flex-col">
-                <p className="text-xs text-gray-600 mb-1">MSWi</p>
-                <p className="text-xl font-bold">{stats.mswi}</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-l-4 border-l-pink-500">
-            <CardContent className="pt-4 pb-4">
-              <div className="flex flex-col">
-                <p className="text-xs text-gray-600 mb-1">MSWa</p>
-                <p className="text-xl font-bold">{stats.mswa}</p>
               </div>
             </CardContent>
           </Card>
@@ -359,7 +332,7 @@ export default function SiswaPage() {
 
               {/* Filter by Institution */}
               <div className="flex flex-wrap gap-2">
-                {(['all', 'KB_TK', 'SD', 'MTQ', 'MSWi', 'MSWa', 'SMP', 'SMA'] as const).map((type) => (
+                {(['all', 'KB_TK', 'SD', 'SMP', 'SMA'] as const).map((type) => (
                   <Button
                     key={type}
                     variant={selectedType === type ? 'default' : 'outline'}
@@ -898,9 +871,9 @@ export default function SiswaPage() {
                   Dengan menghapus siswa ini:
                 </p>
                 <ul className="list-disc list-inside text-sm text-red-700 mt-2 space-y-1">
-                  <li>Status siswa akan diubah menjadi KELUAR</li>
                   <li>Siswa tidak akan muncul di daftar aktif</li>
                   <li>Data siswa tetap tersimpan untuk arsip</li>
+                  <li>Siswa dapat dipulihkan kembali jika diperlukan</li>
                 </ul>
               </div>
 

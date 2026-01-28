@@ -248,6 +248,14 @@ export async function PUT(request: NextRequest) {
       updateData.achievements = JSON.stringify(updateData.achievements);
     }
 
+    // Convert empty strings to null for optional fields
+    const optionalFields = ['nip', 'title', 'email', 'major', 'university', 'bio', 'specialization', 'photo', 'address'];
+    for (const field of optionalFields) {
+      if (updateData[field] === '') {
+        updateData[field] = null;
+      }
+    }
+
     // Process date fields
     if (updateData.birthDate) {
       updateData.birthDate = new Date(updateData.birthDate);

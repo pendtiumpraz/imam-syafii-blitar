@@ -188,11 +188,13 @@ export async function DELETE(
       );
     }
 
-    // Soft delete by updating status
+    // Soft delete using isDeleted flag (keeps status unchanged)
     const deletedStudent = await prisma.students.update({
       where: { id: params.id },
       data: {
-        status: 'DROPPED_OUT',
+        isDeleted: true,
+        deletedAt: new Date(),
+        deletedBy: session.user.id,
         updatedAt: new Date(),
       },
     });

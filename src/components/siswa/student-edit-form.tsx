@@ -82,7 +82,7 @@ export function StudentEditForm({ student, isOpen, onClose, onSubmit }: StudentE
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!formData.nis || !formData.fullName || !formData.birthPlace || !formData.address || !formData.city || !formData.fatherName || !formData.motherName) {
       setError('Mohon lengkapi semua field yang wajib')
       return
@@ -105,11 +105,11 @@ export function StudentEditForm({ student, isOpen, onClose, onSubmit }: StudentE
   return (
     <>
       {/* Backdrop */}
-      <div 
+      <div
         className="fixed inset-0 bg-black bg-opacity-50 z-50 transition-opacity duration-300"
         onClick={onClose}
       />
-      
+
       {/* Slide-out Sidebar */}
       <div className={`fixed top-0 right-0 h-full w-full md:w-1/2 lg:w-1/3 xl:w-1/4 bg-white shadow-xl z-50 transform transition-transform duration-300 overflow-y-auto ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
         <div className="p-6">
@@ -146,7 +146,7 @@ export function StudentEditForm({ student, isOpen, onClose, onSubmit }: StudentE
                     placeholder="Nomor Induk Siswa Nasional"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium mb-2">
                     NIS *
@@ -375,9 +375,6 @@ export function StudentEditForm({ student, isOpen, onClose, onSubmit }: StudentE
                   >
                     <option value="KB_TK">KB-TK</option>
                     <option value="SD">SD</option>
-                    <option value="MTQ">MTQ</option>
-                    <option value="MSWi">MSWi</option>
-                    <option value="MSWa">MSWa</option>
                     <option value="SMP">SMP</option>
                     <option value="SMA">SMA</option>
                   </select>
@@ -426,17 +423,17 @@ export function StudentEditForm({ student, isOpen, onClose, onSubmit }: StudentE
             {/* Submit Buttons */}
             <div className="sticky bottom-0 bg-white border-t pt-4 mt-6 -mx-6 px-6">
               <div className="flex gap-3">
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={onClose} 
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={onClose}
                   className="flex-1"
                   disabled={loading}
                 >
                   Batal
                 </Button>
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   className="flex-1 bg-green-600 hover:bg-green-700"
                   disabled={loading}
                 >
