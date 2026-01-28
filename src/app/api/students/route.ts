@@ -25,7 +25,7 @@ const createStudentSchema = z.object({
   province: z.string().default('Jawa Timur'),
   postalCode: z.string().optional().nullable(),
   phone: z.string().optional().nullable(),
-  email: z.string().email().optional().nullable(),
+  email: z.string().email().optional().nullable().or(z.literal('')),
   fatherName: z.string().min(1, 'Father name is required'),
   fatherJob: z.string().optional().nullable(),
   fatherPhone: z.string().optional().nullable(),
@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
   try {
     const { default: prisma } = await import('@/lib/prisma');
     const session = await getServerSession(authOptions);
-    
+
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -60,14 +60,14 @@ export async function GET(request: NextRequest) {
     // Get pagination and search parameters
     const paginationParams = getPaginationParams(request);
     const searchParams = getSearchParams(request);
-    
+
     // Generate cache key
     const cacheKey = cache.generateAPIKey('students', {
       ...paginationParams,
       ...searchParams,
       userId: session.user.id
     });
-    
+
     // Check cache first
     const cached = cache.get(cacheKey);
     if (cached) {
@@ -125,7 +125,7 @@ export async function GET(request: NextRequest) {
     }));
 
     const result = createPaginationResult(studentsWithCreators, total, paginationParams);
-    
+
     // Cache the result
     cache.set(cacheKey, result, 5 * 60 * 1000); // 5 minutes
 
@@ -143,7 +143,7 @@ export async function POST(request: NextRequest) {
   try {
     const { default: prisma } = await import('@/lib/prisma');
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -162,7 +162,7 @@ export async function POST(request: NextRequest) {
         createdBy: session.user.id,
       },
     });
-    
+
     // Invalidate students cache after creation
     invalidateCache.students();
 
@@ -174,7 +174,7 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    
+
     console.error('Error creating student:', error);
     return NextResponse.json(
       { error: 'Failed to create student' },

@@ -408,6 +408,10 @@ function validateCell(
 
     case 'email':
       value = String(value).trim().toLowerCase();
+      // Skip validation if email is empty (not required case)
+      if (!value) {
+        return { valid: true, value: null };
+      }
       const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailPattern.test(value)) {
         return { valid: false, error: `${rule.field} format email tidak valid` };

@@ -23,7 +23,7 @@ const updateStudentSchema = z.object({
   province: z.string().default('Jawa Timur'),
   postalCode: z.string().optional().nullable(),
   phone: z.string().optional().nullable(),
-  email: z.string().email().optional().nullable(),
+  email: z.string().email().optional().nullable().or(z.literal('')),
   fatherName: z.string().min(1, 'Father name is required'),
   fatherJob: z.string().optional().nullable(),
   fatherPhone: z.string().optional().nullable(),
@@ -36,7 +36,7 @@ const updateStudentSchema = z.object({
   guardianJob: z.string().optional().nullable(),
   guardianPhone: z.string().optional().nullable(),
   guardianRelation: z.string().optional().nullable(),
-  institutionType: z.enum(['TK', 'SD', 'PONDOK']),
+  institutionType: z.enum(['KB_TK', 'SD', 'MTQ', 'MSWi', 'MSWa', 'SMP', 'SMA']),
   grade: z.string().optional().nullable(),
   enrollmentDate: z.string(),
   enrollmentYear: z.string(),
@@ -54,7 +54,7 @@ export async function GET(
   try {
     const { default: prisma } = await import('@/lib/prisma');
     const session = await getServerSession(authOptions);
-    
+
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -97,7 +97,7 @@ export async function PUT(
   try {
     const { default: prisma } = await import('@/lib/prisma');
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -152,7 +152,7 @@ export async function PUT(
         { status: 400 }
       );
     }
-    
+
     console.error('Error updating student:', error);
     return NextResponse.json(
       { error: 'Failed to update student' },
@@ -168,7 +168,7 @@ export async function DELETE(
   try {
     const { default: prisma } = await import('@/lib/prisma');
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user) {
       return NextResponse.json(
         { error: 'Unauthorized' },

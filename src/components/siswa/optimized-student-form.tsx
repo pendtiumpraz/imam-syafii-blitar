@@ -60,7 +60,7 @@ const BasicInfoSection = memo(({ values, setValue, errors, touched, setTouched }
         error={touched.nisn ? errors.nisn : undefined}
         placeholder="Nomor Induk Siswa Nasional"
       />
-      
+
       <FormField
         label="NIS *"
         name="nis"
@@ -233,19 +233,19 @@ interface FormFieldProps {
   required?: boolean;
 }
 
-const FormField = memo(({ 
-  label, 
-  name, 
-  type = 'text', 
-  value, 
-  onChange, 
+const FormField = memo(({
+  label,
+  name,
+  type = 'text',
+  value,
+  onChange,
   onBlur,
-  error, 
-  placeholder, 
-  required = false 
+  error,
+  placeholder,
+  required = false
 }: FormFieldProps) => {
   const debouncedOnChange = useDebounce(onChange, 300)
-  
+
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const newValue = e.target.value
     onChange(newValue) // Immediate update for UI
@@ -263,9 +263,8 @@ const FormField = memo(({
           value={value}
           onChange={handleChange}
           onBlur={onBlur}
-          className={`w-full px-3 py-2 border rounded-md resize-none ${
-            error ? 'border-red-300 bg-red-50' : 'border-gray-300'
-          }`}
+          className={`w-full px-3 py-2 border rounded-md resize-none ${error ? 'border-red-300 bg-red-50' : 'border-gray-300'
+            }`}
           rows={3}
           placeholder={placeholder}
           required={required}
@@ -300,15 +299,15 @@ interface SelectFieldProps {
   required?: boolean;
 }
 
-const SelectField = memo(({ 
-  label, 
-  name, 
-  value, 
-  onChange, 
+const SelectField = memo(({
+  label,
+  name,
+  value,
+  onChange,
   onBlur,
-  error, 
-  options, 
-  required = false 
+  error,
+  options,
+  required = false
 }: SelectFieldProps) => (
   <div>
     <label className="block text-sm font-medium mb-2">
@@ -319,9 +318,8 @@ const SelectField = memo(({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       onBlur={onBlur}
-      className={`w-full px-3 py-2 border rounded-md ${
-        error ? 'border-red-300 bg-red-50' : 'border-gray-300'
-      }`}
+      className={`w-full px-3 py-2 border rounded-md ${error ? 'border-red-300 bg-red-50' : 'border-gray-300'
+        }`}
       required={required}
     >
       {options.map((option) => (
@@ -339,53 +337,54 @@ const SelectField = memo(({
 // Validation schema
 const validationSchema = (values: Record<string, any>) => {
   const errors: Record<string, string> = {}
-  
+
   if (!values.nis?.trim()) {
     errors.nis = 'NIS wajib diisi'
   }
-  
+
   if (!values.fullName?.trim()) {
     errors.fullName = 'Nama lengkap wajib diisi'
   }
-  
+
   if (!values.birthPlace?.trim()) {
     errors.birthPlace = 'Tempat lahir wajib diisi'
   }
-  
+
   if (!values.address?.trim()) {
     errors.address = 'Alamat wajib diisi'
   }
-  
+
   if (!values.city?.trim()) {
     errors.city = 'Kota wajib diisi'
   }
-  
+
   if (!values.fatherName?.trim()) {
     errors.fatherName = 'Nama ayah wajib diisi'
   }
-  
+
   if (!values.motherName?.trim()) {
     errors.motherName = 'Nama ibu wajib diisi'
   }
-  
-  if (values.email && !values.email.includes('@')) {
+
+  // Only validate email format if email is filled and has content
+  if (values.email && values.email.trim() && !values.email.includes('@')) {
     errors.email = 'Email tidak valid'
   }
-  
+
   return errors
 }
 
 // Main optimized component
-export const OptimizedStudentEditForm = memo(({ 
-  student, 
-  isOpen, 
-  onClose, 
-  onSubmit 
+export const OptimizedStudentEditForm = memo(({
+  student,
+  isOpen,
+  onClose,
+  onSubmit
 }: StudentEditFormProps) => {
   const [loading, setLoading] = useState(false)
   const [generalError, setGeneralError] = useState<string | null>(null)
   const { logPerformance } = usePerformanceMonitor('OptimizedStudentEditForm')
-  
+
   // Initialize form with optimized form hook
   const initialValues = useMemo(() => ({
     nisn: student.nisn || '',
@@ -440,7 +439,7 @@ export const OptimizedStudentEditForm = memo(({
   // Optimized submit handler
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     const startTime = performance.now()
     if (!validate()) {
       setGeneralError('Mohon perbaiki kesalahan pada form')
@@ -475,11 +474,11 @@ export const OptimizedStudentEditForm = memo(({
   return (
     <>
       {/* Backdrop */}
-      <div 
+      <div
         className="fixed inset-0 bg-black bg-opacity-50 z-50 transition-opacity duration-300"
         onClick={handleClose}
       />
-      
+
       {/* Slide-out Sidebar */}
       <div className={`fixed top-0 right-0 h-full w-full md:w-1/2 lg:w-1/3 xl:w-1/4 bg-white shadow-xl z-50 transform transition-transform duration-300 overflow-y-auto ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
         <div className="p-6">
@@ -583,9 +582,13 @@ export const OptimizedStudentEditForm = memo(({
                     onBlur={() => setTouched('institutionType' as any)}
                     error={touched.institutionType ? errors.institutionType : undefined}
                     options={[
-                      { value: 'TK', label: 'TK' },
+                      { value: 'KB_TK', label: 'KB-TK' },
                       { value: 'SD', label: 'SD' },
-                      { value: 'PONDOK', label: 'PONDOK' }
+                      { value: 'MTQ', label: 'MTQ' },
+                      { value: 'MSWi', label: 'MSWi' },
+                      { value: 'MSWa', label: 'MSWa' },
+                      { value: 'SMP', label: 'SMP' },
+                      { value: 'SMA', label: 'SMA' }
                     ]}
                     required
                   />
@@ -631,17 +634,17 @@ export const OptimizedStudentEditForm = memo(({
             {/* Submit Buttons */}
             <div className="sticky bottom-0 bg-white border-t pt-4 mt-6 -mx-6 px-6">
               <div className="flex gap-3">
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={handleClose} 
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleClose}
                   className="flex-1"
                   disabled={loading}
                 >
                   Batal
                 </Button>
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   className="flex-1 bg-green-600 hover:bg-green-700"
                   disabled={loading || !isValid}
                 >
